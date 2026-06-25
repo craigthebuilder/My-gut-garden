@@ -70,7 +70,7 @@ private struct Dashboard: View {
     // MARK: Token sample (proves tokens render + flip by mode)
 
     private var tokenSample: some View {
-        Card(theme: theme) {
+        SmokeCard(theme: theme) {
             VStack(alignment: .leading, spacing: theme.metrics.space3) {
                 Text("27 / 30 plants")
                     .font(theme.typography.data(28))
@@ -96,7 +96,7 @@ private struct Dashboard: View {
     // MARK: Auth
 
     private var authCard: some View {
-        Card(theme: theme) {
+        SmokeCard(theme: theme) {
             VStack(alignment: .leading, spacing: theme.metrics.space3) {
                 Text("Account")
                     .font(theme.typography.title())
@@ -157,7 +157,7 @@ private struct Dashboard: View {
     // MARK: Recognition
 
     private var recognitionCard: some View {
-        Card(theme: theme) {
+        SmokeCard(theme: theme) {
             VStack(alignment: .leading, spacing: theme.metrics.space3) {
                 Text("Snap a meal")
                     .font(theme.typography.title())
@@ -241,8 +241,9 @@ private struct Dashboard: View {
     }
 }
 
-/// Themed surface card — reads only tokens, never hardcoded values.
-private struct Card<Content: View>: View {
+/// Themed surface card for the smoke screen (replaced by DesignSystem.Card at
+/// consolidation). Renamed to avoid colliding with the shared `Card`.
+private struct SmokeCard<Content: View>: View {
     let theme: any Theme
     @ViewBuilder var content: Content
 
