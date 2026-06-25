@@ -1,0 +1,15 @@
+# fibers.csv — fermentable fiber types (framework §5 fiber→guild map; SPEC §5). Natural key: name.
+# is_fodmap_trigger flags the molecules that are simultaneously top bacterial fuel AND top IBS trigger (SPEC §1).
+# Source: framework §5; Monash University FODMAP program (which fibers are FODMAPs); USDA dietary-fiber definitions.
+# Format: pipe-delimited. name|is_fodmap_trigger|notes
+name|is_fodmap_trigger|notes
+inulin|true|Fructan. Top bacterial fuel AND classic IBS trigger. Chicory, jerusalem artichoke, onion, garlic.
+fos|true|Fructo-oligosaccharide; shorter-chain fructan, distinct from inulin. Onion, garlic, asparagus.
+gos|true|Galacto-oligosaccharide. Legumes and some dairy. A FODMAP trigger.
+rs2|false|Resistant starch, native granular form. Green banana, raw potato starch, legumes.
+rs3|false|Retrograded resistant starch, formed when cooked starch is cooled. Cooled rice and potato.
+pectin|false|Soluble, gentle, gel-forming. Apple, citrus, carrot. Feeds butyrate producers.
+beta_glucan|false|Soluble fiber of oats, barley and mushrooms. Feeds propionate producers; lowers cholesterol.
+arabinoxylan|false|Major fiber of whole wheat, rye and bran. Commonly overlooked; feeds Base Layer and Appetite Crew.
+psyllium|false|Husk fiber. Poorly fermented, so it bulks mechanically rather than feeding much.
+mucilage|false|Gel fiber of chia, flax and okra. Fermentable; soothes and feeds butyrate producers.

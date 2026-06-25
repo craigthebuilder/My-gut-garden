@@ -1,0 +1,118 @@
+# plants.csv — the master list that defines the "30 unique plants per week" count (SPEC §8, §13). Natural key: name.
+# rarity_tier (common|uncommon|rare|legendary) assigned HEURISTICALLY by dietary commonness for v1
+#   (SPEC §13: "Assigned manually in the plants master list for v1; data-driven later"). Tunable by owner/RD.
+# NOTE: mushrooms (fungi) and sea vegetables (algae) are not botanically "plants" but count toward the
+#   30-plants diversity target in the popular framing this app uses; included here for the Plant Pokédex.
+# Source: USDA FoodData Central (common names); scientific names per standard botanical nomenclature.
+# Format: pipe-delimited. name|scientific_name|plant_family|rarity_tier
+name|scientific_name|plant_family|rarity_tier
+Garlic|Allium sativum|Amaryllidaceae|common
+Onion|Allium cepa|Amaryllidaceae|common
+Leek|Allium ampeloprasum|Amaryllidaceae|uncommon
+Shallot|Allium cepa var. aggregatum|Amaryllidaceae|uncommon
+Spring onion|Allium fistulosum|Amaryllidaceae|common
+Chives|Allium schoenoprasum|Amaryllidaceae|uncommon
+Broccoli|Brassica oleracea var. italica|Brassicaceae|common
+Cauliflower|Brassica oleracea var. botrytis|Brassicaceae|common
+Cabbage|Brassica oleracea var. capitata|Brassicaceae|common
+Kale|Brassica oleracea var. sabellica|Brassicaceae|uncommon
+Brussels sprouts|Brassica oleracea var. gemmifera|Brassicaceae|uncommon
+Bok choy|Brassica rapa subsp. chinensis|Brassicaceae|uncommon
+Arugula|Eruca vesicaria|Brassicaceae|uncommon
+Radish|Raphanus sativus|Brassicaceae|common
+Turnip|Brassica rapa subsp. rapa|Brassicaceae|uncommon
+Watercress|Nasturtium officinale|Brassicaceae|rare
+Spinach|Spinacia oleracea|Amaranthaceae|common
+Romaine lettuce|Lactuca sativa|Asteraceae|common
+Swiss chard|Beta vulgaris subsp. vulgaris|Amaranthaceae|rare
+Collard greens|Brassica oleracea var. viridis|Brassicaceae|uncommon
+Carrot|Daucus carota|Apiaceae|common
+Beet|Beta vulgaris|Amaranthaceae|uncommon
+Sweet potato|Ipomoea batatas|Convolvulaceae|uncommon
+Potato|Solanum tuberosum|Solanaceae|common
+Parsnip|Pastinaca sativa|Apiaceae|rare
+Ginger|Zingiber officinale|Zingiberaceae|uncommon
+Turmeric|Curcuma longa|Zingiberaceae|rare
+Jerusalem artichoke|Helianthus tuberosus|Asteraceae|legendary
+Chicory root|Cichorium intybus|Asteraceae|legendary
+Pumpkin|Cucurbita pepo|Cucurbitaceae|uncommon
+Butternut squash|Cucurbita moschata|Cucurbitaceae|uncommon
+Zucchini|Cucurbita pepo var. cylindrica|Cucurbitaceae|common
+Cucumber|Cucumis sativus|Cucurbitaceae|common
+Tomato|Solanum lycopersicum|Solanaceae|common
+Bell pepper|Capsicum annuum|Solanaceae|common
+Eggplant|Solanum melongena|Solanaceae|uncommon
+Chili pepper|Capsicum annuum var. glabriusculum|Solanaceae|uncommon
+Asparagus|Asparagus officinalis|Asparagaceae|uncommon
+Celery|Apium graveolens|Apiaceae|common
+Fennel|Foeniculum vulgare|Apiaceae|rare
+Artichoke|Cynara cardunculus var. scolymus|Asteraceae|rare
+Okra|Abelmoschus esculentus|Malvaceae|rare
+Green pea|Pisum sativum|Fabaceae|common
+Corn|Zea mays|Poaceae|common
+Chickpea|Cicer arietinum|Fabaceae|uncommon
+Lentil|Lens culinaris|Fabaceae|uncommon
+Black bean|Phaseolus vulgaris|Fabaceae|uncommon
+Kidney bean|Phaseolus vulgaris var. nanus|Fabaceae|uncommon
+White bean|Phaseolus vulgaris var. albus|Fabaceae|uncommon
+Soybean|Glycine max|Fabaceae|uncommon
+Peanut|Arachis hypogaea|Fabaceae|common
+Oats|Avena sativa|Poaceae|common
+Barley|Hordeum vulgare|Poaceae|uncommon
+Brown rice|Oryza sativa|Poaceae|common
+Quinoa|Chenopodium quinoa|Amaranthaceae|uncommon
+Whole wheat|Triticum aestivum|Poaceae|common
+Rye|Secale cereale|Poaceae|rare
+Buckwheat|Fagopyrum esculentum|Polygonaceae|rare
+Millet|Panicum miliaceum|Poaceae|rare
+Sorghum|Sorghum bicolor|Poaceae|rare
+Almond|Prunus dulcis|Rosaceae|uncommon
+Walnut|Juglans regia|Juglandaceae|uncommon
+Cashew|Anacardium occidentale|Anacardiaceae|uncommon
+Pistachio|Pistacia vera|Anacardiaceae|uncommon
+Hazelnut|Corylus avellana|Betulaceae|rare
+Pecan|Carya illinoinensis|Juglandaceae|rare
+Brazil nut|Bertholletia excelsa|Lecythidaceae|rare
+Flaxseed|Linum usitatissimum|Linaceae|uncommon
+Chia seed|Salvia hispanica|Lamiaceae|uncommon
+Sesame seed|Sesamum indicum|Pedaliaceae|uncommon
+Sunflower seed|Helianthus annuus|Asteraceae|uncommon
+Pumpkin seed|Cucurbita pepo var. styriaca|Cucurbitaceae|uncommon
+Apple|Malus domestica|Rosaceae|common
+Banana|Musa acuminata|Musaceae|common
+Green banana|Musa acuminata (unripe)|Musaceae|uncommon
+Blueberry|Vaccinium corymbosum|Ericaceae|uncommon
+Strawberry|Fragaria x ananassa|Rosaceae|common
+Raspberry|Rubus idaeus|Rosaceae|uncommon
+Blackberry|Rubus fruticosus|Rosaceae|uncommon
+Orange|Citrus x sinensis|Rutaceae|common
+Lemon|Citrus x limon|Rutaceae|common
+Grape|Vitis vinifera|Vitaceae|common
+Concord grape|Vitis labrusca|Vitaceae|rare
+Pomegranate|Punica granatum|Lythraceae|rare
+Kiwi|Actinidia deliciosa|Actinidiaceae|uncommon
+Mango|Mangifera indica|Anacardiaceae|uncommon
+Pineapple|Ananas comosus|Bromeliaceae|uncommon
+Pear|Pyrus communis|Rosaceae|common
+Avocado|Persea americana|Lauraceae|uncommon
+Fig|Ficus carica|Moraceae|rare
+Cranberry|Vaccinium macrocarpon|Ericaceae|rare
+Date|Phoenix dactylifera|Arecaceae|uncommon
+Basil|Ocimum basilicum|Lamiaceae|common
+Parsley|Petroselinum crispum|Apiaceae|common
+Cilantro|Coriandrum sativum|Apiaceae|common
+Mint|Mentha spicata|Lamiaceae|common
+Rosemary|Salvia rosmarinus|Lamiaceae|uncommon
+Thyme|Thymus vulgaris|Lamiaceae|uncommon
+Oregano|Origanum vulgare|Lamiaceae|uncommon
+Cinnamon|Cinnamomum verum|Lauraceae|uncommon
+Nutmeg|Myristica fragrans|Myristicaceae|rare
+Cumin|Cuminum cyminum|Apiaceae|uncommon
+Black pepper|Piper nigrum|Piperaceae|common
+Sumac|Rhus coriaria|Anacardiaceae|legendary
+White mushroom|Agaricus bisporus|Agaricaceae|common
+Shiitake mushroom|Lentinula edodes|Omphalotaceae|uncommon
+Oyster mushroom|Pleurotus ostreatus|Pleurotaceae|rare
+Nori|Pyropia yezoensis|Bangiaceae|rare
+Wakame|Undaria pinnatifida|Alariaceae|rare
+Kombu|Saccharina japonica|Laminariaceae|legendary
