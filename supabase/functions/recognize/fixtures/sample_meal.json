@@ -1,0 +1,9 @@
+{
+  "foods": [
+    { "name": "Garlic", "portion_tier": "serving", "confidence": 0.82, "dish_type": "stir_fry" },
+    { "name": "Oats", "portion_tier": "lots", "confidence": 0.91, "dish_type": null },
+    { "name": "Spinach", "portion_tier": "serving", "confidence": 0.77, "dish_type": "stir_fry" },
+    { "name": "Blueberry", "portion_tier": "trace", "confidence": 0.88, "dish_type": null }
+  ],
+  "scene_notes": "mixed breakfast bowl; some items may be partially occluded"
+}

@@ -1,0 +1,14 @@
+# macOS
+.DS_Store
+
+# Xcode
+xcuserdata/
+*.xcuserstate
+DerivedData/
+build/
+*.xcuserdatad
+
+# Supabase
+supabase/.branches/
+supabase/.temp/
+.env
