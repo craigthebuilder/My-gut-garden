@@ -14,16 +14,13 @@ struct SupabaseUser: Codable, Sendable {
     let email: String?
 }
 
+// Field names map via the decoder's `.convertFromSnakeCase` strategy
+// (access_token → accessToken). Do NOT add explicit snake_case CodingKeys here:
+// combined with that strategy the key is transformed twice and never matches.
 struct SupabaseSession: Codable, Sendable {
     let accessToken: String
     let refreshToken: String?
     let user: SupabaseUser?
-
-    enum CodingKeys: String, CodingKey {
-        case accessToken = "access_token"
-        case refreshToken = "refresh_token"
-        case user
-    }
 }
 
 enum SupabaseError: LocalizedError {
@@ -54,7 +51,12 @@ struct SupabaseClient {
     }
 
     private func request(path: String, body: [String: Any], bearer: String) async throws -> (Data, HTTPURLResponse) {
-        var req = URLRequest(url: baseURL.appendingPathComponent(path))
+        // String-concatenate (not appendingPathComponent, which would percent-
+        // encode the "?" in "...token?grant_type=password" → a 404).
+        guard let url = URL(string: baseURL.absoluteString + "/" + path) else {
+            throw SupabaseError.server(status: -1, message: "bad URL for \(path)")
+        }
+        var req = URLRequest(url: url)
         req.httpMethod = "POST"
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
         req.setValue(anonKey, forHTTPHeaderField: "apikey")
