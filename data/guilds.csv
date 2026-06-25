@@ -1,0 +1,24 @@
+# guilds.csv — full microbial-guild roster (framework §4; SPEC §5). Natural key: internal_name.
+# confidence_tag enum: solid|maturing|frontier|emerging|associational
+#
+# 🔒 FENCE 2 (SPEC §14): the four District 3-4 names that imply health/disease claims —
+#    Mood Regulators, Estrogen Regulators, Mitochondria Boosters, Tumor Preventors —
+#    carry claim_risk=true and a substantiation string. UI must render an inline
+#    "[emerging science]" tag and NOT ship these as bare health claims. The substantiation
+#    text is RD-REVIEW-REQUIRED placeholder copy pending registered-dietitian sign-off.
+#
+# Source: framework §4 guild roster + confidence tags, verbatim where given.
+# Format: pipe-delimited. district_order|internal_name|display_name|function_copy|confidence_tag|feeds_copy|claim_risk|substantiation
+district_order|internal_name|display_name|function_copy|confidence_tag|feeds_copy|claim_risk|substantiation
+1|anti_inflammatory_arsenal|The Anti-inflammatory Arsenal|Butyrate producers (Faecalibacterium, Roseburia) that fuel the gut lining and calm inflammation. The backbone.|solid|Resistant starch, pectin, beta-glucan, oats and beans|false|
+1|appetite_crew|The Appetite Crew|Propionate producers (Bacteroides) tied to satiety, steadier blood sugar and lower cholesterol.|solid|Beta-glucan, barley, arabinoxylan and seaweed|false|
+1|base_layer|The Base Layer|Bifidobacteria that acidify the gut, crowd out pathogens and feed everyone else. Base of the pyramid.|solid|Inulin, FOS and GOS — onion, garlic, chicory and legumes|false|
+1|recycling_engine|The Recycling Engine|Lactate utilizers (Anaerostipes, E. hallii) that turn lactate into more butyrate and keep the system stable.|solid|Indirect — they eat what the Base Layer makes, so feed the Base Layer|false|
+2|locksmith|The Locksmith|Ruminococcus bromii — cracks open resistant-starch particles so everyone else can feed. Without it, RS passes straight through.|solid|Resistant starch — green banana, cooled rice and potato|false|
+2|knights_of_the_wall|The Knights of the Wall|Akkermansia muciniphila — maintains the mucus barrier and tracks with metabolic health.|maturing|Polyphenols — cranberry, pomegranate, green tea and concord grape|false|
+3|vitamin_lab|The Vitamin Lab|Vitamin synthesizers that produce K2, folate, biotin and B12. Where your 30-plants number cashes out into a mechanism.|solid|Overall diversity — the wider your plant range, the busier this lab|false|
+3|mood_regulators|The Mood Regulators|Tryptophan and indole producers on the gut-brain axis; ties to the mood dashboard.|frontier|Tryptophan-rich foods (oats, seeds, soy) plus fiber|true|[emerging science] RD-REVIEW-REQUIRED: gut-brain axis is a real and active research field, but a direct food→mood causal claim is unproven in humans. Frame as association only; never imply the app treats mood. Pending RD sign-off.
+4|estrogen_regulators|The Estrogen Regulators|Equol producers from soy isoflavones; roughly 1 in 3 people host them. Equol is a potent phytoestrogen of cardiovascular, bone and menopause interest.|emerging|Soy isoflavones — soybean, tempeh, tofu and miso|true|[emerging science] RD-REVIEW-REQUIRED: equol-producer status is a real metabotype confirmed only by a urine test after a soy challenge, not by tracking intake. Phytoestrogen health effects are emerging, not established. No therapeutic claim. Pending RD sign-off.
+4|mitochondria_boosters|The Mitochondria Boosters|Urolithin producers from ellagitannins; metabotypes A/B/0. Urolithin A is studied for mitochondrial and muscle health.|emerging|Pomegranate, walnuts and berries|true|[emerging science] RD-REVIEW-REQUIRED: urolithin-A benefits rest on early human trials and supplement studies, not whole-food outcomes. Producer status is a metabotype, not guaranteed by intake. No therapeutic claim. Pending RD sign-off.
+4|tumor_preventors|The Tumor Preventors|Enterolignan producers from plant lignans; enterolactone is of hormonal and cardiovascular interest.|associational|Flax, sesame and rye|true|[emerging science] RD-REVIEW-REQUIRED: ASSOCIATIONAL ONLY — NOT proven cancer prevention. Cancer-prevention claims are heavily scrutinized by FDA/FTC and app-store review. Name is placeholder; likely must be softened before launch. Pending RD sign-off.
+4|stone_breakers|The Stone Breakers|Oxalate degraders (Oxalobacter) — niche, but a clean food→function link that matters mainly for kidney-stone formers.|solid|Niche — they process oxalate from foods like spinach, beet and almond|false|

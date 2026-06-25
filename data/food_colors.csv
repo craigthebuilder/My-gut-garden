@@ -1,0 +1,128 @@
+# food_colors.csv — junction food -> rainbow color group (SPEC §5, §8). Composite PK (food_id,color_id).
+# A food may map to more than one color (one row each). Color = the dominant visible pigment group.
+# Source: USDA "eat the rainbow" groupings; visible pigment of the common form of the food.
+# Format: pipe-delimited. food|color
+food|color
+Garlic|white_brown
+Onion|white_brown
+Leek|white_brown
+Shallot|white_brown
+Spring onion|green
+Chives|green
+Broccoli|green
+Cauliflower|white_brown
+Cabbage|green
+Kale|green
+Brussels sprouts|green
+Bok choy|green
+Arugula|green
+Radish|red
+Turnip|white_brown
+Watercress|green
+Spinach|green
+Romaine lettuce|green
+Swiss chard|green
+Collard greens|green
+Carrot|orange
+Beet|red
+Sweet potato|orange
+Potato|white_brown
+Parsnip|white_brown
+Ginger|white_brown
+Turmeric|yellow
+Jerusalem artichoke|white_brown
+Chicory root|white_brown
+Pumpkin|orange
+Butternut squash|orange
+Zucchini|green
+Cucumber|green
+Tomato|red
+Bell pepper|red
+Eggplant|blue_purple
+Chili pepper|red
+Asparagus|green
+Celery|green
+Fennel|white_brown
+Artichoke|green
+Okra|green
+Green pea|green
+Corn|yellow
+Chickpea|white_brown
+Lentil|white_brown
+Black bean|blue_purple
+Kidney bean|red
+White bean|white_brown
+Soybean|green
+Peanut|white_brown
+Oats|white_brown
+Barley|white_brown
+Brown rice|white_brown
+Quinoa|white_brown
+Whole wheat|white_brown
+Rye|white_brown
+Buckwheat|white_brown
+Millet|yellow
+Sorghum|white_brown
+Almond|white_brown
+Walnut|white_brown
+Cashew|white_brown
+Pistachio|green
+Hazelnut|white_brown
+Pecan|white_brown
+Brazil nut|white_brown
+Flaxseed|white_brown
+Chia seed|white_brown
+Sesame seed|white_brown
+Sunflower seed|white_brown
+Pumpkin seed|green
+Apple|red
+Apple|green
+Banana|yellow
+Green banana|green
+Blueberry|blue_purple
+Strawberry|red
+Raspberry|red
+Blackberry|blue_purple
+Orange|orange
+Lemon|yellow
+Grape|green
+Concord grape|blue_purple
+Pomegranate|red
+Kiwi|green
+Mango|orange
+Pineapple|yellow
+Pear|green
+Avocado|green
+Fig|blue_purple
+Cranberry|red
+Date|white_brown
+Basil|green
+Parsley|green
+Cilantro|green
+Mint|green
+Rosemary|green
+Thyme|green
+Oregano|green
+Cinnamon|white_brown
+Nutmeg|white_brown
+Cumin|white_brown
+Black pepper|white_brown
+Sumac|red
+White mushroom|white_brown
+Shiitake mushroom|white_brown
+Oyster mushroom|white_brown
+Nori|green
+Wakame|green
+Kombu|green
+Tofu|white_brown
+Green tea|green
+Yogurt|white_brown
+Kefir|white_brown
+Aged cheese|yellow
+Sauerkraut|white_brown
+Kimchi|red
+Miso|white_brown
+Tempeh|white_brown
+Natto|white_brown
+Sourdough bread|white_brown
+Kombucha|white_brown
