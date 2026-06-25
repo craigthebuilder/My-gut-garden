@@ -17,3 +17,13 @@ Single index of every clinical/claim-risk location that a registered dietitian
 - `users.est_daily_kcal` exists but is documented internal-only; only `fiber_goal_g` is meant to surface (SPEC §10).
 - `exclusion_type` enum is a hard split (`medical_allergy` vs `preference_intolerance`) and the recognition pipeline branches on it (`attributes.ts`: LOUD alert vs silent omit) — never flattened (SPEC §9).
 - The vision LLM returns ID + coarse `portion_tier` only; all fiber/FODMAP/etc. come from the DB join (`attributes.ts`), never the model (SPEC §4).
+
+## Phase 1 — where each fence now lives
+
+| Fence | Implementation (machinery built, content fenced) |
+|---|---|
+| **1 — Survive pattern rules** | `MyGutGarden/MyGutGarden/PatternEngine/PatRules.swift` — every fingerprint→pattern→confidence rule carries `// RD-REVIEW-REQUIRED`; timing gates in `GameConfig.swift` (`patternMinDays`/`patternEmergingDays`/`patternConsistentDays`). Output is signal→experiment→"raise with a GI", asserted never-diagnosis by `PatSafetyTests`. |
+| **2 — Health-claim guild names** | `guilds.claim_risk` + `substantiation` in the seed (`/data/guilds.csv`, migration `…010`); rendered as `EmergingScienceTag` on the guild card + bloom celebration + notifications (`GuildGarden/`, `DesignSystem/Components.swift`). |
+| **3 — Reintro durations & sequencing** | Placeholder durations in `Config/GameConfig.swift` (`reintroChallengeDays`/`reintroWashoutDays`/`patternExperimentDays`, marked RD-REVIEW-REQUIRED), consumed by `Survive/SrvReintroEngine.swift`. |
+| **4 — FODMAP thresholds** | `/data/fodmap_profiles.csv` + `food_fibers.est_grams_per_serving` (reverse-engineered placeholder, marked); `/data/README.md` carries the Monash-source licensing note. Unprofiled foods → "unknown, flag" (not green). |
+| **5 — Disordered-eating duty of care** | Blameless off-ramp built in `Survive/SrvOffRampView.swift` + a "take a break" entry on the Thrive dashboard; `est_daily_kcal` written by Onboarding but never decoded into a view (`Repository.UserProfile` omits it); streaks/celebrations attach only to positive outcomes. |

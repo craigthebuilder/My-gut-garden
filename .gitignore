@@ -1,3 +1,6 @@
+# Claude Code (local settings + agent worktrees)
+.claude/
+
 # macOS
 .DS_Store
 

@@ -91,10 +91,14 @@ struct Repository: Sendable {
         _ = try await run(req)
     }
 
-    func upsert(_ table: String, _ body: [String: PGValue], onConflict: String) async throws {
+    /// `ignoreDuplicates: true` → leave the existing row untouched (e.g. the
+    /// lifetime plant collection's first_logged_at); false → merge/update it.
+    func upsert(_ table: String, _ body: [String: PGValue], onConflict: String,
+                ignoreDuplicates: Bool = false) async throws {
+        let resolution = ignoreDuplicates ? "ignore-duplicates" : "merge-duplicates"
         var req = makeRequest(table, method: "POST",
                               query: [URLQueryItem(name: "on_conflict", value: onConflict)],
-                              prefer: "resolution=merge-duplicates,return=minimal")
+                              prefer: "resolution=\(resolution),return=minimal")
         req.httpBody = try JSONSerialization.data(withJSONObject: body.mapValues(\.json))
         _ = try await run(req)
     }
@@ -171,6 +175,7 @@ struct GuildStateRow: Decodable, Sendable {
     let bloomState: String
     let lastFedAt: String?
     let daysFedThisWeek: Int
+    var hasEverBloomed: Bool = false   // set by the ingestion coordinator on crossedIntoBlooming
 }
 
 struct UserPlantCollectionRow: Decodable, Sendable {
