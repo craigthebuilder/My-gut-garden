@@ -123,7 +123,7 @@ function toAttributes(row: FoodRow): FoodAttributes {
 }
 
 const FOOD_SELECT = `
-  id, canonical_name, aliases, is_plant, is_fermented, histamine_level, common_hidden_in,
+  id, canonical_name, aliases, is_plant, is_fermented, histamine_level, common_hidden_in, categories,
   plant:plants(name, rarity_tier),
   food_fibers(relative_amount, est_grams_per_serving, fibers(name, is_fodmap_trigger)),
   food_colors(color_id),
@@ -159,6 +159,14 @@ export async function buildResponse(
   const prefFoodIds = new Set(
     exclusions.filter((e) => e.exclusion_type === "preference_intolerance" && e.food_id).map((e) => e.food_id),
   );
+  // §9: category-level exclusions (e.g. a celiac excluding "gluten") must ALSO
+  // fire — matched against foods.categories, not just food_id.
+  const allergyCategories = new Set(
+    exclusions.filter((e) => e.exclusion_type === "medical_allergy" && e.category).map((e) => e.category!.toLowerCase()),
+  );
+  const prefCategories = new Set(
+    exclusions.filter((e) => e.exclusion_type === "preference_intolerance" && e.category).map((e) => e.category!.toLowerCase()),
+  );
 
   const items: ResolvedItem[] = [];
   const unmatched: string[] = [];
@@ -174,9 +182,13 @@ export async function buildResponse(
     const attrs = toAttributes(row);
     const item: ResolvedItem = { vision: vf, attributes: attrs };
     // ⚠️ Two-faced model (§9): allergy = LOUD alert; preference = silent omit.
-    if (allergyFoodIds.has(attrs.food_id)) {
+    // Matches by food_id OR by category (foods.categories).
+    const cats: string[] = (row.categories ?? []).map((c: string) => c.toLowerCase());
+    const isAllergy = allergyFoodIds.has(attrs.food_id) || cats.some((c) => allergyCategories.has(c));
+    const isPref = prefFoodIds.has(attrs.food_id) || cats.some((c) => prefCategories.has(c));
+    if (isAllergy) {
       allergy_alerts.push({ food_name: attrs.canonical_name, exclusion_type: "medical_allergy" });
-    } else if (prefFoodIds.has(attrs.food_id)) {
+    } else if (isPref) {
       item.silently_omitted = true;
     }
     items.push(item);

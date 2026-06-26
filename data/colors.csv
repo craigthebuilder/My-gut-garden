@@ -1,0 +1,11 @@
+# colors.csv — the 6 rainbow groups (SPEC §8). Natural key: id (enum color_name).
+# Copy is curated + truthful, gut-framed (DESIGN "Writing": gain-framed, non-clinical).
+# Source: USDA "eat the rainbow" phytochemical groupings; Phenol-Explorer compound→color mapping.
+# Format: pipe-delimited. id|meaning_copy|what_it_does_copy
+id|meaning_copy|what_it_does_copy
+red|Lycopene, anthocyanins and ellagic acid|Polyphenols linked to heart and circulation; some feed mucus-barrier crews
+orange|Alpha- and beta-carotene|Carotenoids the body can turn into vitamin A for eyes, skin and immune signalling
+yellow|Flavonoids, lutein and zeaxanthin|A broad antioxidant mix; lutein and zeaxanthin concentrate in the eye
+green|Chlorophyll, folate and lutein|Folate supports methylation; chlorophyll and glucosinolates ride along in leafy and cruciferous greens
+blue_purple|Anthocyanins|Deep-pigment polyphenols that reach the colon and feed barrier-keeping bacteria like Akkermansia
+white_brown|Organosulfur compounds and quercetin|Allium sulfur compounds and prebiotic fibers; the fuel layer for your Base Layer bifidobacteria

@@ -1,0 +1,69 @@
+# fodmap_profiles.csv — per-food, per-serving FODMAP levels + derived safety (SPEC §5, §11b). PK: food_id.
+# levels enum: none|low|moderate|high (per fermentable group). safety enum: green|yellow|red.
+# Derivation rule used here: any group 'high' at the stated serving => red; any one group 'moderate' (others <= low) => yellow; else green.
+#
+# 🔒 FENCE 4 (SPEC §14): this is REVERSE-ENGINEERED PLACEHOLDER data for v1, RD-REVIEW-REQUIRED.
+#    OWNER ACTION BEFORE LAUNCH: validate the LICENSING of any FODMAP-threshold source (e.g. the Monash
+#    University Low FODMAP Diet app/data are proprietary) before shipping these values. Do NOT present as
+#    clinically validated thresholds. serving_size_desc is the coarse tier these levels assume.
+# Source (directional only, for shape not licensing): widely-published low-FODMAP food categorizations; framework §1 (fructans/GOS as triggers).
+# Format: pipe-delimited. food|fructan_level|gos_level|lactose_level|fructose_level|polyol_level|serving_size_desc|safety
+food|fructan_level|gos_level|lactose_level|fructose_level|polyol_level|serving_size_desc|safety
+Garlic|high|none|none|none|none|2-3 cloves|red
+Onion|high|none|none|none|none|1/4 cup chopped|red
+Leek|high|none|none|none|none|1/2 leek bulb|red
+Shallot|high|none|none|none|none|1 small shallot|red
+Chicory root|high|none|none|none|none|1 tsp inulin powder|red
+Jerusalem artichoke|high|none|none|none|none|1/2 cup|red
+Asparagus|moderate|none|none|high|none|2 spears|red
+Whole wheat|moderate|none|none|none|none|1 slice bread|yellow
+Rye|high|none|none|none|none|2 slices bread|red
+Barley|moderate|moderate|none|none|none|1/2 cup cooked|red
+Chickpea|none|high|none|none|none|1/4 cup canned, rinsed|red
+Lentil|none|moderate|none|none|none|1/4 cup boiled|yellow
+Black bean|none|high|none|none|none|1/2 cup|red
+Kidney bean|none|high|none|none|none|1/2 cup|red
+White bean|none|high|none|none|none|1/2 cup|red
+Soybean|none|low|none|none|none|1/2 cup edamame|green
+Green pea|moderate|none|none|none|none|1/2 cup|yellow
+Apple|none|none|none|high|high|1 medium|red
+Pear|none|none|none|high|high|1 medium|red
+Mango|none|none|none|high|none|1/2 fruit|red
+Avocado|none|none|none|none|moderate|1/4 fruit|yellow
+Fig|moderate|none|none|moderate|none|1 fresh fig|red
+Date|moderate|none|none|moderate|none|2 dates|red
+Cashew|moderate|high|none|none|none|10 nuts|red
+Pistachio|high|high|none|none|none|10 nuts|red
+Butternut squash|none|none|none|none|moderate|1/2 cup|yellow
+White mushroom|none|none|none|none|high|1/2 cup|red
+Shiitake mushroom|high|none|none|none|high|1/2 cup|red
+Cauliflower|none|none|none|none|high|1/2 cup|red
+Broccoli|moderate|none|none|none|none|3/4 cup|yellow
+Brussels sprouts|moderate|none|none|none|none|1/2 cup|yellow
+Okra|none|moderate|none|none|none|1/2 cup|yellow
+Sauerkraut|moderate|none|none|none|moderate|2 tbsp|yellow
+Kimchi|moderate|none|none|none|none|2 tbsp|yellow
+Miso|moderate|moderate|none|none|none|1 tbsp paste|yellow
+Carrot|none|none|none|none|none|1 medium|green
+Spinach|none|none|none|none|none|1 cup|green
+Cucumber|none|none|none|none|none|1/2 cup|green
+Tomato|none|none|none|low|none|1 medium|green
+Bell pepper|none|none|none|low|none|1/2 cup|green
+Zucchini|low|none|none|none|none|1/2 cup|green
+Eggplant|none|none|none|none|none|1 cup|green
+Potato|none|none|none|none|none|1 medium|green
+Brown rice|none|none|none|none|none|1 cup cooked|green
+Quinoa|none|none|none|none|none|1 cup cooked|green
+Oats|low|none|none|none|none|1/2 cup dry|green
+Kale|none|none|none|none|none|1 cup|green
+Blueberry|none|none|none|low|none|20 berries|green
+Strawberry|none|none|none|low|none|10 berries|green
+Raspberry|none|none|none|none|none|10 berries|green
+Orange|none|none|none|none|none|1 medium|green
+Banana|none|none|none|low|none|1 medium firm|green
+Green banana|none|none|none|none|none|1 medium|green
+Tofu|none|none|none|none|none|3/4 cup firm|green
+Tempeh|none|none|none|none|none|1/2 cup|green
+Yogurt|none|none|high|none|none|1/2 cup|red
+Kefir|none|none|high|none|none|1 cup|red
+Aged cheese|none|none|low|none|none|40 g|green

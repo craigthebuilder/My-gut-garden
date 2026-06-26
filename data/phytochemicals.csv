@@ -1,0 +1,38 @@
+# phytochemicals.csv — representative named compounds across the 9 classes (framework §5; SPEC §5). Natural key: name.
+# class is the phyto_class enum: carotenoid|polyphenol|organosulfur|terpene|phytosterol|saponin|alkaloid|chlorophyll|betalain
+# maps_to_color_id ties color-visible compounds to the Tier-1 Rainbow tracker (blank = camera-invisible, credited via food-ID lookup).
+# Source: USDA Database for the Flavonoid Content of Foods; USDA carotenoid data; Phenol-Explorer (polyphenols).
+# Format: pipe-delimited. name|class|maps_to_color_id
+name|class|maps_to_color_id
+beta_carotene|carotenoid|orange
+alpha_carotene|carotenoid|orange
+lycopene|carotenoid|red
+lutein|carotenoid|green
+zeaxanthin|carotenoid|yellow
+beta_cryptoxanthin|carotenoid|orange
+anthocyanin|polyphenol|blue_purple
+quercetin|polyphenol|yellow
+kaempferol|polyphenol|yellow
+catechin|polyphenol|green
+epigallocatechin_gallate|polyphenol|green
+ellagic_acid|polyphenol|red
+resveratrol|polyphenol|blue_purple
+hesperidin|polyphenol|orange
+naringenin|polyphenol|yellow
+curcumin|polyphenol|yellow
+chlorogenic_acid|polyphenol|white_brown
+punicalagin|polyphenol|red
+genistein|polyphenol|white_brown
+secoisolariciresinol|polyphenol|white_brown
+allicin|organosulfur|white_brown
+sulforaphane|organosulfur|green
+glucosinolate|organosulfur|green
+s_allyl_cysteine|organosulfur|white_brown
+limonene|terpene|orange
+carnosic_acid|terpene|green
+beta_sitosterol|phytosterol|white_brown
+soyasaponin|saponin|white_brown
+piperine|alkaloid|white_brown
+capsaicin|alkaloid|red
+chlorophyll|chlorophyll|green
+betanin|betalain|red

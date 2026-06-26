@@ -1,3 +1,6 @@
+# Claude Code (local settings + agent worktrees)
+.claude/
+
 # macOS
 .DS_Store
 
@@ -12,3 +15,6 @@ build/
 supabase/.branches/
 supabase/.temp/
 .env
+
+# Large design reference images (kept on disk, not in git)
+design/references/

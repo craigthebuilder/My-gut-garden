@@ -1,0 +1,8 @@
+# districts.csv — the 4 Thrive guild-garden districts, unlocked in sequence (framework §4; SPEC §8, §13). Natural key: order.
+# unlock_rule_key matches SPEC §13 district-unlock logic (resolved by Module D config).
+# Format: pipe-delimited. order|name|unlock_rule_key
+order|name|unlock_rule_key
+1|The Backbone District|tier2_unlocked
+2|The Keystones|two_backbone_blooming
+3|The Scientists|one_keystone_blooming_and_10_days
+4|The Hidden Gems|after_d3_engagement

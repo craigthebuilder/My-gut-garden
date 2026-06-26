@@ -1,0 +1,133 @@
+# foods.csv — every recognizable food; the attribute hub the recognition pipeline joins against (SPEC §4, §5). Natural key: canonical_name.
+# plant_name links to plants.name (blank => non-plant / processed food; is_plant set accordingly).
+# common_hidden_in = dish_types this food is often an INVISIBLE ingredient in (SPEC §4/§11 hidden-ingredient prompts) — semicolon-separated.
+# categories = allergen + diet/functional tags (the SPEC §9 / phase-1-seams categories column). CATEGORY-level exclusions fire the §9 LOUD allergy path
+#   for allergen tags (gluten, wheat, tree_nut, peanut, soy, sesame, dairy) and the quiet preference path for fodmap. Semicolon-separated.
+# histamine_level (low|moderate|high|blank) supports the Survive histamine pattern + Fermented Finds caution. Fresh-produce 'low' values are
+#   directional placeholders; high/moderate flags follow commonly-cited histamine food lists (RD-REVIEW-REQUIRED where it drives Survive output).
+# aliases / common_hidden_in / categories are semicolon-separated lists inside a pipe-delimited row.
+# Source: USDA FoodData Central (identities, common names); Monash FODMAP (which foods carry fodmap tag); standard allergen lists.
+# Format: pipe-delimited. canonical_name|aliases|is_plant|plant_name|is_fermented|histamine_level|common_hidden_in|categories
+canonical_name|aliases|is_plant|plant_name|is_fermented|histamine_level|common_hidden_in|categories
+Garlic|garlic clove;minced garlic;ajo;garlic powder|true|Garlic|false|low|curry;stir_fry;pasta_sauce;dressing;soup;marinade|allium;fodmap;prebiotic
+Onion|yellow onion;red onion;white onion;diced onion|true|Onion|false|low|curry;soup;stock;sauce;dressing;stir_fry;casserole|allium;fodmap;prebiotic
+Leek|leeks|true|Leek|false|low|soup;quiche;stock;gratin|allium;fodmap;prebiotic
+Shallot|shallots;eschalot|true|Shallot|false|low|dressing;sauce;stir_fry|allium;fodmap;prebiotic
+Spring onion|scallion;green onion|true|Spring onion|false|low|stir_fry;garnish;noodle_soup|allium;fodmap
+Chives|chive|true|Chives|false|low|garnish;dip;baked_potato|allium;herb_spice
+Broccoli|broccoli florets;tenderstem|true|Broccoli|false|low||cruciferous;green;fodmap
+Cauliflower|cauliflower florets|true|Cauliflower|false|low|cauliflower_rice;curry|cruciferous;fodmap
+Cabbage|green cabbage;red cabbage|true|Cabbage|false|low|slaw;soup|cruciferous
+Kale|curly kale;lacinato;cavolo nero|true|Kale|false|low|smoothie;chips|cruciferous;leafy_green;green
+Brussels sprouts|brussel sprouts|true|Brussels sprouts|false|low||cruciferous;fodmap
+Bok choy|pak choi;chinese cabbage|true|Bok choy|false|low|stir_fry|cruciferous;leafy_green;green
+Arugula|rocket;rucola|true|Arugula|false|low|salad|cruciferous;leafy_green;green
+Radish|radishes;daikon|true|Radish|false|low|salad;slaw|cruciferous;root_vegetable
+Turnip|turnips;swede|true|Turnip|false|low|soup;stew|cruciferous;root_vegetable
+Watercress|water cress|true|Watercress|false|low|salad;soup|cruciferous;leafy_green;green
+Spinach|baby spinach;spinach leaves|true|Spinach|false|moderate|curry;dip;smoothie;lasagne|leafy_green;green
+Romaine lettuce|romaine;cos lettuce;lettuce|true|Romaine lettuce|false|low|salad;wrap|leafy_green;green
+Swiss chard|chard;silverbeet|true|Swiss chard|false|moderate|saute|leafy_green;green
+Collard greens|collards;spring greens|true|Collard greens|false|low|braise|cruciferous;leafy_green;green
+Carrot|carrots;shredded carrot;baby carrot|true|Carrot|false|low|soup;stir_fry;slaw;stock;cake|root_vegetable;orange
+Beet|beetroot;beets|true|Beet|false|low|salad;juice;dip|root_vegetable;red
+Sweet potato|sweet potatoes;yam;kumara|true|Sweet potato|false|low|fries;mash;curry|root_vegetable;orange
+Potato|potatoes;white potato;russet|true|Potato|false|low|mash;fries;soup;gratin|root_vegetable
+Parsnip|parsnips|true|Parsnip|false|low|soup;roast;mash|root_vegetable;white_brown
+Ginger|fresh ginger;ginger root|true|Ginger|false|low|curry;stir_fry;marinade;smoothie;tea|root_vegetable;herb_spice
+Turmeric|fresh turmeric;turmeric root|true|Turmeric|false|low|curry;golden_milk;rice|root_vegetable;herb_spice;yellow
+Jerusalem artichoke|sunchoke;sunroot|true|Jerusalem artichoke|false|low|soup;roast|root_vegetable;fodmap;prebiotic
+Chicory root|chicory;inulin;witloof root|true|Chicory root|false|low|coffee_substitute;fiber_additive|root_vegetable;fodmap;prebiotic
+Pumpkin|pumpkin puree;winter squash|true|Pumpkin|false|low|soup;pie;curry|squash;orange
+Butternut squash|butternut;butternut pumpkin|true|Butternut squash|false|low|soup;roast;risotto|squash;orange;fodmap
+Zucchini|courgette;summer squash|true|Zucchini|false|low|fritter;ratatouille;bread|squash;green
+Cucumber|cucumbers;gherkin|true|Cucumber|false|low|salad;tzatziki|squash;green
+Tomato|tomatoes;cherry tomato;roma|true|Tomato|false|moderate|sauce;curry;salsa;soup|nightshade;red
+Bell pepper|capsicum;sweet pepper;red pepper|true|Bell pepper|false|low|stir_fry;fajita;salsa|nightshade;red
+Eggplant|aubergine;brinjal|true|Eggplant|false|moderate|curry;dip;ratatouille;moussaka|nightshade;blue_purple
+Chili pepper|chilli;hot pepper;jalapeno|true|Chili pepper|false|moderate|curry;salsa;sauce;marinade|nightshade;red;herb_spice
+Asparagus|asparagus spears|true|Asparagus|false|low|risotto;quiche|fodmap;green;prebiotic
+Celery|celery stalk;celeriac|true|Celery|false|low|soup;stock;salad;stir_fry|herb_spice;green
+Fennel|fennel bulb;anise bulb|true|Fennel|false|low|salad;roast|herb_spice;white_brown
+Artichoke|globe artichoke;artichoke heart|true|Artichoke|false|low|dip;pizza_topping|fodmap;green;prebiotic
+Okra|okra;ladies fingers;bhindi|true|Okra|false|low|gumbo;curry;stew|green;fodmap
+Green pea|peas;garden pea;petit pois|true|Green pea|false|low|soup;curry;fried_rice|legume;green;fodmap
+Corn|sweetcorn;maize;corn kernels|true|Corn|false|low|salad;soup;salsa|grain;yellow
+Chickpea|garbanzo;hummus bean|true|Chickpea|false|low|hummus;curry;falafel;soup|legume;fodmap
+Lentil|lentils;dal;red lentil|true|Lentil|false|low|dal;soup;curry;stew|legume;fodmap
+Black bean|black beans;turtle bean|true|Black bean|false|low|burrito;chili;soup|legume;fodmap
+Kidney bean|kidney beans;rajma|true|Kidney bean|false|low|chili;curry;salad|legume;fodmap
+White bean|cannellini;navy bean;haricot|true|White bean|false|low|soup;stew;dip|legume;fodmap
+Soybean|edamame;soya bean|true|Soybean|false|low|stir_fry;salad|legume;soy;fodmap
+Peanut|peanuts;groundnut;peanut butter|true|Peanut|false|moderate|satay;sauce;dressing;baked_goods|legume;peanut
+Oats|oatmeal;rolled oats;porridge;oat|true|Oats|false|low|granola;smoothie;baked_goods|grain;whole_grain
+Barley|pearl barley;pot barley|true|Barley|false|low|soup;risotto;stew|grain;whole_grain;gluten;fodmap
+Brown rice|wholegrain rice;brown rice|true|Brown rice|false|low|stir_fry;bowl;pilaf|grain;whole_grain;gluten_free
+Quinoa|quinoa grain|true|Quinoa|false|low|salad;bowl;porridge|grain;whole_grain;gluten_free
+Whole wheat|wholemeal;whole wheat bread;wheat|true|Whole wheat|false|low|bread;pasta;baked_goods;sauce_thickener|grain;whole_grain;gluten;wheat;fodmap
+Rye|rye bread;pumpernickel|true|Rye|false|low|bread;crackers|grain;whole_grain;gluten;fodmap
+Buckwheat|soba;kasha|true|Buckwheat|false|low|noodles;pancake;porridge|grain;whole_grain;gluten_free
+Millet|millet grain|true|Millet|false|low|porridge;flatbread|grain;whole_grain;gluten_free
+Sorghum|jowar;milo|true|Sorghum|false|low|porridge;flour|grain;whole_grain;gluten_free
+Almond|almonds;almond butter;almond meal|true|Almond|false|low|baked_goods;pesto;milk|nut;tree_nut
+Walnut|walnuts|true|Walnut|false|moderate|salad;baked_goods;pesto|nut;tree_nut
+Cashew|cashews;cashew butter|true|Cashew|false|moderate|curry;sauce;stir_fry|nut;tree_nut;fodmap
+Pistachio|pistachios|true|Pistachio|false|moderate|dessert;baked_goods|nut;tree_nut;fodmap
+Hazelnut|hazelnuts;filbert|true|Hazelnut|false|moderate|dessert;spread;baked_goods|nut;tree_nut
+Pecan|pecans|true|Pecan|false|low|pie;salad;baked_goods|nut;tree_nut
+Brazil nut|brazil nuts|true|Brazil nut|false|low|baked_goods;snack_mix|nut;tree_nut
+Flaxseed|flax;linseed;ground flaxseed|true|Flaxseed|false|low|smoothie;baked_goods;porridge|seed
+Chia seed|chia;chia seeds|true|Chia seed|false|low|pudding;smoothie;baked_goods|seed
+Sesame seed|sesame;tahini;til|true|Sesame seed|false|moderate|tahini;dressing;baked_goods;stir_fry|seed;sesame
+Sunflower seed|sunflower seeds;sunflower butter|true|Sunflower seed|false|low|salad;baked_goods;snack_mix|seed
+Pumpkin seed|pepitas;pumpkin seeds|true|Pumpkin seed|false|low|salad;snack_mix;granola|seed
+Apple|apples;green apple;red apple|true|Apple|false|low|sauce;pie;juice;slaw|fruit;fodmap
+Banana|ripe banana;bananas|true|Banana|false|moderate|smoothie;baked_goods|fruit
+Green banana|unripe banana;cooking banana;plantain|true|Green banana|false|low|smoothie;curry|fruit
+Blueberry|blueberries;wild blueberry|true|Blueberry|false|low|smoothie;muffin;pancake|fruit;berry;blue_purple;polyphenol_rich
+Strawberry|strawberries|true|Strawberry|false|moderate|smoothie;dessert;jam|fruit;berry;red
+Raspberry|raspberries|true|Raspberry|false|high|smoothie;dessert;jam|fruit;berry;red;polyphenol_rich
+Blackberry|blackberries|true|Blackberry|false|moderate|smoothie;dessert;jam|fruit;berry;blue_purple;polyphenol_rich
+Orange|oranges;mandarin;clementine|true|Orange|false|moderate|juice;salad;dessert|fruit;citrus;orange
+Lemon|lemons;lemon juice|true|Lemon|false|high|dressing;marinade;dessert;juice|fruit;citrus;yellow
+Grape|grapes;green grape;red grape|true|Grape|false|low|salad;juice;snack|fruit
+Concord grape|concord grapes;purple grape|true|Concord grape|false|low|juice;jam|fruit;blue_purple;polyphenol_rich
+Pomegranate|pomegranate seeds;arils|true|Pomegranate|false|low|salad;juice;garnish|fruit;red;polyphenol_rich
+Kiwi|kiwifruit;kiwis|true|Kiwi|false|moderate|smoothie;salad;dessert|fruit;green
+Mango|mangoes;mango|true|Mango|false|moderate|smoothie;salsa;curry|fruit;orange;fodmap
+Pineapple|pineapples;ananas|true|Pineapple|false|moderate|smoothie;salsa;dessert|fruit;yellow
+Pear|pears;bartlett;bosc|true|Pear|false|low|salad;dessert;juice|fruit;fodmap
+Avocado|avocados;guacamole|true|Avocado|false|high|guacamole;salad;toast|fruit;green;fodmap
+Fig|figs;dried fig|true|Fig|false|low|salad;dessert;jam|fruit;fodmap
+Cranberry|cranberries;dried cranberry|true|Cranberry|false|low|sauce;juice;baked_goods|fruit;red;polyphenol_rich
+Date|dates;medjool|true|Date|false|low|energy_ball;dessert;smoothie|fruit;fodmap
+Basil|fresh basil;sweet basil|true|Basil|false|low|pesto;pasta_sauce;salad|herb_spice;green
+Parsley|flat-leaf parsley;curly parsley|true|Parsley|false|low|garnish;tabbouleh;sauce|herb_spice;green
+Cilantro|coriander leaf;fresh coriander|true|Cilantro|false|low|salsa;curry;garnish|herb_spice;green
+Mint|fresh mint;spearmint|true|Mint|false|low|salad;tea;dessert;chutney|herb_spice;green
+Rosemary|fresh rosemary|true|Rosemary|false|low|roast;marinade;bread|herb_spice;green
+Thyme|fresh thyme|true|Thyme|false|low|stock;roast;stew|herb_spice;green
+Oregano|fresh oregano;dried oregano|true|Oregano|false|low|pizza_sauce;pasta_sauce;marinade|herb_spice;green
+Cinnamon|ground cinnamon;cinnamon stick|true|Cinnamon|false|low|baked_goods;curry;oatmeal;chai|herb_spice;white_brown
+Nutmeg|ground nutmeg|true|Nutmeg|false|low|baked_goods;bechamel;curry|herb_spice;white_brown
+Cumin|ground cumin;cumin seed;jeera|true|Cumin|false|low|curry;chili;spice_blend|herb_spice;white_brown
+Black pepper|peppercorn;ground pepper|true|Black pepper|false|moderate|almost_any_savory_dish|herb_spice;white_brown
+Sumac|ground sumac|true|Sumac|false|low|dressing;spice_blend;garnish|herb_spice;red
+White mushroom|button mushroom;cremini;portobello|true|White mushroom|false|moderate|stir_fry;soup;sauce;pizza_topping|mushroom;white_brown;fodmap
+Shiitake mushroom|shiitake;dried shiitake|true|Shiitake mushroom|false|moderate|stir_fry;broth;ramen|mushroom;white_brown;fodmap
+Oyster mushroom|oyster mushrooms|true|Oyster mushroom|false|moderate|stir_fry;soup|mushroom;white_brown
+Nori|seaweed sheet;laver|true|Nori|false|moderate|sushi;snack;garnish|seaweed
+Wakame|seaweed salad;wakame|true|Wakame|false|moderate|miso_soup;salad|seaweed
+Kombu|kelp;dashi kelp|true|Kombu|false|moderate|dashi;broth;bean_cooking|seaweed
+Tofu|bean curd;firm tofu;silken tofu|true||false|moderate|stir_fry;curry;soup;scramble|soy;legume
+Green tea|matcha;sencha;green tea leaves|true||false|moderate|latte;smoothie|beverage;polyphenol_rich
+Yogurt|plain yogurt;greek yogurt;curd|false||true|moderate|smoothie;dressing;dip;marinade|dairy;fermented
+Kefir|milk kefir;kefir drink|false||true|high|smoothie|dairy;fermented;high_histamine
+Aged cheese|cheddar;parmesan;hard cheese|false||true|high|pasta;pizza;sauce;gratin|dairy;fermented;high_histamine
+Sauerkraut|fermented cabbage;kraut|true||true|high|hot_dog_topping;salad|fermented;cruciferous;high_histamine;fodmap
+Kimchi|fermented kimchi;baechu|true||true|high|stir_fry;rice_bowl;stew|fermented;cruciferous;allium;high_histamine;fodmap
+Miso|miso paste;red miso;white miso|true||true|high|soup;marinade;dressing|fermented;soy;high_histamine;fodmap
+Tempeh|fermented soy cake|true||true|moderate|stir_fry;sandwich|fermented;soy
+Natto|fermented soybeans|true||true|high|rice_bowl|fermented;soy;high_histamine
+Sourdough bread|sourdough;levain|true||true|low|sandwich;toast|fermented;grain;gluten;wheat
+Kombucha|fermented tea;booch|true||true|moderate||fermented;beverage;polyphenol_rich

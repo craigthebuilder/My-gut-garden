@@ -59,11 +59,13 @@ struct ThemeTypography {
     let utilityName: String?    // nil => system (numerics / data, e.g. "27/30")
 
     // Intentional scale. Tune sizes/weights/line-heights in DESIGN.md §2.
+    // Display + title default to a SERIF design (field-guide character, per the
+    // design references) unless the owner supplies a custom display face.
     func display(_ size: CGFloat = 34, weight: Font.Weight = .bold) -> Font {
-        displayName.map { Font.custom($0, size: size).weight(weight) } ?? .system(size: size, weight: weight)
+        displayName.map { Font.custom($0, size: size).weight(weight) } ?? .system(size: size, weight: weight, design: .serif)
     }
     func title(_ size: CGFloat = 22, weight: Font.Weight = .semibold) -> Font {
-        displayName.map { Font.custom($0, size: size).weight(weight) } ?? .system(size: size, weight: weight)
+        displayName.map { Font.custom($0, size: size).weight(weight) } ?? .system(size: size, weight: weight, design: .serif)
     }
     func body(_ size: CGFloat = 17, weight: Font.Weight = .regular) -> Font {
         bodyName.map { Font.custom($0, size: size).weight(weight) } ?? .system(size: size, weight: weight)
@@ -101,24 +103,28 @@ struct ThemeMetrics {
 // MARK: - Concrete themes  (TODO(owner): replace placeholder hexes)
 
 struct ThriveTheme: Theme {
-    // Lush, warm, alive — additive and rewarding. Spend boldness here.
+    // Warm field-guide world: cream/parchment + forest-green ink + terracotta
+    // accent. Derived from design/references/* (DESIGN.md §4 — the reference
+    // wins). Owner-tunable; the structure is the source of truth.
     let colors = ThemeColors(
-        primary:      Color(hex: "#3FA34D"),   // TODO placeholder — "growing" green
-        secondary:    Color(hex: "#7BC47F"),   // TODO
-        accent:       Color(hex: "#F2B807"),   // TODO — celebration / rare-find pop
-        success:      Color(hex: "#3FA34D"),   // TODO
-        warning:      Color(hex: "#E8A33D"),   // TODO
-        error:        Color(hex: "#D7504D"),   // TODO
-        safetyGreen:  Color(hex: "#3FA34D"),   // (unused in Thrive, kept for parity)
-        safetyYellow: Color(hex: "#E8A33D"),
-        safetyRed:    Color(hex: "#D7504D"),
-        background:   Color(hex: "#FBFCF8"),   // TODO
-        surface:      Color(hex: "#FFFFFF"),   // TODO
-        textPrimary:  Color(hex: "#1C2A1E"),   // TODO
-        textSecondary:Color(hex: "#5A6B5C"),   // TODO
-        divider:      Color(hex: "#E4EAE0")    // TODO
+        primary:      Color(hex: "#3B6B43"),   // forest-green ink (field-guide titles, primary)
+        secondary:    Color(hex: "#8FA983"),   // sage
+        accent:       Color(hex: "#D9794E"),   // terracotta — celebration / rare-find pop, dashboard arc
+        success:      Color(hex: "#3B6B43"),
+        warning:      Color(hex: "#D9A441"),
+        error:        Color(hex: "#C2553F"),
+        safetyGreen:  Color(hex: "#3B6B43"),   // (Thrive rarely uses safety; kept for parity)
+        safetyYellow: Color(hex: "#D9A441"),
+        safetyRed:    Color(hex: "#C2553F"),
+        background:   Color(hex: "#EFE7D9"),   // warm cream
+        surface:      Color(hex: "#FAF4E8"),   // parchment / card
+        textPrimary:  Color(hex: "#2A3A2C"),   // dark green-ink
+        textSecondary:Color(hex: "#6B7A66"),   // muted olive-grey
+        divider:      Color(hex: "#E0D8C7")    // soft tan
     )
-    let typography = ThemeTypography(displayName: nil, bodyName: nil, utilityName: nil) // TODO(owner)
+    // Serif display (field-guide feel) is applied in ThemeTypography's fallback;
+    // body stays a clean sans, numerics rounded. Owner can supply custom faces.
+    let typography = ThemeTypography(displayName: nil, bodyName: nil, utilityName: nil)
     let metrics = ThemeMetrics()
 }
 

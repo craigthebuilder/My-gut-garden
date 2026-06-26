@@ -42,13 +42,13 @@ final class RecognitionService {
 
     /// Decodes the bundled fixture — a representative `recognize` response for
     /// the sample meal joined against the Phase-0 demo seed.
-    static func offlineFixture() throws -> RecognitionResponse {
+    nonisolated static func offlineFixture() throws -> RecognitionResponse {
         let decoder = JSONDecoder()
         decoder.keyDecodingStrategy = .convertFromSnakeCase
         return try decoder.decode(RecognitionResponse.self, from: Data(fixtureJSON.utf8))
     }
 
-    private static let fixtureJSON = """
+    private nonisolated static let fixtureJSON = """
     {
       "provider": "fixture",
       "mode": "thrive",
