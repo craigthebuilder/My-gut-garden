@@ -350,4 +350,43 @@ These are the framework's "open gates" (§10). They are **not blockers to buildi
 
 ---
 
+## 16. Phase 2 expansion (Batches B–E) — implemented, RD-content fenced
+
+Phase 2 broadened both modes. The machinery is built and runtime-verified; all
+clinical content ships as `// RD-REVIEW-REQUIRED` placeholders (see `FENCES.md`, now
+incl. Fences 6 & 7) and `PHASE2_PLAN.md` (the frozen design contract).
+
+**Central-tension ruling (load-bearing):** the Suspects/Avoid system and the
+low-residue reset are the **user's own observations and experiments** ("your data,
+raise with a GI"), never an app diagnosis, never an accumulating "bad-guy" meter,
+never gamified restriction. The only surfaced anthropometric number remains the
+Thrive fiber goal in grams.
+
+- **§6/§10 Onboarding (B):** 10-goal Q1; `plant_consumption_level` → a fiber-goal
+  multiplier (RD-REVIEW); **Survive has no fiber goal** — it uses an internal
+  `residue_ceiling_g` (never surfaced, twin of `est_daily_kcal`); a bowel-consistency
+  baseline; the mood scale flips to **regulated→erratic**, stored CANONICAL high=better
+  via `6 - ui_value`; a Thrive fiber-goal **auto-increase** after sustained success.
+- **§4 Snap (C):** auto-log on capture; a pre-analysis accept/retake/annotate step;
+  Snapchat-style annotations feed a **text-only structured re-prompt** that stays inside
+  the frozen vision contract (ID + coarse tier only, primary-vision-wins dedup);
+  **5-day photo retention** then the image is dropped (all food data kept).
+- **§11a Thrive (D/E):** fiber **mini-bar**; **Recent Meals** with AI-hypothesis
+  confirm/deny; **three-ring rainbow** (any amount = X/6, full ring only at "lots") +
+  weekly per-color charts + example foods; relative-fill **3 P's**; collected-only field
+  guide + a random "try this" suggestion; a daily **check-in** tab; the
+  **Suspects/Re-intro/Timeline/Avoid** surface (over the shared food-status store).
+- **§11b Survive (D/E):** a **multi-entry** check-in (stool/symptom/mood/notes sub-tables)
+  with per-entry time / tie-to-photo and a gas-odor popup; the same food-status surface;
+  and an **aggressive low-residue reset** — user-initiated, relief-framed, persistent
+  clinician disclaimer, frictionless Pause, **progress measured only in symptom-free
+  days** (`resetProgressMetric = .symptomFreeDays`, never a restriction counter). Reintro
+  bars are **event-driven** (felt-fine meals), never time-based.
+- **§13 Config:** new fiber/reintro/avoid/reset constants + the `resetProgressMetric`
+  structural pin. **§14 Fences:** Fence 6 (low-residue reset protocol + DE mitigations)
+  and Fence 7 (suspect/avoid thresholds + the pattern-engine auto-suggest gate); Fence 3
+  now also covers the reintro pass threshold + reset reintroduction sequencing.
+
+---
+
 *End of SPEC.md. Build order and agent rules: `CLAUDE.md`. Visual system: `DESIGN.md`.*
