@@ -190,6 +190,10 @@ private struct SurviveTabs: View {
             Tab("You", systemImage: "person") { ShellSettings(appState: appState) }
         }
         .task {
+            // Survive IS the reset episode: ensure one is active and turn on the
+            // evening check-in reminder (R3 Batch E).
+            await SrvEpisode.ensureStarted(appState: appState)
+            await SrvNotifications.enableEveningReminder()
             // Wire Module F: refresh the (read-only) pattern assessment on entry.
             if let uid = appState.profile?.id, let repo = appState.repository {
                 try? await PatPatternEngine().refresh(repository: repo, userId: uid, asOf: Date())
@@ -211,6 +215,11 @@ private struct ShellInsightPresenter: MealInsightPresenting {
         return AnyView(base.task {
             if let repo = state.repository {
                 await MealIngestion(repository: repo, appState: state).ingest(meal)
+            }
+            // Survive cadence: a 30-min "how did that sit?" nudge replaces the old
+            // inline "How did X feel?" prompt (R3 Batch E).
+            if state.mode == .survive {
+                SrvNotifications.schedulePostMealNudge(mealId: meal.id.uuidString)
             }
         })
     }
@@ -309,12 +318,21 @@ private struct ShellSettings: View {
             ModalScrim(onTapOutside: { pending = nil }) {
                 switch which {
                 case .toSurvive:
+                    // Entering Survive IS starting the ~2-week reset, so the disclaimer
+                    // is here, up front (Fence 6), not buried in a sub-feature.
                     ConfirmationModal(
-                        title: "Switch to Survive?",
-                        message: "Survive is for finding triggers and easing symptoms. Nothing you've grown is lost, and you can switch back any time.",
-                        confirmTitle: "Switch to Survive",
+                        title: "Start Survive?",
+                        message: "Survive is a roughly two-week experiment. You'll eat a very gentle, low-residue diet and log symptoms closely, then add foods back slowly. It asks for real dietary restriction and is best done with a registered dietitian's guidance. It isn't right for everyone, and you can pause or switch back any time. Sure you want to start?",
+                        confirmTitle: "Start Survive",
                         severity: .caution,
-                        onConfirm: { pending = nil; Task { await appState.setMode(.survive) } },
+                        onConfirm: {
+                            pending = nil
+                            Task {
+                                await appState.setMode(.survive)
+                                await SrvEpisode.ensureStarted(appState: appState)
+                                await SrvNotifications.enableEveningReminder()
+                            }
+                        },
                         onCancel: { pending = nil }
                     )
                 case .graduate:

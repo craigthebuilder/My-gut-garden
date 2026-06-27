@@ -175,21 +175,29 @@ struct SrvSuspectsTab: View {
             }
             ForEach(foods, id: \.id) { s in
                 Card {
-                    HStack(spacing: theme.metrics.space3) {
-                        Image(systemName: "leaf").foregroundStyle(theme.colors.secondary)
-                        Text(foodStore.foodName(s.foodId))
-                            .font(theme.typography.body(weight: .medium))
-                            .foregroundStyle(theme.colors.textPrimary)
-                        Spacer()
-                        Button("Re-intro") { startReintro(s) }
-                            .font(theme.typography.caption(weight: .semibold))
-                            .foregroundStyle(theme.colors.primary)
-                        Button {
-                            Task { await foodStore.removeSuspect(s) }
-                        } label: {
-                            Image(systemName: "xmark.circle").foregroundStyle(theme.colors.textSecondary)
+                    VStack(alignment: .leading, spacing: theme.metrics.space1) {
+                        HStack(spacing: theme.metrics.space3) {
+                            Image(systemName: "leaf").foregroundStyle(theme.colors.secondary)
+                            Text(foodStore.foodName(s.foodId))
+                                .font(theme.typography.body(weight: .medium))
+                                .foregroundStyle(theme.colors.textPrimary)
+                            Spacer()
+                            Button("Re-intro") { startReintro(s) }
+                                .font(theme.typography.caption(weight: .semibold))
+                                .foregroundStyle(theme.colors.primary)
+                            Button {
+                                Task { await foodStore.removeSuspect(s) }
+                            } label: {
+                                Image(systemName: "xmark.circle").foregroundStyle(theme.colors.textSecondary)
+                            }
+                            .accessibilityLabel("Remove \(foodStore.foodName(s.foodId))")
                         }
-                        .accessibilityLabel("Remove \(foodStore.foodName(s.foodId))")
+                        if s.addedBy == "auto_reset_break" {
+                            Text("Added automatically after a meal that didn't sit well. Remove it anytime.")
+                                .font(theme.typography.caption())
+                                .foregroundStyle(theme.colors.textSecondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
                     }
                 }
             }

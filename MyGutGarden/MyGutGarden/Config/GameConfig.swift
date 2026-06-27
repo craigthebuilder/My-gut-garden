@@ -92,4 +92,18 @@ struct GameConfig: Sendable {
     let suspectSuggestionMinMeals = 3              // meals-with-food before SUGGESTING a suspect
     let suspectSuggestionMinSeverity = 2           // symptom severity that qualifies
     let suspectSuggestionProximityHours = 12       // symptom must follow the meal within this window
+
+    // MARK: Survive episode notifications (R3 Batch E; cadence = post-meal + evening only)
+    let surviveReintroFollowupMinutes = 30         // "how did that sit?" nudge after a meal photo
+    let surviveEveningCheckinHour = 20             // local hour for the evening check-in reminder
+
+    // MARK: Reset diet-break auto-track (R3 Batch E). 🔒 FENCE 6, RD-REVIEW-REQUIRED
+    // During an active reset, a meal food above this fiber tier is "not low-residue"
+    // (a break); if the user then logs feeling unwell within the window, that food is
+    // auto-added to Checking with a calm, removable note. Investigation, not accusation.
+    let resetBreakFoodFiberThresholdG: Double = 2.5  // grams/serving above which a food breaks the reset
+    let resetBreakUnwellProximityHours = 6           // unwell within this window of a break -> auto-add
+
+    // MARK: Field-guide gap insights (R3 Batch B; tunable, not fenced)
+    let phytoGapInsightDays = 30                   // "not eaten lycopene in over a month"
 }

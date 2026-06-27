@@ -60,28 +60,34 @@ struct ThrRootView: View {
             .presentationDetents([.medium, .large])
         }
         .sheet(isPresented: $showDailyCheckin) {
-            ThrDailyCheckinSheet(appState: appState)
+            // ONE check-in: the same multi-entry form the Check-in tab uses (Batch C).
+            ThrCheckInFormView(appState: appState, mode: .new) { showDailyCheckin = false }
         }
+        // Refresh from the DB whenever Today reappears (e.g. after a snap in another
+        // tab), so plants-this-week and field-guide counts aren't stuck on cold-load
+        // state (R3 Batch A).
+        .onAppear { Task { await model.load(appState: appState, latestMeal: latestMeal) } }
     }
 
-    // MARK: - Header (greeting + compact fiber mini-bar top-right)
+    // MARK: - Header (full-width greeting, then the fiber readout on one line below)
 
     private var header: some View {
-        HStack(alignment: .top) {
-            VStack(alignment: .leading, spacing: theme.metrics.space2) {
-                Text("Your garden today")
-                    .font(theme.typography.display())
-                    .foregroundStyle(theme.colors.textPrimary)
-                Text(model.plantsRemaining == 0
-                     ? "30 plants this week, your garden's thriving."
-                     : "\(model.plantsRemaining) more plant\(model.plantsRemaining == 1 ? "" : "s") to reach this week's 30.")
-                    .font(theme.typography.body())
-                    .foregroundStyle(theme.colors.textSecondary)
-            }
-            Spacer(minLength: theme.metrics.space3)
-            ThrFiberMiniBar(consumedG: model.fiberConsumedTodayG,
-                            goalG: model.fiberGoalG,
-                            fraction: model.fiberFraction)
+        VStack(alignment: .leading, spacing: theme.metrics.space2) {
+            Text("Your garden today")
+                .font(theme.typography.display())
+                .foregroundStyle(theme.colors.textPrimary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            Text(model.plantsRemaining == 0
+                 ? "30 plants this week, your garden's thriving."
+                 : "\(model.plantsRemaining) more plant\(model.plantsRemaining == 1 ? "" : "s") to reach this week's 30.")
+                .font(theme.typography.body())
+                .foregroundStyle(theme.colors.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            ThrFiberLine(consumedG: model.fiberConsumedTodayG,
+                         goalG: model.fiberGoalG,
+                         fraction: model.fiberFraction)
+                .padding(.top, theme.metrics.space1)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -100,8 +106,8 @@ struct ThrRootView: View {
                     centerValue: "\(model.uniquePlantsThisWeek)",
                     centerUnit: "of \(GameConfig.shared.weeklyPlantTarget)",
                     caption: model.plantsRemaining == 0
-                        ? "Target hit, every extra still counts"
-                        : "\(model.plantsRemaining) to go before Sunday resets",
+                        ? "Every extra still counts"
+                        : "\(model.plantsRemaining) to go",
                     accent: theme.colors.primary
                 )
                 if model.bestWeekCount > 0 {
@@ -151,7 +157,19 @@ struct ThrRootView: View {
     private var rainbowSection: some View {
         Card {
             VStack(alignment: .leading, spacing: theme.metrics.space3) {
-                SectionHeader(title: "Eat the rainbow", trailing: "\(model.rainbowAmounts.hitCount)/6")
+                // The title routes into the Field Guide's Rainbow (same data, deeper),
+                // so "Eat the rainbow" and the field guide never disagree (R3 Batch B).
+                NavigationLink {
+                    ThrRainbowPokedexView(appState: appState, latestMeal: latestMeal)
+                } label: {
+                    HStack(spacing: theme.metrics.space1) {
+                        SectionHeader(title: "Eat the rainbow", trailing: "\(model.rainbowAmounts.hitCount)/6")
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(theme.colors.textSecondary)
+                    }
+                }
+                .buttonStyle(.plain)
                 ThrRainbowRings(amounts: model.rainbowAmounts) { group in
                     educatingColor = group
                 }

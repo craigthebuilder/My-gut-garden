@@ -84,6 +84,7 @@ struct ThrColorRow: Decodable, Sendable {
     let meaningCopy: String?
     let whatItDoesCopy: String?
     let exampleFoods: [String]?
+    let deficiencyCopy: String?        // R3 Batch B: "what going short could mean" (RD-REVIEW)
 }
 
 // MARK: - Meal-item / food rows (Recent Meals, rainbow + 3 P's day reads, Your Foods)
@@ -133,9 +134,19 @@ struct ThrPhytochemicalRow: Decodable, Sendable {
     let id: String
     let name: String
     let phytoClass: String
+    let whatItDoes: String?            // R3 Batch B: per-compound detail (RD-REVIEW)
 
     enum CodingKeys: String, CodingKey {
-        case id, name
+        case id, name, whatItDoes
         case phytoClass = "class"
     }
+}
+
+/// A phytochemical CATEGORY (`phyto_classes`): the field-guide opens here, then
+/// drills into the compounds in the class. R3 Batch B (RD-REVIEW content).
+struct ThrPhytoClassRow: Decodable, Sendable, Identifiable {
+    let id: String                     // phyto_class enum value
+    let title: String
+    let description: String
+    let deficiencyCopy: String?
 }

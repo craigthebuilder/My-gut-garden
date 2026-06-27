@@ -153,6 +153,44 @@ struct ThrFiberMiniBar: View {
     }
 }
 
+/// One-line fiber readout for the full-width header (R3 Batch A): label + count +
+/// a short inline bar, all on a single line. Fiber in grams is the ONLY
+/// anthropometric-derived number ever shown (rule #6).
+struct ThrFiberLine: View {
+    @Environment(\.theme) private var theme
+    let consumedG: Double
+    let goalG: Int?
+    let fraction: Double
+
+    var body: some View {
+        if let goal = goalG {
+            HStack(spacing: theme.metrics.space2) {
+                Image(systemName: "leaf.fill")
+                    .font(.system(size: 12))
+                    .foregroundStyle(theme.colors.accent)
+                Text("Fiber \(Int(consumedG.rounded())) / \(goal) g")
+                    .font(theme.typography.data(14, weight: .semibold))
+                    .foregroundStyle(theme.colors.textPrimary)
+                ZStack(alignment: .leading) {
+                    Capsule().fill(theme.colors.divider).frame(width: 72, height: 6)
+                    Capsule().fill(theme.colors.accent)
+                        .frame(width: max(4, 72 * CGFloat(max(0, min(1, fraction)))), height: 6)
+                }
+                Text("directional")
+                    .font(theme.typography.caption(11))
+                    .foregroundStyle(theme.colors.textSecondary)
+                Spacer(minLength: 0)
+            }
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("Fiber today \(Int(consumedG.rounded())) of \(goal) grams, directional")
+        } else {
+            Text("Fiber goal in setup")
+                .font(theme.typography.caption(11))
+                .foregroundStyle(theme.colors.textSecondary)
+        }
+    }
+}
+
 // MARK: - Radial goal card (the reference's hero arc, fiber goal / 30 plants)
 
 /// Wraps the shared `ProgressArc` with a centered count + caption. Used for both
@@ -181,6 +219,7 @@ struct ThrGoalArcCard: View {
                     .font(theme.typography.caption())
                     .foregroundStyle(theme.colors.textSecondary)
                     .multilineTextAlignment(.center)
+                    .frame(maxWidth: 116)        // keep the caption inside the arc (R3 Batch A)
                     .padding(.top, theme.metrics.space1)
             }
             .padding(.horizontal, theme.metrics.space4)

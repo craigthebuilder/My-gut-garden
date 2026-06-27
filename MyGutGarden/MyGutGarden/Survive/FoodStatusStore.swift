@@ -162,6 +162,23 @@ final class FoodStatusStore {
         await persist { try await repository.upsert("food_suspects", body, onConflict: "user_id,food_id") }
     }
 
+    /// Reset auto-track (Batch E): a high-residue food eaten during the reset that
+    /// preceded an unwell check-in lands in Checking with a calm, removable note
+    /// (added_by='auto_reset_break'). Skips medical allergies and any food already
+    /// being tracked, so it never clobbers the user's own list. The user removes it
+    /// with the normal Remove action. Investigation, not accusation (rule #4).
+    func autoFlagBreakFood(_ foodId: String) async {
+        guard !isMedicalAllergy(foodId) else { return }
+        if suspects.contains(where: { $0.foodId == foodId && $0.status != "cleared" }) { return }
+        let body: [String: PGValue] = [
+            "user_id": .string(userId), "food_id": .string(foodId),
+            "added_by": .string("auto_reset_break"), "status": .string("suspect"),
+            "user_verdict": .string("confirmed"), "avoid": .bool(false),
+            "updated_at": .date(Date())
+        ]
+        await persist { try await repository.upsert("food_suspects", body, onConflict: "user_id,food_id") }
+    }
+
     /// Accept a system suggestion: user authors it as a real suspect.
     func confirmSuggestion(_ s: FoodSuspectRow) async {
         await update(s, ["user_verdict": .string("confirmed")])

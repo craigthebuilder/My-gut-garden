@@ -99,10 +99,10 @@ struct ThrPokedexView: View {
                         Divider().overlay(theme.colors.divider)
                         if tier2Unlocked {
                             NavigationLink {
-                                ThrPhytochemicalPokedexView(model: model)
+                                ThrPhytochemicalPokedexView(appState: appState)
                             } label: {
                                 ThrNavRow(icon: "atom", title: "Phytochemicals",
-                                          subtitle: "Compound classes you've collected")
+                                          subtitle: "Categories, compounds, and what each does")
                             }
                         } else {
                             ThrNavRow(icon: "atom", title: "Phytochemicals",
@@ -204,113 +204,8 @@ struct ThrPlantSuggestionSheet: View {
     }
 }
 
-// MARK: - Rainbow pokédex (Tier 1)
-
-struct ThrRainbowPokedexView: View {
-    @Environment(\.theme) private var theme
-    let appState: AppState
-    var latestMeal: ConfirmedMeal? = nil
-
-    @State private var status = ThrRainbowStatus()
-    @State private var education: [String: ThrColorEducation] = ThrRainbowContent.fallback
-    @State private var educatingColor: ThrRainbowGroup?
-
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: theme.metrics.space4) {
-                Card {
-                    VStack(alignment: .leading, spacing: theme.metrics.space3) {
-                        SectionHeader(title: "This week's spectrum", trailing: "\(status.hitCount)/6")
-                        ThrRainbowRow(status: status) { educatingColor = $0 }
-                    }
-                }
-                ForEach(ThrRainbowGroup.allCases) { group in
-                    let edu = education[group.rawValue] ?? ThrColorEducation(meaning: "", whatItDoes: "")
-                    Button { educatingColor = group } label: {
-                        Card {
-                            HStack(spacing: theme.metrics.space3) {
-                                Circle().fill(group.swatch.opacity(status.state(for: group) == .hit ? 0.85 : 0.2))
-                                    .frame(width: 32, height: 32)
-                                    .overlay(Circle().strokeBorder(group.swatch, lineWidth: 1))
-                                    .accessibilityHidden(true)
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(group.label)
-                                        .font(theme.typography.body(weight: .medium))
-                                        .foregroundStyle(theme.colors.textPrimary)
-                                    Text(edu.whatItDoes)
-                                        .font(theme.typography.caption())
-                                        .foregroundStyle(theme.colors.textSecondary)
-                                        .lineLimit(1)
-                                }
-                                Spacer()
-                                Image(systemName: "chevron.right")
-                                    .font(.system(size: 13, weight: .semibold))
-                                    .foregroundStyle(theme.colors.textSecondary)
-                            }
-                        }
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-            .padding(theme.metrics.space5)
-        }
-        .background(theme.colors.background.ignoresSafeArea())
-        .navigationTitle("Rainbow")
-        .task { await load() }
-        .sheet(item: $educatingColor) { group in
-            ThrColorEducationSheet(group: group,
-                                   education: education[group.rawValue]
-                                    ?? ThrColorEducation(meaning: "", whatItDoes: ""))
-                .presentationDetents([.medium])
-        }
-    }
-
-    private func load() async {
-        if let meal = latestMeal {
-            for c in FoodAttributeJoin.thriveInsights(meal.response).colorsHit { status.mark(c, .hit) }
-        }
-        guard let repo = appState.repository,
-              let rows: [ThrColorRow] = try? await repo.select("colors") else { return }
-        for row in rows {
-            education[row.id] = ThrColorEducation(meaning: row.meaningCopy ?? "",
-                                                  whatItDoes: row.whatItDoesCopy ?? "")
-        }
-    }
-}
-
-// MARK: - Phytochemical pokédex (Tier 2, caller gates entry)
-
-struct ThrPhytochemicalPokedexView: View {
-    @Environment(\.theme) private var theme
-    let model: ThrPokedexModel
-
-    private let columns = [GridItem(.adaptive(minimum: 96), spacing: 12)]
-
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: theme.metrics.space4) {
-                if model.phytochemicals.isEmpty {
-                    ThrEmptyState(icon: "atom",
-                                  title: "No compounds catalogued yet",
-                                  message: "As you log colorful plants, the phytochemicals they carry land here.")
-                } else {
-                    LazyVGrid(columns: columns, spacing: theme.metrics.space3) {
-                        ForEach(model.phytochemicals, id: \.id) { p in
-                            let collected = model.collectedPhytoNames.contains(p.name)
-                            CollectibleTile(name: p.name.capitalized, collected: collected) {
-                                IllustrationPlaceholder(systemImage: "atom", tint: theme.colors.secondary)
-                            }
-                            .accessibilityHint(p.phytoClass.replacingOccurrences(of: "_", with: " "))
-                        }
-                    }
-                }
-            }
-            .padding(theme.metrics.space5)
-        }
-        .background(theme.colors.background.ignoresSafeArea())
-        .navigationTitle("Phytochemicals")
-    }
-}
+// MARK: - Rainbow + Phytochemical pokédex
+// (rich versions live in ThrFieldGuideDepth.swift, R3 Batch B)
 
 // MARK: - Fermented Finds (cross-mode; celebrated in Thrive)
 

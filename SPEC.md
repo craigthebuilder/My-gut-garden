@@ -387,6 +387,32 @@ Thrive fiber goal in grams.
   and Fence 7 (suspect/avoid thresholds + the pattern-engine auto-suggest gate); Fence 3
   now also covers the reintro pass threshold + reset reintroduction sequencing.
 
+### 16.1 Round-3 refinements (product-shaping pass) — implemented, RD-content fenced
+
+- **Thrive Today:** full-width header with a one-line fiber readout; the "30 plants"
+  count now recomputes **live** from the week's meals (the server `weekly_summaries`
+  lagged a fresh snap); Today refreshes on appear so 3 P's / field-guide counts move.
+- **Rainbow + Phytochemicals (Fence 8):** per-color **deficiency** copy; "Eat the
+  rainbow" routes into the Field Guide's Rainbow (same data, one source of truth);
+  phytochemicals are a **category → compound → detail** hierarchy; both surfaces carry
+  a **gap insight** with a refresh (drawn from curated junctions, never generated).
+- **One check-in:** the Today button and the Check-in tab open the **same** multi-entry
+  form; the Check-in tab is a **history log** (month/week, editable). Adds **Energy +
+  Clarity** categories (`metric_entries`, high=better, no inversion), a **meal-offset**
+  time tie ("30 min after a meal"), one empty seed per category, and a **persisted**
+  single-category **light** check-in (`users.light_checkin_category`, Thrive-only). The
+  add-then-remove **freeze is fixed** (id-based bindings).
+- **Snap:** the "Worth a check" flag now surfaces only when a meal food is on the user's
+  **Checking** list, as a calm **bottom** warning; the inline "How did it feel?" prompt
+  is replaced by a 30-min post-meal notification.
+- **Survive is a time-boxed EPISODE (Fence 6 extended):** entering Survive IS starting
+  the reset (the ~2-week disclaimer fires up front); the reset is the home surface, with
+  a curated **7-day suggested-meal plan** per phase, **recent meals**, relief-only
+  progress, advance/graduate, a persistent clinician disclaimer, **no light option**,
+  and **post-meal + evening** notifications. One unified "Foods you're checking" surface
+  (the separate food guide is retired). A high-residue **diet-break** that precedes an
+  unwell check-in **auto-adds** the food to Checking with a removable note.
+
 ---
 
 *End of SPEC.md. Build order and agent rules: `CLAUDE.md`. Visual system: `DESIGN.md`.*

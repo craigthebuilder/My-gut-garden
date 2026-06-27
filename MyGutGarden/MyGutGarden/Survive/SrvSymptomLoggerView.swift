@@ -37,6 +37,7 @@ struct SrvSymptomLoggerView: View {
                     stoolSection
                     feltSection
                     moodSection
+                    energyClaritySection
                     notesSection
                     saveButton
                 }
@@ -161,6 +162,47 @@ struct SrvSymptomLoggerView: View {
                             Spacer()
                             removeButton { draft.moods.removeAll { $0.id == entry.id } }
                         }
+                    }
+                }
+            }
+        }
+    }
+
+    // MARK: Energy & clarity (high=better, no inversion; same as Thrive)
+
+    private var energyClaritySection: some View {
+        Card {
+            VStack(alignment: .leading, spacing: theme.metrics.space4) {
+                SectionHeader(title: "Energy & clarity")
+                metricGroup(title: "Energy", metricType: "energy", keyPath: \.energy)
+                metricGroup(title: "Clarity", metricType: "clarity", keyPath: \.clarity)
+            }
+        }
+    }
+
+    private func metricGroup(title: String, metricType: String,
+                             keyPath: ReferenceWritableKeyPath<CheckInDraft, [MetricEntryDraft]>) -> some View {
+        let entries = draft[keyPath: keyPath]
+        return VStack(alignment: .leading, spacing: theme.metrics.space2) {
+            addHeader(title, style: .subhead) {
+                draft[keyPath: keyPath].append(MetricEntryDraft(metricType: metricType, score: 0))
+            }
+            ForEach(entries) { entry in
+                VStack(alignment: .leading, spacing: theme.metrics.space1) {
+                    SrvMetricRow(label: title, score: entry.score) { v in
+                        if let i = draft[keyPath: keyPath].firstIndex(where: { $0.id == entry.id }) {
+                            draft[keyPath: keyPath][i].score = v
+                        }
+                    }
+                    HStack {
+                        timeControl(occurredAt: entry.occurredAt, linkedMealId: entry.linkedMealId) { at, meal in
+                            if let i = draft[keyPath: keyPath].firstIndex(where: { $0.id == entry.id }) {
+                                draft[keyPath: keyPath][i].occurredAt = at
+                                draft[keyPath: keyPath][i].linkedMealId = meal
+                            }
+                        }
+                        Spacer()
+                        removeButton { draft[keyPath: keyPath].removeAll { $0.id == entry.id } }
                     }
                 }
             }
@@ -408,6 +450,42 @@ struct SrvMoodRow: View {
                             .clipShape(RoundedRectangle(cornerRadius: theme.metrics.radiusSmall, style: .continuous))
                     }
                     .accessibilityLabel("Mood \(n) of 5, where 1 is regulated")
+                    .accessibilityAddTraits(isOn ? .isSelected : [])
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Metric row (Energy / Clarity, Low 1 .. High 5; stored as-is, high=better)
+
+struct SrvMetricRow: View {
+    @Environment(\.theme) private var theme
+    let label: String
+    let score: Int                    // 0 = unset, 1 = low .. 5 = high
+    let onSelect: (Int) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: theme.metrics.space1) {
+            HStack {
+                Text(label).font(theme.typography.body(weight: .medium))
+                    .foregroundStyle(theme.colors.textPrimary)
+                Spacer()
+                Text("Low → High").font(theme.typography.caption())
+                    .foregroundStyle(theme.colors.textSecondary)
+            }
+            HStack(spacing: theme.metrics.space2) {
+                ForEach(1...5, id: \.self) { n in
+                    let isOn = score == n
+                    Button { onSelect(n) } label: {
+                        Text("\(n)").font(theme.typography.data(17))
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, theme.metrics.space2)
+                            .foregroundStyle(isOn ? theme.colors.surface : theme.colors.textSecondary)
+                            .background(isOn ? theme.colors.primary : theme.colors.background)
+                            .clipShape(RoundedRectangle(cornerRadius: theme.metrics.radiusSmall, style: .continuous))
+                    }
+                    .accessibilityLabel("\(label) \(n) of 5, where 5 is high")
                     .accessibilityAddTraits(isOn ? .isSelected : [])
                 }
             }

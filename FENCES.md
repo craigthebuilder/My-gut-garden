@@ -38,6 +38,19 @@ Single index of every clinical/claim-risk location that a registered dietitian
 **Extends Fence 3** — now also covers the suspect-clear pass threshold (`reintroMealsToPass`) and the reset reintroduction sequencing (see Fence 6).
 **Extends Fence 5** — the low-residue reset is the headline DE location; its disclaimer + Pause + relief-only progress are the duty-of-care machinery.
 
+## Phase 3 — new + extended fences (R3 round)
+
+| Fence | What is fenced + where |
+|---|---|
+| **8 — Rainbow + phytochemical education depth** (NEW) | Fenced **content**: per-color "if you go short" deficiency copy (`colors.deficiency_copy`); phytochemical CATEGORY descriptions + class-level deficiency (`phyto_classes.description` / `.deficiency_copy`, `claim_risk=true`); per-compound "what it does" (`phytochemicals.what_it_does`). Where: migration `20260627000010_phase3_education.sql`; surfaced in `Thrive/ThrFieldGuideDepth.swift` + `ThrRainbow.swift` (`ThrColorDetailSheet`), each rendered with an inline `[emerging science]` tag. Gap insights ("missing red, try pomegranate" / "no lycopene in a while, try tomato") are drawn from the curated `food_colors` / `food_phytochemicals` junctions and `colors.example_foods`, never runtime-generated (rule #9). All strings carry `// RD-REVIEW-REQUIRED`. |
+
+**Extends Fence 6** — now also covers the curated Survive **meal plans** (`survive_meal_plan`, migration `…011`, the 7-day low-residue / gentle-fiber rotation, surfaced read-only on Survive Today) and the **reset diet-break auto-track**: a high-residue food eaten during the reset that precedes an unwell check-in is auto-added to "Checking" (`food_suspects.added_by='auto_reset_break'`, migration `…012`) with a calm, user-removable note. Thresholds (`resetBreakFoodFiberThresholdG`, `resetBreakUnwellProximityHours`) are RD-REVIEW-REQUIRED. Machinery (not fenced): the auto-add is investigation not accusation, lands in Checking (never an exclusion), is always removable, and there is no severity/meter (rule #4). The ~2-week-experiment disclaimer now fires on ENTERING Survive (AppShell), not in a sub-feature.
+
+### R3 invariants enforced in the spine (not fences)
+- Energy/Clarity entries (`metric_entries`) are stored **high=better, as-is** (no inversion); mood remains the single `6 - ui_value` inversion point (`Shared/CheckInKit.swift`).
+- The persisted light check-in (`users.light_checkin_category`) is Thrive-only; **Survive has no light option** (the logger is always full).
+- Survive notifications are **post-meal + evening only** (`GameConfig.surviveReintroFollowupMinutes` / `surviveEveningCheckinHour`), calm-framed, never a streak or reward.
+
 ### Phase-2 invariants enforced in the spine (not fences — hard rules)
 - `residue_ceiling_g` is **internal-only** (twin of `est_daily_kcal`): written by Onboarding, never decoded into `Repository.UserProfile`, never surfaced. Only the Thrive fiber goal (g) is ever shown.
 - Mood is stored **CANONICAL high=better** via `6 - ui_value` (the single inversion point is `Shared/CheckInKit.swift`). The regulated→erratic UI flip never reaches the DB polarity; the pattern engine stays high=better.

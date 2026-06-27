@@ -1,58 +1,61 @@
 //
 //  SrvRootView.swift
-//  MyGutGarden, Module E PUBLIC ENTRY. The calm Survive home (SPEC §11b).
+//  MyGutGarden, Module E PUBLIC ENTRY. The Survive home (SPEC §11b, R3 Batch E).
 //
-//  Survive's register is steady and reassuring (DESIGN.md §1, §3): cool, quiet,
-//  lots of whitespace, gentle motion, no celebratory bursts. This screen brings
-//  the surface together, the symptom-free streak (framed "days feeling good",
-//  never "days restricted", rule #7), the evening logger, the read-only
-//  pattern insight, reintro progress, the food pokédexes, and the blameless
-//  off-ramp (Fence 5).
+//  Survive is now a time-boxed EPISODE: entering it (after a hard disclaimer) IS
+//  starting the low-residue reset, so the reset is the home surface, not a buried
+//  card. Today shows: where you are in the arc (phase + relief), this phase's
+//  curated suggested meals (Fence 6), the evening check-in, recent meals, the one
+//  unified "Foods you're checking" surface, and a persistent clinician disclaimer.
 //
-//  The AppShell injects the Survive theme by mode; this view also applies
-//  `.themed(for: .survive)` so it renders correctly in isolation and previews.
+//  Register stays calm (DESIGN §1/§3): no celebration, relief-framed progress
+//  ("days feeling good", never "days restricted", rule #7), frictionless pause.
 //
 
 import SwiftUI
 
 struct SrvRootView: View {
     @State private var store: SrvStore
+    @State private var resetModel: SrvResetModel
+    @State private var mealPlan = SrvMealPlanModel()
     @State private var foodStore: FoodStatusStore?
     @State private var showLogger = false
     @State private var showOffRamp = false
 
     init(appState: AppState) {
-        _store = State(initialValue: SrvStore(appState: appState))
+        let s = SrvStore(appState: appState)
+        _store = State(initialValue: s)
+        _resetModel = State(initialValue: SrvResetModel(store: s))
     }
 
     /// Preview/testing seam: inject a pre-populated store directly.
     init(store: SrvStore) {
         _store = State(initialValue: store)
+        _resetModel = State(initialValue: SrvResetModel(store: store))
     }
 
     var body: some View {
         NavigationStack {
-            SrvHomeContent(store: store, foodStore: foodStore,
-                           showLogger: $showLogger, showOffRamp: $showOffRamp)
+            SrvHomeContent(store: store, resetModel: resetModel, mealPlan: mealPlan,
+                           foodStore: foodStore, showLogger: $showLogger, showOffRamp: $showOffRamp)
                 .navigationTitle("My Gut Garden")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .topBarTrailing) {
-                        Button {
-                            showOffRamp = true
-                        } label: {
-                            Image(systemName: "slider.horizontal.3")
-                        }
-                        .accessibilityLabel("Adjust or pause tracking")
+                        Button { showOffRamp = true } label: { Image(systemName: "slider.horizontal.3") }
+                            .accessibilityLabel("Adjust or pause tracking")
                     }
                 }
         }
         .themed(for: .survive)
         .task {
+            await SrvEpisode.ensureStarted(appState: store.appState)
             await store.load()
-            // The shared food-status store needs a live repository + signed-in user.
-            // The lead may also construct/share this once at the shell, this is the
-            // in-module fallback so the surface works standalone + in previews.
+            await resetModel.load()
+            if let repo = store.appState.repository, let reset = resetModel.reset {
+                await mealPlan.load(repo: repo, phase: reset.phase,
+                                    startedAt: SrvDateParse.timestamp(reset.startedAt))
+            }
             if foodStore == nil,
                let repo = store.appState.repository,
                let uid = store.appState.profile?.id {
@@ -62,8 +65,10 @@ struct SrvRootView: View {
             }
         }
         .sheet(isPresented: $showLogger) {
-            SrvSymptomLoggerView(store: store, lite: store.trackingPreference == .lite)
+            // No light check-in in Survive: the reset wants methodical logging.
+            SrvSymptomLoggerView(store: store, lite: false)
                 .themed(for: .survive)
+                .onDisappear { Task { await SrvResetBreakDetector.run(appState: store.appState) } }
         }
         .sheet(isPresented: $showOffRamp) {
             SrvOffRampView(store: store)
@@ -75,23 +80,28 @@ struct SrvRootView: View {
 private struct SrvHomeContent: View {
     @Environment(\.theme) private var theme
     @Bindable var store: SrvStore
+    @Bindable var resetModel: SrvResetModel
+    @Bindable var mealPlan: SrvMealPlanModel
     let foodStore: FoodStatusStore?
     @Binding var showLogger: Bool
     @Binding var showOffRamp: Bool
 
     private var loggedDays: Int { store.mergedDailySymptoms().count }
+    private var phase: SrvResetPhase { SrvResetPhase(rawValue: resetModel.reset?.phase ?? "reset") ?? .reset }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: theme.metrics.space4) {
                 greeting
-                streakCard
+                resetCard
+                suggestedMeals
                 logCta
-                if store.trackingPreference == .paused { pausedNote }
-                activeChallengeCard
+                recentMeals
+                resetActions
+                clinicianCheckpoint
+                checkingNav
                 patternSection
-                navCards
-                resetEntry
+                clinicianDisclaimer
                 SrvRedFlagCard()
                 if store.usingSampleData { sampleNote }
             }
@@ -107,49 +117,93 @@ private struct SrvHomeContent: View {
             Text("How are you feeling?")
                 .font(theme.typography.display(28))
                 .foregroundStyle(theme.colors.textPrimary)
-            Text("Symptoms in, insights out. We'll keep it calm.")
+            Text("A gentle reset. Symptoms in, insights out, we'll keep it calm.")
                 .font(theme.typography.body())
                 .foregroundStyle(theme.colors.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
-    // MARK: Streak (relief-framed, never restriction)
+    // MARK: Reset status (phase + relief, frictionless pause)
 
-    private var streakCard: some View {
+    private var resetCard: some View {
         Card {
-            HStack(spacing: theme.metrics.space4) {
-                VStack(alignment: .leading, spacing: theme.metrics.space1) {
-                    Text(streakHeadline)
-                        .font(theme.typography.display(30))
-                        .foregroundStyle(theme.colors.primary)
-                    Text(streakSubtitle)
-                        .font(theme.typography.body())
-                        .foregroundStyle(theme.colors.textSecondary)
+            VStack(alignment: .leading, spacing: theme.metrics.space2) {
+                HStack {
+                    Text(phase.title)
+                        .font(theme.typography.title(18))
+                        .foregroundStyle(theme.colors.textPrimary)
+                    Spacer()
+                    if resetModel.reset?.pausedAt != nil {
+                        Button("Resume") { Task { await resetModel.resume() } }
+                            .font(theme.typography.caption(weight: .semibold))
+                            .foregroundStyle(theme.colors.primary)
+                    } else {
+                        Button("Pause anytime") { Task { await resetModel.pause() } }
+                            .font(theme.typography.caption(weight: .semibold))
+                            .foregroundStyle(theme.colors.primary)
+                            .accessibilityHint("Pauses right away, nothing is lost")
+                    }
                 }
-                Spacer()
-                Image(systemName: "sun.max")
-                    .font(.system(size: 34))
-                    .foregroundStyle(theme.colors.secondary)
-                    .accessibilityHidden(true)
+                Text(phaseBlurb)                                  // RD-REVIEW-REQUIRED (Fence 6)
+                    .font(theme.typography.body())
+                    .foregroundStyle(theme.colors.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text(reliefHeadline)
+                    .font(theme.typography.body(weight: .semibold))
+                    .foregroundStyle(theme.colors.primary)
+                Text("We're watching how you feel, not counting days. Off days carry no penalty.")
+                    .font(theme.typography.caption())
+                    .foregroundStyle(theme.colors.textSecondary)
             }
         }
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(streakHeadline + ". " + streakSubtitle)
     }
 
-    private var streakHeadline: String {
-        store.streak.current == 0 ? "Time to rebuild."
-            : "\(store.streak.current) \(store.streak.current == 1 ? "day" : "days") feeling good"
+    /// RD-REVIEW-REQUIRED (Fence 6): phase guidance copy.
+    private var phaseBlurb: String {
+        switch phase {
+        case .reset: return "Keep meals very gentle and low-residue while things settle."
+        case .reintroductionPhase: return "Adding gentle fiber back, one small step at a time."
+        case .graduated: return "You're ready for Thrive whenever you are."
+        }
     }
 
-    private var streakSubtitle: String {
-        if store.streak.current == 0 {
-            return "Log an evening or two and your streak begins. Off days with context just pause it."
+    private var reliefHeadline: String {
+        let n = resetModel.reliefDaysThisWeek
+        return n == 0 ? "Settling in" : "You've had \(n) \(n == 1 ? "day" : "days") feeling better this week"
+    }
+
+    // MARK: Suggested meals (curated, fenced)
+
+    @ViewBuilder private var suggestedMeals: some View {
+        if !mealPlan.slots.isEmpty {
+            Card {
+                VStack(alignment: .leading, spacing: theme.metrics.space3) {
+                    SectionHeader(title: "Suggested meals today")
+                    ForEach(mealPlan.slots) { slot in
+                        VStack(alignment: .leading, spacing: theme.metrics.space1) {
+                            Text(slot.title)
+                                .font(theme.typography.caption(weight: .semibold))
+                                .foregroundStyle(theme.colors.secondary)
+                            ForEach(slot.options, id: \.id) { option in
+                                VStack(alignment: .leading, spacing: 1) {
+                                    Text("\u{2022} \(option.title)")
+                                        .font(theme.typography.body())
+                                        .foregroundStyle(theme.colors.textPrimary)
+                                    Text(option.description)
+                                        .font(theme.typography.caption())
+                                        .foregroundStyle(theme.colors.textSecondary)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                }
+                            }
+                        }
+                    }
+                    Text("Ideas your dietitian can tune.")
+                        .font(theme.typography.caption())
+                        .foregroundStyle(theme.colors.textSecondary)
+                }
+            }
         }
-        if store.streak.longest > store.streak.current {
-            return "Your best stretch so far is \(store.streak.longest) days. Context days pause the count, never break it."
-        }
-        return "This is your best stretch yet. Keep going gently."
     }
 
     // MARK: Log CTA
@@ -160,39 +214,89 @@ private struct SrvHomeContent: View {
         }
     }
 
-    private var pausedNote: some View {
-        Card {
-            HStack(spacing: theme.metrics.space2) {
-                Image(systemName: "pause.circle").foregroundStyle(theme.colors.secondary)
-                Text("Tracking is paused. Everything's saved, log whenever you're ready.")
-                    .font(theme.typography.caption())
-                    .foregroundStyle(theme.colors.textSecondary)
+    // MARK: Recent meals (like Thrive)
+
+    @ViewBuilder private var recentMeals: some View {
+        if !store.recentMeals.isEmpty {
+            Card {
+                VStack(alignment: .leading, spacing: theme.metrics.space2) {
+                    SectionHeader(title: "Recent meals")
+                    ForEach(store.recentMeals.prefix(5)) { meal in
+                        HStack(spacing: theme.metrics.space3) {
+                            Image(systemName: "fork.knife")
+                                .foregroundStyle(theme.colors.secondary)
+                            Text(meal.label)
+                                .font(theme.typography.body())
+                                .foregroundStyle(theme.colors.textPrimary)
+                            Spacer()
+                        }
+                    }
+                }
             }
         }
     }
 
-    // MARK: Active challenge
+    // MARK: Reset actions (relief-gated)
 
-    @ViewBuilder private var activeChallengeCard: some View {
-        if let active = store.challenges.first(where: { $0.status == .testing }) {
-            NavigationLink {
-                SrvPokedexView(store: store)
-            } label: {
-                Card {
+    @ViewBuilder private var resetActions: some View {
+        if let reset = resetModel.reset, reset.pausedAt == nil {
+            if phase == .reset, SrvResetEngine.canAdvance(from: .reset, symptomFreeDays: resetModel.reliefDaysThisWeek) {
+                PrimaryButton(title: "I'm feeling better, add foods back", systemImage: "arrow.up.forward") {
+                    Task { await resetModel.advanceToReintroduction(); await reloadPlan() }
+                }
+            }
+            if SrvResetEngine.graduationReady(state: reset) {
+                PrimaryButton(title: "Move to Thrive", systemImage: "sun.max") {
+                    Task { await resetModel.graduate() }
+                }
+            }
+        }
+    }
+
+    private func reloadPlan() async {
+        guard let repo = store.appState.repository, let reset = resetModel.reset else { return }
+        await mealPlan.load(repo: repo, phase: reset.phase, startedAt: SrvDateParse.timestamp(reset.startedAt))
+    }
+
+    @ViewBuilder private var clinicianCheckpoint: some View {
+        if let reset = resetModel.reset, reset.pausedAt == nil,
+           SrvResetEngine.clinicianPromptNeeded(state: reset, now: Date()) {
+            Card {
+                HStack(alignment: .top, spacing: theme.metrics.space3) {
+                    Image(systemName: "stethoscope").foregroundStyle(theme.colors.warning)
                     VStack(alignment: .leading, spacing: theme.metrics.space2) {
-                        Label("Testing \(active.group.shortName)", systemImage: "target")
-                            .font(theme.typography.body(weight: .semibold))
+                        Text("It's been a couple of weeks and things haven't settled. A good moment to check in with a doctor or dietitian.")
+                            .font(theme.typography.body())
                             .foregroundStyle(theme.colors.textPrimary)
-                        ProgressView(value: SrvReintroEngine.progress(active, now: Date()))
-                            .tint(theme.colors.primary)
-                        Text("We'll flag this in your meals so it's easy to log.")
-                            .font(theme.typography.caption())
-                            .foregroundStyle(theme.colors.textSecondary)
+                        Button("Got it") { Task { await resetModel.markClinicianPrompted() } }
+                            .font(theme.typography.caption(weight: .semibold))
+                            .foregroundStyle(theme.colors.primary)
                     }
                 }
             }
+        }
+    }
+
+    // MARK: One unified food surface
+
+    @ViewBuilder private var checkingNav: some View {
+        if let foodStore {
+            NavigationLink {
+                SrvFoodSurfaceView(foodStore: foodStore)
+            } label: {
+                SrvNavRow(title: "Foods you're checking", subtitle: checkingSubtitle,
+                          systemImage: "list.bullet.clipboard")
+            }
             .buttonStyle(.plain)
         }
+    }
+
+    private var checkingSubtitle: String {
+        guard let foodStore else { return "Keep an eye on foods, ease them back in" }
+        let checking = foodStore.checking().count
+        let paused = foodStore.avoided().count
+        if checking == 0 && paused == 0 { return "Keep an eye on foods, ease them back in" }
+        return "\(checking) checking \u{00B7} \(paused) on pause"
     }
 
     // MARK: Pattern
@@ -205,52 +309,18 @@ private struct SrvHomeContent: View {
         }
     }
 
-    // MARK: Navigation cards
+    // MARK: Persistent clinician disclaimer (Fence 6 machinery)
 
-    private var navCards: some View {
-        VStack(spacing: theme.metrics.space3) {
-            if let foodStore {
-                NavigationLink {
-                    SrvFoodSurfaceView(foodStore: foodStore)
-                } label: {
-                    SrvNavRow(title: "Foods you're checking", subtitle: checkingSubtitle,
-                              systemImage: "list.bullet.clipboard")
-                }
-                .buttonStyle(.plain)
+    private var clinicianDisclaimer: some View {
+        Card {
+            HStack(alignment: .top, spacing: theme.metrics.space3) {
+                Image(systemName: "cross.case.fill").foregroundStyle(theme.colors.error)
+                Text("This is a personal experiment, not medical advice. If you have any health condition, especially IBD, an autoimmune condition, diabetes, or a history of disordered eating, or if you're pregnant, talk to your doctor first. This isn't right for everyone.")
+                    .font(theme.typography.caption())
+                    .foregroundStyle(theme.colors.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
-
-            NavigationLink {
-                SrvPokedexView(store: store)
-            } label: {
-                SrvNavRow(title: "Your food guide", subtitle: foodsSubtitle, systemImage: "square.grid.2x2")
-            }
-            .buttonStyle(.plain)
         }
-    }
-
-    /// A calm, user-initiated entry to the low-residue reset (Survive-contained,
-    /// never reachable directly from Thrive). Fence 6.
-    private var resetEntry: some View {
-        NavigationLink {
-            SrvResetView(store: store)
-        } label: {
-            SrvNavRow(title: "Give your gut a break",
-                      subtitle: "A gentle low-residue reset, then rebuild slowly",
-                      systemImage: "leaf.circle")
-        }
-        .buttonStyle(.plain)
-    }
-
-    private var checkingSubtitle: String {
-        guard let foodStore else { return "Keep an eye on foods, ease them back in" }
-        let checking = foodStore.checking().count
-        let paused = foodStore.avoided().count
-        if checking == 0 && paused == 0 { return "Keep an eye on foods, ease them back in" }
-        return "\(checking) checking · \(paused) on pause"
-    }
-
-    private var foodsSubtitle: String {
-        "\(store.safeFoods.count) safe · \(store.triggerFoods.count) resting · timeline"
     }
 
     private var sampleNote: some View {

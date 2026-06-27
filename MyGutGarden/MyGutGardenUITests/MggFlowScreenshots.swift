@@ -77,8 +77,8 @@ final class MggFlowScreenshots: XCTestCase {
         // 4) Switch to Survive (You → Go back to basics → confirm)
         if tapTab("You") {
             if tapButtonIfExists("Go back to basics (Survive)") {
-                _ = tapButtonIfExists("Switch to Survive", timeout: 4)
-                sleep(5)
+                _ = tapButtonIfExists("Start Survive", timeout: 4)
+                sleep(6)
                 snap("10-survive-home")
             }
         }

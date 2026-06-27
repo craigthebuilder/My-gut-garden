@@ -145,6 +145,7 @@ struct ThrRainbowAmounts: Sendable, Equatable {
 struct ThrColorEducation: Sendable, Equatable {
     let meaning: String        // colors.meaning_copy
     let whatItDoes: String     // colors.what_it_does_copy
+    var deficiency: String = "" // colors.deficiency_copy (R3 Batch B, RD-REVIEW)
 }
 
 enum ThrRainbowContent {
@@ -407,6 +408,21 @@ struct ThrColorDetailSheet: View {
                             }
                             Text(education.whatItDoes)
                                 .font(theme.typography.body())
+                                .foregroundStyle(theme.colors.textSecondary)
+                        }
+                    }
+                }
+
+                if !education.deficiency.isEmpty {
+                    Card {
+                        VStack(alignment: .leading, spacing: theme.metrics.space2) {
+                            SectionHeader(title: "If you go short")
+                            Text(education.deficiency)
+                                .font(theme.typography.body())
+                                .foregroundStyle(theme.colors.textSecondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                            Text("[emerging science]")
+                                .font(theme.typography.caption(11))
                                 .foregroundStyle(theme.colors.textSecondary)
                         }
                     }

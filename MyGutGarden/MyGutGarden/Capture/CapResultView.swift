@@ -26,10 +26,8 @@ struct CapResultScreen: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: theme.metrics.space5) {
                     CapAllergyBanner(alerts: model.allergyAlerts)          // LAYER 1, always first
-                    softFlags                                              // LAYER 2 (soft)
-                    reintroNudge
-                    reintroFeelingCard
                     insight
+                    bottomWarning                                          // only if a Checking/Avoid food is here
                     actions
                 }
                 .padding(theme.metrics.space5)
@@ -55,79 +53,53 @@ struct CapResultScreen: View {
         .accessibilityLabel("Close")
     }
 
-    // MARK: LAYER 2 soft flags (calm, user-framed, never an alarm)
+    // MARK: Bottom warning (ONLY when a Checking/Avoid food is in this meal)
+    //
+    // R3 Batch D: no "Worth a check" mid-screen card on every snap. It surfaces at
+    // the BOTTOM, as a calm warning, and ONLY if a food in this meal is on the
+    // user's Checking or Avoid list (or it's a big portion of a food being
+    // checked). The "How did it feel?" inline prompt is gone, a notification 30
+    // min after the photo asks instead (Survive notifications).
 
     @ViewBuilder
-    private var softFlags: some View {
+    private var bottomWarning: some View {
         if let meal = model.confirmedMeal {
-            VStack(alignment: .leading, spacing: theme.metrics.space3) {
-                ForEach(meal.suspectFoodIds, id: \.self) { foodId in
-                    CapSoftFlag(
-                        systemImage: "eye",
-                        text: "You've got \(model.foodName(for: foodId)) on your list to keep an eye on."
-                    )
-                }
-                ForEach(meal.avoidFoodIds, id: \.self) { foodId in
-                    CapSoftFlag(
-                        systemImage: "arrow.uturn.backward",
-                        text: "You set \(model.foodName(for: foodId)) aside for now. Want to revisit it?"
-                    )
-                }
-            }
-        }
-    }
-
-    // MARK: Reintro coaching (over-eating nudge + feeling card)
-
-    @ViewBuilder
-    private var reintroNudge: some View {
-        if model.confirmedMeal?.reintroFoodId != nil, model.reintroPortion == .lots {
-            CapSoftFlag(
-                systemImage: "tortoise",
-                text: "That looks like a lot for a food you're still checking. Going slow tells you more."
-            )
-        }
-    }
-
-    @ViewBuilder
-    private var reintroFeelingCard: some View {
-        if let id = model.confirmedMeal?.reintroFoodId {
-            Card {
-                VStack(alignment: .leading, spacing: theme.metrics.space3) {
-                    Text("How did the \(model.foodName(for: id)) feel?")
-                        .font(theme.typography.body(weight: .semibold))
-                        .foregroundStyle(theme.colors.textPrimary)
-                    if let answer = model.reintroAnswer {
-                        Text(answer ? "Noted, felt fine. That counts toward bringing it back."
-                                     : "Noted, a bit rough. No rush, you can try again later.")
-                            .font(theme.typography.caption())
-                            .foregroundStyle(theme.colors.textSecondary)
-                    } else {
-                        HStack(spacing: theme.metrics.space3) {
-                            feelingButton("Felt fine", feltFine: true)
-                            feelingButton("A bit rough", feltFine: false)
-                        }
+            let checking = meal.suspectFoodIds
+            let avoid = meal.avoidFoodIds
+            let overEating = meal.reintroFoodId != nil && model.reintroPortion == .lots
+            if !checking.isEmpty || !avoid.isEmpty || overEating {
+                VStack(alignment: .leading, spacing: theme.metrics.space2) {
+                    HStack(spacing: theme.metrics.space2) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                        Text("Worth a check")
+                            .font(theme.typography.body(weight: .semibold))
+                    }
+                    .foregroundStyle(theme.colors.secondary)
+                    ForEach(checking, id: \.self) { foodId in
+                        warningLine("This has \(model.foodName(for: foodId)), one you're keeping an eye on.")
+                    }
+                    ForEach(avoid, id: \.self) { foodId in
+                        warningLine("This has \(model.foodName(for: foodId)), one you set aside for now.")
+                    }
+                    if overEating {
+                        warningLine("That's a lot of a food you're still checking. Going slow tells you more.")
                     }
                 }
+                .padding(theme.metrics.space4)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(theme.colors.secondary.opacity(0.10),
+                            in: RoundedRectangle(cornerRadius: theme.metrics.radiusMedium, style: .continuous))
+                .accessibilityElement(children: .combine)
             }
         }
     }
 
-    private func feelingButton(_ title: String, feltFine: Bool) -> some View {
-        Button { Task { await model.recordReintroFeeling(feltFine) } } label: {
-            Text(title)
-                .font(theme.typography.body(weight: .medium))
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, theme.metrics.space2)
-        }
-        .foregroundStyle(theme.colors.primary)
-        .background(theme.colors.surface)
-        .clipShape(RoundedRectangle(cornerRadius: theme.metrics.radiusSmall, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: theme.metrics.radiusSmall, style: .continuous)
-                .strokeBorder(theme.colors.primary.opacity(0.4), lineWidth: 1)
-        )
-        .accessibilityLabel(title)
+    private func warningLine(_ text: String) -> some View {
+        Text(text)
+            .font(theme.typography.body())
+            .foregroundStyle(theme.colors.textPrimary)
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     // MARK: Insight + actions

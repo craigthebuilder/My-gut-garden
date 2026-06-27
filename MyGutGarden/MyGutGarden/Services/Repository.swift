@@ -155,6 +155,9 @@ struct Repository: Sendable {
         let rows: [SurviveResetRow] = try await select("survive_reset")
         return rows.first
     }
+    func fetchSurviveMealPlan(phase: String) async throws -> [SurviveMealPlanRow] {
+        try await select("survive_meal_plan", filters: ["phase": "eq.\(phase)"], order: "day_index")
+    }
 }
 
 // MARK: - Shared row types (used across modules + the coordinator)
@@ -180,6 +183,7 @@ struct UserProfile: Decodable, Sendable {
     let baselineBowelConsistency: Int?   // 1=inconsistent .. 5=consistent (high=better)
     let otherAutoimmune: Bool
     let fiberGoalAdjustedWeekStart: String?  // last week the Thrive auto-increase fired (idempotency)
+    let lightCheckinCategory: String?    // R3 Batch C: persisted single-category light check-in (nil = full)
 }
 
 struct ExclusionRow: Decodable, Sendable {
@@ -363,4 +367,21 @@ struct SurviveResetRow: Decodable, Sendable {
 struct ResetInstructionRow: Decodable, Sendable {
     let id: String; let phase: String; let sortOrder: Int
     let instructionCopy: String; let foodSuggestions: [String]; let claimRisk: Bool
+}
+
+/// R3 Batch C: an Energy or Clarity entry. High=better, stored as-is (no inversion).
+struct MetricEntryRow: Decodable, Sendable {
+    let id: String; let userId: String; let logDate: String
+    let metricType: String             // energy | clarity
+    let score: Int                     // 1=low .. 5=high
+    let context: String; let occurredAt: String?; let linkedMealId: String?
+}
+
+/// R3 Batch E: a curated Survive meal-plan slot (Fence 6, RD-REVIEW-REQUIRED).
+struct SurviveMealPlanRow: Decodable, Sendable {
+    let id: String; let phase: String; let dayIndex: Int
+    let mealSlot: String               // breakfast | lunch | dinner
+    let optionIndex: Int
+    let title: String; let description: String
+    let exampleFoods: [String]; let fiberLevel: String
 }

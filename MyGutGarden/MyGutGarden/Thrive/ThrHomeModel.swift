@@ -64,6 +64,7 @@ final class ThrHomeModel {
         fiberGoalG = profile?.fiberGoalG
 
         await loadWeeklyVariety(repo)
+        await loadWeeklyPlantsLive(repo)        // live count so a fresh snap shows up now
         await loadCuriosity(repo)
         await loadColorEducation(repo)
         await loadTodayCheckin(repo, userId: profile?.id)
@@ -128,6 +129,29 @@ final class ThrHomeModel {
         weekly30Streak = ThrIngestor.consecutiveWeeklyHits(mostRecentFirst: completed.map(\.hit30))
     }
 
+    /// `weekly_summaries` is computed server-side and lags a fresh snap, so the
+    /// "X / 30 plants" hero would look frozen right after logging. Recompute this
+    /// week's distinct plant foods live from the week's meals and keep the larger
+    /// of the two, so the number moves immediately and never regresses (R3 Batch A).
+    private func loadWeeklyPlantsLive(_ repo: Repository) async {
+        let since = ThrDates.timestampString(ThrDates.currentMonday())
+        guard let meals: [MealRow] = try? await repo.select(
+            "meals", columns: "id,mode,photo_url,captured_at,confirmed,user_annotation,photo_expires_at",
+            filters: ["captured_at": "gte.\(since)", "mode": "eq.thrive", "confirmed": "eq.true"]
+        ), !meals.isEmpty else { return }
+        let mealList = "(" + meals.map(\.id).joined(separator: ",") + ")"
+        guard let items: [ThrMealItemTierRow] = try? await repo.select(
+            "meal_items", columns: "food_id,portion_tier,est_fiber_g", filters: ["meal_id": "in.\(mealList)"]
+        ), !items.isEmpty else { return }
+        let foodList = "(" + Set(items.map(\.foodId)).joined(separator: ",") + ")"
+        guard let foods: [ThrFoodNameRow] = try? await repo.select(
+            "foods", columns: "id,canonical_name", filters: ["id": "in.\(foodList)"]
+        ) else { return }
+        let plantNames = Set(((try? await repo.fetchPlants()) ?? []).map { $0.name.lowercased() })
+        let distinct = Set(foods.map { $0.canonicalName.lowercased() }.filter { plantNames.contains($0) })
+        uniquePlantsThisWeek = max(uniquePlantsThisWeek, distinct.count)
+    }
+
     private func loadCuriosity(_ repo: Repository) async {
         if let facts: [ThrCuriosityFactRow] = try? await repo.select("curiosity_facts", limit: 50) {
             curiosity = facts.randomElement()
@@ -139,7 +163,8 @@ final class ThrHomeModel {
         for row in rows {
             colorEducation[row.id] = ThrColorEducation(
                 meaning: row.meaningCopy ?? colorEducation[row.id]?.meaning ?? "",
-                whatItDoes: row.whatItDoesCopy ?? colorEducation[row.id]?.whatItDoes ?? ""
+                whatItDoes: row.whatItDoesCopy ?? colorEducation[row.id]?.whatItDoes ?? "",
+                deficiency: row.deficiencyCopy ?? colorEducation[row.id]?.deficiency ?? ""
             )
             if let examples = row.exampleFoods, !examples.isEmpty { colorExampleFoods[row.id] = examples }
         }
