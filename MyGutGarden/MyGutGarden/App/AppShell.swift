@@ -187,6 +187,12 @@ private struct SurviveTabs: View {
                                  ShellInsightPresenter(inner: store.makeInsightPresenter(), appState: appState))
                     .captureSeams(appState: appState)
             }
+            // The SAME check-in as Thrive (R4), in Survive context: no light option,
+            // and saving refreshes the streak + runs the reset break-detector.
+            Tab("Check-in", systemImage: "checklist") {
+                ThrTestTabView(appState: appState, context: .surviveLogger, showsLight: false,
+                               onSaved: { await store.load(); await SrvResetBreakDetector.run(appState: appState) })
+            }
             Tab("You", systemImage: "person") { ShellSettings(appState: appState) }
         }
         .task {

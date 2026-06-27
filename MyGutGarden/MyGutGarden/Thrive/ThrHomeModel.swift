@@ -152,6 +152,10 @@ final class ThrHomeModel {
         uniquePlantsThisWeek = max(uniquePlantsThisWeek, distinct.count)
     }
 
+    // Tiny decode rows for the 3 P's DB computation.
+    private struct ThrFoodIdRow: Decodable, Sendable { let foodId: String }
+    private struct ThrIdRow: Decodable, Sendable { let id: String }
+
     private func loadCuriosity(_ repo: Repository) async {
         if let facts: [ThrCuriosityFactRow] = try? await repo.select("curiosity_facts", limit: 50) {
             curiosity = facts.randomElement()
@@ -211,6 +215,39 @@ final class ThrHomeModel {
         for fc in colors {
             guard let tier = tierByFood[fc.foodId] else { continue }
             rainbowAmounts.mark(fc.colorId, tier: tier)
+        }
+
+        // The 3 P's from the DB too, so they update on the Today tab (latestMeal nil),
+        // not only on the post-snap path. Same dual-path gap that hit "30 plants".
+        await markThreePsFromDB(repo, tierByFood: tierByFood,
+                                bluePurpleFoods: Set(colors.filter { $0.colorId == "blue_purple" }.map(\.foodId)))
+    }
+
+    /// Prebiotic = a food with fiber or a guild feed; Probiotic = a fermented food;
+    /// Polyphenol = a polyphenol-class phytochemical or a blue/purple color. Mirrors
+    /// applyLatestMeal so the offline and DB paths agree.
+    private func markThreePsFromDB(_ repo: Repository, tierByFood: [String: PortionTier],
+                                   bluePurpleFoods: Set<String>) async {
+        let ids = Array(tierByFood.keys)
+        guard !ids.isEmpty else { return }
+        let list = "(" + ids.joined(separator: ",") + ")"
+        async let fibers: [ThrFoodIdRow]   = (try? await repo.select("food_fibers", columns: "food_id", filters: ["food_id": "in.\(list)"])) ?? []
+        async let guilds: [ThrFoodIdRow]   = (try? await repo.select("food_guild_feeds", columns: "food_id", filters: ["food_id": "in.\(list)"])) ?? []
+        async let ferments: [ThrIdRow]     = (try? await repo.select("foods", columns: "id", filters: ["id": "in.\(list)", "is_fermented": "eq.true"])) ?? []
+        async let polyIds: [ThrIdRow]      = (try? await repo.select("phytochemicals", columns: "id", filters: ["class": "eq.polyphenol"])) ?? []
+        async let foodPhytos: [ThrFoodPhytoRow] = (try? await repo.select("food_phytochemicals", columns: "food_id,phytochemical_id", filters: ["food_id": "in.\(list)"])) ?? []
+        let (fib, gld, frm, ply, fph) = await (fibers, guilds, ferments, polyIds, foodPhytos)
+
+        let prebioticFoods = Set(fib.map(\.foodId)).union(gld.map(\.foodId))
+        let probioticFoods = Set(frm.map(\.id))
+        let polySet = Set(ply.map(\.id))
+        let polyphenolFoods = Set(fph.filter { polySet.contains($0.phytochemicalId) }.map(\.foodId)).union(bluePurpleFoods)
+
+        for (foodId, tier) in tierByFood {
+            let amt = ThrColorAmount(tier: tier)
+            if prebioticFoods.contains(foodId)  { todayThreePs.prebiotic = max(todayThreePs.prebiotic, amt) }
+            if probioticFoods.contains(foodId)  { todayThreePs.probiotic = max(todayThreePs.probiotic, amt) }
+            if polyphenolFoods.contains(foodId) { todayThreePs.polyphenol = max(todayThreePs.polyphenol, amt) }
         }
     }
 

@@ -413,6 +413,28 @@ Thrive fiber goal in grams.
   (the separate food guide is retired). A high-residue **diet-break** that precedes an
   unwell check-in **auto-adds** the food to Checking with a removable note.
 
+### 16.2 Round-4 refinements (root-cause pass) — implemented
+
+- **Annotations are real.** The `recognize` edge function was redeployed (it predated the
+  Phase-2 annotation code, so `user_annotation` was silently ignored). The LLM now also
+  maps quantity words ("lots"/"tiny") to coarse tiers. Deterministic correction
+  (search the foods DB + tap to add) remains as a reliable fallback in the meal editor.
+- **ONE check-in, everywhere.** The same form (icon Bristol grid; one seeded empty entry
+  per category incl. each symptom subtype + "Anything else?") is used by Thrive Today,
+  both **Check-in tabs** (Survive gained one), Survive Today, and "Is it working?" (which
+  now links to it instead of a separate mini-form; the "chore" off-ramp text is gone).
+- **3 P's** now recompute from the DB on the Today tab (not only post-snap), closing the
+  same dual-path gap that hit "30 plants."
+- **Rainbow** copy is benefit-forward and lands harder (RD-fenced); the **phytochemical**
+  encyclopedia has ≥5 food-linked compounds per class.
+- **Survive snap is reset-aware:** high-residue foods are flagged "not for this phase"
+  (FODMAP-safe ≠ low-residue), instead of a misleading "safe serving."
+- **Snap "Worth a check"** gates on the Checking list (+ an active reintro food) only;
+  the reintro food is flagged so its post-meal follow-up is logged.
+- **Survive home:** suggested meals are 1/slot with a **refresh**, plus a **weekly plan +
+  grocery haul** click-in; recent meals use the **same** component as Thrive. The
+  lighter-check-in is removed; **Pause** + **Return to Thrive** live in the off-ramp menu.
+
 ---
 
 *End of SPEC.md. Build order and agent rules: `CLAUDE.md`. Visual system: `DESIGN.md`.*

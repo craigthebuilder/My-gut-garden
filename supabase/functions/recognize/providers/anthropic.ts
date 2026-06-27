@@ -42,8 +42,10 @@ const ANNOTATION_SYSTEM_PROMPT =
   `free-text note about foods that were in their meal but not visible in the ` +
   `photo (e.g. "extra onion not pictured", "ketchup under the bun"). List ONLY ` +
   `the additional foods the note explicitly mentions - do not invent or infer ` +
-  `foods that are not named. Give a COARSE visible-portion tier for each from ` +
-  `any quantity words in the note (default to "serving"). You do food ` +
+  `foods that are not named. Give a COARSE portion tier for each by reading the ` +
+  `quantity words in the note. Map them: "a lot/lots/loads/heaps/tons/plenty/a ` +
+  `whole/extra" -> "lots"; "a little/a bit/tiny/small amount/a touch/a sprinkle/ ` +
+  `a dash/barely any/light" -> "trace"; no quantity word -> "serving". You do food ` +
   `identification and portion tiering ONLY - never any nutrition, fiber, ` +
   `FODMAP, or calorie numbers; the app's database derives all of those. ` +
   `Respond with STRICT JSON ONLY - no prose, no markdown fences. ` +

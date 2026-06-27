@@ -51,6 +51,17 @@ Single index of every clinical/claim-risk location that a registered dietitian
 - The persisted light check-in (`users.light_checkin_category`) is Thrive-only; **Survive has no light option** (the logger is always full).
 - Survive notifications are **post-meal + evening only** (`GameConfig.surviveReintroFollowupMinutes` / `surviveEveningCheckinHour`), calm-framed, never a streak or reward.
 
+## Phase 3 — R4 round (deeper fixes)
+
+- **Fence 8 grows + lands harder.** `colors.deficiency_copy` was rewritten benefit-forward ("supports your heart and circulation", not "linked to") and the phytochemical encyclopedia expanded to ≥5 compounds/class with food links (migration `…013`). The stronger efficacy framing **raises** the claim-risk bar: an RD + legal pass is required before launch. All still `// RD-REVIEW-REQUIRED`.
+- **Fence 6 — reset-aware snap (NEW machinery).** During an active reset, the Survive per-photo insight flags high-residue foods as **"not for this phase"** (`SrvInsightPresenter`, threshold `GameConfig.resetBreakFoodFiberThresholdG`), computed from the meal's own `fibers[].estGramsPerServing`. FODMAP-safe ≠ low-residue. This is machinery, not new fenced content.
+- **Fence 5 — off-ramp simplified.** The "lighter check-in" is **removed** everywhere (it undercut the reset's methodical logging). The duty-of-care exits are now **Pause Survive** (progress kept) and **Return to Thrive** (the full, shame-free exit from restriction), both in the off-ramp menu. The home pause card was removed; the persistent clinician disclaimer + relief-only progress remain.
+
+### R4 invariants
+- ONE check-in everywhere: the same form (icon Bristol grid, every symptom subtype + "Anything else?" seeded) runs in Thrive Today, both Check-in tabs, Survive Today, and feeds the trends. Mood stays the single `6 - ui_value` inversion; Energy/Clarity stored high=better. Survive context never goes light.
+- "Worth a check" on the snap gates on the **Checking list (+ an active reintro food) only** — never Avoid, never an over-eating nudge.
+- Annotations are real again: the `recognize` edge function was redeployed (it predated the annotation code); the LLM maps quantity words ("lots"/"tiny") to coarse tiers, still ID + tier only, DB derives every number (rule #2).
+
 ### Phase-2 invariants enforced in the spine (not fences — hard rules)
 - `residue_ceiling_g` is **internal-only** (twin of `est_daily_kcal`): written by Onboarding, never decoded into `Repository.UserProfile`, never surfaced. Only the Thrive fiber goal (g) is ever shown.
 - Mood is stored **CANONICAL high=better** via `6 - ui_value` (the single inversion point is `Shared/CheckInKit.swift`). The regulated→erratic UI flip never reaches the DB polarity; the pattern engine stays high=better.

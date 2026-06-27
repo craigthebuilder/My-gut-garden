@@ -64,10 +64,9 @@ struct CapResultScreen: View {
     @ViewBuilder
     private var bottomWarning: some View {
         if let meal = model.confirmedMeal {
-            let checking = meal.suspectFoodIds
-            let avoid = meal.avoidFoodIds
-            let overEating = meal.reintroFoodId != nil && model.reintroPortion == .lots
-            if !checking.isEmpty || !avoid.isEmpty || overEating {
+            let checking = meal.suspectFoodIds          // foods on the user's Checking list
+            let reintroId = meal.reintroFoodId          // a food in an active reintro test
+            if !checking.isEmpty || reintroId != nil {
                 VStack(alignment: .leading, spacing: theme.metrics.space2) {
                     HStack(spacing: theme.metrics.space2) {
                         Image(systemName: "exclamationmark.triangle.fill")
@@ -78,11 +77,8 @@ struct CapResultScreen: View {
                     ForEach(checking, id: \.self) { foodId in
                         warningLine("This has \(model.foodName(for: foodId)), one you're keeping an eye on.")
                     }
-                    ForEach(avoid, id: \.self) { foodId in
-                        warningLine("This has \(model.foodName(for: foodId)), one you set aside for now.")
-                    }
-                    if overEating {
-                        warningLine("That's a lot of a food you're still checking. Going slow tells you more.")
+                    if let reintroId {
+                        warningLine("This has \(model.foodName(for: reintroId)), the food you're testing. We'll ask how it sat in a bit.")
                     }
                 }
                 .padding(theme.metrics.space4)

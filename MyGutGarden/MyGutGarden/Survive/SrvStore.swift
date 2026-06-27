@@ -70,7 +70,7 @@ final class SrvStore {
 
     /// A presenter for the Survive per-photo view, aware of what's being tested.
     func makeInsightPresenter() -> SrvInsightPresenter {
-        SrvInsightPresenter(activeReintroGroups: activeTestingGroups)
+        SrvInsightPresenter(activeReintroGroups: activeTestingGroups, appState: appState)
     }
 
     // MARK: - Load

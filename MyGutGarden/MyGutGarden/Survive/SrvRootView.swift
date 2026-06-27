@@ -19,6 +19,7 @@ struct SrvRootView: View {
     @State private var resetModel: SrvResetModel
     @State private var mealPlan = SrvMealPlanModel()
     @State private var foodStore: FoodStatusStore?
+    @State private var recentMealRows: [MealRow] = []
     @State private var showLogger = false
     @State private var showOffRamp = false
 
@@ -37,7 +38,8 @@ struct SrvRootView: View {
     var body: some View {
         NavigationStack {
             SrvHomeContent(store: store, resetModel: resetModel, mealPlan: mealPlan,
-                           foodStore: foodStore, showLogger: $showLogger, showOffRamp: $showOffRamp)
+                           foodStore: foodStore, recentMealRows: recentMealRows,
+                           showLogger: $showLogger, showOffRamp: $showOffRamp)
                 .navigationTitle("My Gut Garden")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
@@ -51,6 +53,7 @@ struct SrvRootView: View {
         .task {
             await SrvEpisode.ensureStarted(appState: store.appState)
             await store.load()
+            await loadRecentMeals()
             await resetModel.load()
             if let repo = store.appState.repository, let reset = resetModel.reset {
                 await mealPlan.load(repo: repo, phase: reset.phase,
@@ -65,15 +68,33 @@ struct SrvRootView: View {
             }
         }
         .sheet(isPresented: $showLogger) {
-            // No light check-in in Survive: the reset wants methodical logging.
-            SrvSymptomLoggerView(store: store, lite: false)
+            // The SAME check-in form as Thrive (R4), Survive context: no light option,
+            // and on save we refresh the store + run the reset break-detector.
+            ThrCheckInFormView(appState: store.appState, mode: .new, context: .surviveLogger,
+                               onSaved: {
+                                   await store.load()
+                                   await SrvResetBreakDetector.run(appState: store.appState)
+                               }) { showLogger = false }
                 .themed(for: .survive)
-                .onDisappear { Task { await SrvResetBreakDetector.run(appState: store.appState) } }
         }
         .sheet(isPresented: $showOffRamp) {
-            SrvOffRampView(store: store)
+            SrvOffRampView(store: store, resetModel: resetModel)
                 .themed(for: .survive)
         }
+    }
+
+    /// Last 5 days of confirmed Survive meals as MealRows, for the shared
+    /// recent-meals rail (same component as Thrive).
+    private func loadRecentMeals() async {
+        guard let repo = store.appState.repository else { return }
+        let cal = Calendar.current
+        let since = cal.date(byAdding: .day, value: -5, to: cal.startOfDay(for: Date())) ?? Date()
+        let iso = ISO8601DateFormatter(); iso.formatOptions = [.withInternetDateTime]
+        let rows: [MealRow]? = try? await repo.select(
+            "meals", columns: "id,mode,photo_url,captured_at,confirmed,user_annotation,photo_expires_at",
+            filters: ["captured_at": "gte.\(iso.string(from: since))", "mode": "eq.survive", "confirmed": "eq.true"],
+            order: "captured_at.desc", limit: 20)
+        recentMealRows = rows ?? []
     }
 }
 
@@ -83,6 +104,7 @@ private struct SrvHomeContent: View {
     @Bindable var resetModel: SrvResetModel
     @Bindable var mealPlan: SrvMealPlanModel
     let foodStore: FoodStatusStore?
+    let recentMealRows: [MealRow]
     @Binding var showLogger: Bool
     @Binding var showOffRamp: Bool
 
@@ -129,22 +151,9 @@ private struct SrvHomeContent: View {
     private var resetCard: some View {
         Card {
             VStack(alignment: .leading, spacing: theme.metrics.space2) {
-                HStack {
-                    Text(phase.title)
-                        .font(theme.typography.title(18))
-                        .foregroundStyle(theme.colors.textPrimary)
-                    Spacer()
-                    if resetModel.reset?.pausedAt != nil {
-                        Button("Resume") { Task { await resetModel.resume() } }
-                            .font(theme.typography.caption(weight: .semibold))
-                            .foregroundStyle(theme.colors.primary)
-                    } else {
-                        Button("Pause anytime") { Task { await resetModel.pause() } }
-                            .font(theme.typography.caption(weight: .semibold))
-                            .foregroundStyle(theme.colors.primary)
-                            .accessibilityHint("Pauses right away, nothing is lost")
-                    }
-                }
+                Text(phase.title)
+                    .font(theme.typography.title(18))
+                    .foregroundStyle(theme.colors.textPrimary)
                 Text(phaseBlurb)                                  // RD-REVIEW-REQUIRED (Fence 6)
                     .font(theme.typography.body())
                     .foregroundStyle(theme.colors.textSecondary)
@@ -155,6 +164,11 @@ private struct SrvHomeContent: View {
                 Text("We're watching how you feel, not counting days. Off days carry no penalty.")
                     .font(theme.typography.caption())
                     .foregroundStyle(theme.colors.textSecondary)
+                if resetModel.reset?.pausedAt != nil {
+                    Text("Paused. Resume it from the top-right menu whenever you're ready.")
+                        .font(theme.typography.caption(weight: .medium))
+                        .foregroundStyle(theme.colors.secondary)
+                }
             }
         }
     }
@@ -176,27 +190,44 @@ private struct SrvHomeContent: View {
     // MARK: Suggested meals (curated, fenced)
 
     @ViewBuilder private var suggestedMeals: some View {
-        if !mealPlan.slots.isEmpty {
+        if !mealPlan.todaySlots.isEmpty {
             Card {
                 VStack(alignment: .leading, spacing: theme.metrics.space3) {
-                    SectionHeader(title: "Suggested meals today")
-                    ForEach(mealPlan.slots) { slot in
-                        VStack(alignment: .leading, spacing: theme.metrics.space1) {
+                    HStack {
+                        SectionHeader(title: "Suggested meals today")
+                        Spacer()
+                        Button { withAnimation(.snappy) { mealPlan.refresh() } } label: {
+                            Image(systemName: "arrow.triangle.2.circlepath")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundStyle(theme.colors.primary)
+                        }
+                        .accessibilityLabel("Show different meal ideas")
+                    }
+                    ForEach(mealPlan.todaySlots) { slot in
+                        VStack(alignment: .leading, spacing: 1) {
                             Text(slot.title)
                                 .font(theme.typography.caption(weight: .semibold))
                                 .foregroundStyle(theme.colors.secondary)
-                            ForEach(slot.options, id: \.id) { option in
-                                VStack(alignment: .leading, spacing: 1) {
-                                    Text("\u{2022} \(option.title)")
-                                        .font(theme.typography.body())
-                                        .foregroundStyle(theme.colors.textPrimary)
-                                    Text(option.description)
-                                        .font(theme.typography.caption())
-                                        .foregroundStyle(theme.colors.textSecondary)
-                                        .fixedSize(horizontal: false, vertical: true)
-                                }
-                            }
+                            Text(slot.meal.title)
+                                .font(theme.typography.body(weight: .medium))
+                                .foregroundStyle(theme.colors.textPrimary)
+                            Text(slot.meal.description)
+                                .font(theme.typography.caption())
+                                .foregroundStyle(theme.colors.textSecondary)
+                                .fixedSize(horizontal: false, vertical: true)
                         }
+                    }
+                    NavigationLink {
+                        SrvWeeklyPlanView(model: mealPlan)
+                    } label: {
+                        HStack(spacing: theme.metrics.space1) {
+                            Image(systemName: "calendar")
+                            Text("See the week + grocery list")
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                        }
+                        .font(theme.typography.caption(weight: .semibold))
+                        .foregroundStyle(theme.colors.primary)
                     }
                     Text("Ideas your dietitian can tune.")
                         .font(theme.typography.caption())
@@ -216,23 +247,10 @@ private struct SrvHomeContent: View {
 
     // MARK: Recent meals (like Thrive)
 
+    // The SAME recent-meals rail as Thrive (R4): identical photo cards + reopen/edit.
     @ViewBuilder private var recentMeals: some View {
-        if !store.recentMeals.isEmpty {
-            Card {
-                VStack(alignment: .leading, spacing: theme.metrics.space2) {
-                    SectionHeader(title: "Recent meals")
-                    ForEach(store.recentMeals.prefix(5)) { meal in
-                        HStack(spacing: theme.metrics.space3) {
-                            Image(systemName: "fork.knife")
-                                .foregroundStyle(theme.colors.secondary)
-                            Text(meal.label)
-                                .font(theme.typography.body())
-                                .foregroundStyle(theme.colors.textPrimary)
-                            Spacer()
-                        }
-                    }
-                }
-            }
+        if !recentMealRows.isEmpty {
+            ThrRecentMealsSection(appState: store.appState, meals: recentMealRows)
         }
     }
 

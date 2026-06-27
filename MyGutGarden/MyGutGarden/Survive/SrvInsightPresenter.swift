@@ -24,13 +24,18 @@ struct SrvInsightPresenter: MealInsightPresenting {
     /// Groups the user is actively testing, so the view can say "logging for
     /// your challenge" when a food contains one (SPEC §11b).
     let activeReintroGroups: [SrvFodmapGroup]
+    /// Lets the view check whether a reset is active, so it can flag high-residue
+    /// foods as "not for this phase" (R4) instead of a misleading FODMAP "safe".
+    let appState: AppState?
 
-    init(activeReintroGroups: [SrvFodmapGroup] = []) {
+    init(activeReintroGroups: [SrvFodmapGroup] = [], appState: AppState? = nil) {
         self.activeReintroGroups = activeReintroGroups
+        self.appState = appState
     }
 
     func insightView(for meal: ConfirmedMeal) -> AnyView {
-        AnyView(SrvPhotoInsightView(response: meal.response, activeReintroGroups: activeReintroGroups))
+        AnyView(SrvPhotoInsightView(response: meal.response,
+                                    activeReintroGroups: activeReintroGroups, appState: appState))
     }
 }
 
@@ -74,12 +79,25 @@ struct SrvPhotoInsightView: View {
     @Environment(\.theme) private var theme
     let response: RecognitionResponse
     let activeReintroGroups: [SrvFodmapGroup]
+    var appState: AppState? = nil
+
+    @State private var resetActive = false
 
     private var rows: [SrvSafetyRow] {
         SrvInsightModel.safetyRows(for: response, activeReintroGroups: activeReintroGroups)
     }
     private var survive: SurvivePhotoInsights {
         FoodAttributeJoin.surviveInsights(response)
+    }
+
+    /// Foods whose est fiber per serving exceeds the reset threshold, i.e. not
+    /// low-residue. Computed from the meal's own attributes, no extra query.
+    private var highResidueFoods: [String] {
+        let threshold = GameConfig.shared.resetBreakFoodFiberThresholdG
+        return FoodAttributeJoin.surfacedAttributes(response).compactMap { a in
+            let grams = a.fibers.compactMap(\.estGramsPerServing).reduce(0, +)
+            return grams > threshold ? a.canonicalName : nil
+        }
     }
 
     var body: some View {
@@ -90,6 +108,7 @@ struct SrvPhotoInsightView: View {
                     SrvAllergyBanner(alerts: response.allergyAlerts)
                 }
 
+                if resetActive && !highResidueFoods.isEmpty { resetCard }
                 safetyCard
                 if !survive.fermentedCaution.isEmpty { fermentCautionCard }
                 if !survive.hiddenIngredientPrompts.isEmpty { hiddenIngredientCard }
@@ -102,6 +121,28 @@ struct SrvPhotoInsightView: View {
             .padding(theme.metrics.space4)
         }
         .background(theme.colors.background.ignoresSafeArea())
+        .task {
+            guard let repo = appState?.repository, let reset = try? await repo.fetchSurviveReset() else { return }
+            resetActive = reset.endedAt == nil && reset.pausedAt == nil && reset.phase == "reset"
+        }
+    }
+
+    /// During the low-residue reset, FODMAP-safe is misleading for high-fiber foods.
+    /// This headline flags them as "not for this phase" (R4 / Fence 6).
+    private var resetCard: some View {
+        Card {
+            VStack(alignment: .leading, spacing: theme.metrics.space2) {
+                Label("Not for this phase", systemImage: "hand.raised.fill")
+                    .font(theme.typography.body(weight: .semibold))
+                    .foregroundStyle(theme.colors.secondary)
+                Text("\(highResidueFoods.joined(separator: ", ")) are higher-residue. They're gentle on many guts, but best saved until you're ramping fiber back. Low-FODMAP isn't the same as low-residue.")
+                    .font(theme.typography.body())
+                    .foregroundStyle(theme.colors.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .background(theme.colors.secondary.opacity(0.10),
+                    in: RoundedRectangle(cornerRadius: theme.metrics.radiusMedium, style: .continuous))
     }
 
     private var safetyCard: some View {

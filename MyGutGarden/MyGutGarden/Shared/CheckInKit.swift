@@ -98,17 +98,50 @@ final class CheckInDraft {
 
     init(context: CheckInContext) { self.context = context }
 
-    /// Seeds ONE empty entry per active category (Batch C: every category starts with
-    /// one, "empty is fine"). Empty = an UNSET sentinel (bss nil / severity 0 /
-    /// uiValue 0 / score 0); the writer skips unset entries, so an untouched seed is
+    /// Seeds ONE empty entry per active category (R3/R4: every category starts with
+    /// one, including EACH symptom subtype and "Anything else?", so nothing needs a
+    /// "+" to begin). Empty = an UNSET sentinel (bss nil / severity 0 / uiValue 0 /
+    /// score 0 / empty note); the writer skips unset entries, so an untouched seed is
     /// never saved. In light mode only the chosen category is seeded/shown.
     func seedEmptyEntries() {
         func active(_ c: CheckInCategory) -> Bool { lightCategory == nil || lightCategory == c }
-        stools = active(.stool)     ? [StoolEntryDraft()] : []
-        symptoms = active(.symptom) ? [SymptomEntryDraft(symptomType: "bloating", severity: 0)] : []
-        moods = active(.mood)       ? [MoodEntryDraft(uiValue: 0)] : []
-        energy = active(.energy)    ? [MetricEntryDraft(metricType: "energy", score: 0)] : []
-        clarity = active(.clarity)  ? [MetricEntryDraft(metricType: "clarity", score: 0)] : []
+        stools = active(.stool) ? [StoolEntryDraft()] : []
+        symptoms = active(.symptom)
+            ? ["bloating", "gas", "pain", "urgency"].map { SymptomEntryDraft(symptomType: $0, severity: 0) }
+            : []
+        moods = active(.mood)      ? [MoodEntryDraft(uiValue: 0)] : []
+        energy = active(.energy)   ? [MetricEntryDraft(metricType: "energy", score: 0)] : []
+        clarity = active(.clarity) ? [MetricEntryDraft(metricType: "clarity", score: 0)] : []
+        notes = (lightCategory == nil) ? [CheckInNoteDraft(content: "")] : []
+    }
+}
+
+/// The Bristol stool types as an ICON grid (shared by both modes' check-in so they
+/// look identical). Stored value is just the Int (1...7); this only drives display.
+enum CheckInBristol: Int, CaseIterable, Identifiable, Sendable {
+    case type1 = 1, type2, type3, type4, type5, type6, type7
+    var id: Int { rawValue }
+    var systemImage: String {
+        switch self {
+        case .type1: return "circle.grid.3x3.fill"
+        case .type2: return "circle.grid.2x2.fill"
+        case .type3: return "capsule.portrait.fill"
+        case .type4: return "capsule.fill"
+        case .type5: return "drop.fill"
+        case .type6: return "cloud.fill"
+        case .type7: return "wave.3.forward"
+        }
+    }
+    var title: String {
+        switch self {
+        case .type1: return "Separate lumps"
+        case .type2: return "Lumpy"
+        case .type3: return "Cracked"
+        case .type4: return "Smooth"
+        case .type5: return "Soft blobs"
+        case .type6: return "Mushy"
+        case .type7: return "Liquid"
+        }
     }
 }
 

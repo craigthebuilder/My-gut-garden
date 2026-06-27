@@ -113,54 +113,50 @@ struct ThrIsItWorkingView: View {
     let appState: AppState
 
     @State private var model = ThrCheckinModel()
-    @State private var showBreakNote = false
+    @State private var showCheckIn = false
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: theme.metrics.space4) {
                 intro
-                todayCheckCard
+                checkInLink
                 if model.history.isEmpty {
                     ThrEmptyState(icon: "heart.text.square.fill",
                                   title: "Your before-and-after starts today",
-                                  message: "Tap how you feel each day. Over a couple of weeks this shows whether the garden's paying off.")
+                                  message: "Log your daily check-in and, over a couple of weeks, this shows whether the garden's paying off.")
                 } else {
                     trendCard("Mood", metric: .mood, baseline: model.baselineMood)
                     trendCard("Energy", metric: .energy, baseline: model.baselineEnergy)
                     trendCard("Clarity", metric: .clarity, baseline: model.baselineClarity)
                 }
-                offRamp
             }
             .padding(theme.metrics.space5)
         }
         .background(theme.colors.background.ignoresSafeArea())
         .navigationTitle("Is it working?")
         .task { await model.load(appState: appState) }
+        .sheet(isPresented: $showCheckIn) {
+            // ONE check-in everywhere (R4): mood/energy/clarity come from the daily
+            // check-in, which mirrors them into thrive_checkins to feed these trends.
+            ThrCheckInFormView(appState: appState, mode: .new) {
+                showCheckIn = false
+                Task { await model.load(appState: appState) }
+            }
+        }
     }
 
     private var intro: some View {
-        Text("How you feel, tracked against where you started. No pressure, one tap a day is plenty.")
+        Text("How you feel, tracked against where you started. Your daily check-in feeds this.")
             .font(theme.typography.body())
             .foregroundStyle(theme.colors.textSecondary)
             .fixedSize(horizontal: false, vertical: true)
     }
 
-    // MARK: One-tap check
+    // MARK: Link to the one daily check-in (no separate mini-form here)
 
-    private var todayCheckCard: some View {
-        Card {
-            VStack(alignment: .leading, spacing: theme.metrics.space3) {
-                SectionHeader(title: model.loggedToday ? "Logged today, thanks" : "How are you today?")
-                ThrScalePicker(label: "Mood", selection: model.todayMood) { value in
-                    Task { await model.tapMood(value, appState: appState) }
-                }
-                ThrScalePicker(label: "Energy", selection: model.todayEnergy) { value in
-                    Task { await model.tapEnergy(value, appState: appState) }
-                }
-                ThrScalePicker(label: "Clarity", selection: model.todayClarity) { value in
-                    Task { await model.tapClarity(value, appState: appState) }
-                }
-            }
+    private var checkInLink: some View {
+        PrimaryButton(title: "Log your daily check-in", systemImage: "square.and.pencil") {
+            showCheckIn = true
         }
     }
 
@@ -198,29 +194,6 @@ struct ThrIsItWorkingView: View {
         return "up since you started"
     }
 
-    // MARK: Off-ramp (Fence 5, blameless break from tracking)
-
-    private var offRamp: some View {
-        VStack(spacing: theme.metrics.space2) {
-            Button { showBreakNote.toggle() } label: {
-                Text("Tracking feeling like a chore?")
-                    .font(theme.typography.caption(weight: .medium))
-                    .foregroundStyle(theme.colors.textSecondary)
-                    .underline()
-            }
-            .buttonStyle(.plain)
-            if showBreakNote {
-                Text("Totally fine to take a break. Your garden and lifetime collection stay exactly as they are, come back whenever you like.")
-                    .font(theme.typography.caption())
-                    .foregroundStyle(theme.colors.textSecondary)
-                    .multilineTextAlignment(.center)
-                    .transition(.opacity)
-            }
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.top, theme.metrics.space3)
-        .animation(.default, value: showBreakNote)
-    }
 }
 
 // MARK: - Metric selector

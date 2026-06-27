@@ -32,6 +32,11 @@ extension MealRow {
 struct ThrTestTabView: View {
     @Environment(\.theme) private var theme
     let appState: AppState
+    /// Shared by both modes (R4). Thrive shows the light-check-in picker; Survive
+    /// passes showsLight=false and an onSaved hook to refresh its store.
+    var context: CheckInContext = .thriveCheckin
+    var showsLight: Bool = true
+    var onSaved: (() async -> Void)? = nil
 
     @State private var model = ThrCheckInHistoryModel()
     @State private var presenting: ThrCheckInFormView.Mode?
@@ -43,7 +48,7 @@ struct ThrTestTabView: View {
                     PrimaryButton(title: "Log a new check-in", systemImage: "square.and.pencil") {
                         presenting = .new
                     }
-                    ThrLightCheckInPicker(appState: appState)
+                    if showsLight { ThrLightCheckInPicker(appState: appState) }
                     history
                 }
                 .padding(theme.metrics.space4)
@@ -54,7 +59,7 @@ struct ThrTestTabView: View {
         }
         .task { await model.load(appState) }
         .sheet(item: $presenting) { mode in
-            ThrCheckInFormView(appState: appState, mode: mode) {
+            ThrCheckInFormView(appState: appState, mode: mode, context: context, onSaved: onSaved) {
                 presenting = nil
                 Task { await model.load(appState) }
             }
@@ -194,6 +199,12 @@ struct ThrCheckInFormView: View {
     @Environment(\.dismiss) private var dismiss
     let appState: AppState
     let mode: Mode
+    /// Which surface this check-in belongs to. Thrive uses .thriveCheckin (light
+    /// pick + the thrive_checkins trend aggregate); Survive uses .surviveLogger
+    /// (no light, runs the post-save hook to refresh the streak + break detector).
+    var context: CheckInContext = .thriveCheckin
+    /// Mode-specific work to run after a successful save (e.g. Survive store reload).
+    var onSaved: (() async -> Void)? = nil
     let onDone: () -> Void
 
     @State private var draft = CheckInDraft(context: .thriveCheckin)
@@ -257,10 +268,14 @@ struct ThrCheckInFormView: View {
     }
 
     private func configure() {
+        draft.context = context
         switch mode {
         case .new:
             draft.logDate = Date()
-            draft.lightCategory = appState.profile?.lightCheckinCategory.flatMap(CheckInCategory.init(rawValue:))
+            // Light check-in is Thrive-only; Survive is always the full check-in.
+            draft.lightCategory = context == .thriveCheckin
+                ? appState.profile?.lightCheckinCategory.flatMap(CheckInCategory.init(rawValue:))
+                : nil
             draft.seedEmptyEntries()
         case .edit(let day):
             draft.logDate = day.date
@@ -305,10 +320,11 @@ struct ThrCheckInFormView: View {
         guard let repo = appState.repository else { return }
         let dayStart = Calendar.current.startOfDay(for: draft.logDate)
         let dayEnd = dayStart.addingTimeInterval(24 * 3600)
+        let mealMode = context == .thriveCheckin ? "thrive" : "survive"
         guard let rows: [MealRow] = try? await repo.select(
             "meals", columns: "id,mode,photo_url,captured_at,confirmed,user_annotation,photo_expires_at",
             filters: ["captured_at": "gte.\(ThrDates.timestampString(dayStart))",
-                      "confirmed": "eq.true"], order: "captured_at.asc"
+                      "confirmed": "eq.true", "mode": "eq.\(mealMode)"], order: "captured_at.asc"
         ) else { return }
         meals = rows.filter { ($0.capturedAtDate ?? dayStart) < dayEnd }
                     .enumerated().map { ThrTodayMeal.make($0.element, index: $0.offset + 1) }
@@ -320,7 +336,10 @@ struct ThrCheckInFormView: View {
         defer { isSaving = false }
         if case .edit = mode { await deleteEditingRows(repo) }   // replace-in-place
         try? await CheckInWriter(repository: repo, userId: uid).save(draft)
-        await upsertDailyAggregate(repo, uid: uid)               // keep "Is it working?" trends fed
+        if context == .thriveCheckin {
+            await upsertDailyAggregate(repo, uid: uid)           // keep "Is it working?" trends fed
+        }
+        await onSaved?()                                         // mode-specific refresh (Survive)
         onDone()
         dismiss()
     }
@@ -817,28 +836,31 @@ private struct ThrRemoveButton: View {
     }
 }
 
-/// Bristol 1-7 grid.
+/// Bristol 1-7 as an ICON grid (identical to Survive's, R4 unification).
 struct ThrBristolGrid: View {
     @Environment(\.theme) private var theme
     let selection: Int?
     let onPick: (Int?) -> Void
 
     var body: some View {
-        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: theme.metrics.space1), count: 7),
-                  spacing: theme.metrics.space1) {
-            ForEach(1...7, id: \.self) { n in
-                let on = selection == n
-                Button { onPick(on ? nil : n) } label: {
-                    Text("\(n)")
-                        .font(theme.typography.data(15, weight: on ? .semibold : .regular))
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, theme.metrics.space2)
-                        .foregroundStyle(on ? theme.colors.surface : theme.colors.textSecondary)
-                        .background(on ? theme.colors.primary : theme.colors.background)
-                        .clipShape(RoundedRectangle(cornerRadius: theme.metrics.radiusSmall, style: .continuous))
+        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: theme.metrics.space2), count: 4),
+                  spacing: theme.metrics.space2) {
+            ForEach(CheckInBristol.allCases) { type in
+                let on = selection == type.rawValue
+                Button { onPick(on ? nil : type.rawValue) } label: {
+                    VStack(spacing: theme.metrics.space1) {
+                        Image(systemName: type.systemImage).font(.system(size: 20))
+                        Text(type.title).font(theme.typography.caption())
+                            .multilineTextAlignment(.center).lineLimit(2)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, theme.metrics.space2)
+                    .foregroundStyle(on ? theme.colors.surface : theme.colors.textPrimary)
+                    .background(on ? theme.colors.primary : theme.colors.background)
+                    .clipShape(RoundedRectangle(cornerRadius: theme.metrics.radiusSmall, style: .continuous))
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel("Bristol type \(n)")
+                .accessibilityLabel("Bristol type \(type.rawValue), \(type.title)")
                 .accessibilityAddTraits(on ? .isSelected : [])
             }
         }
