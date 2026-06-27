@@ -44,23 +44,6 @@ enum SrvSampleData {
         ]
     }
 
-    static func challenges() -> [SrvChallenge] {
-        let now = Date()
-        let cal = Calendar.current
-        return [
-            SrvChallenge(id: "ch-lactose", group: .lactose, status: .passed,
-                         startedAt: cal.date(byAdding: .day, value: -12, to: now),
-                         endedAt: cal.date(byAdding: .day, value: -9, to: now)),
-            SrvChallenge(id: "ch-fructose", group: .fructose, status: .testing,
-                         startedAt: cal.date(byAdding: .day, value: -1, to: now), endedAt: nil),
-            SrvChallenge(id: "ch-gos", group: .gos, status: .failed,
-                         startedAt: cal.date(byAdding: .day, value: -20, to: now),
-                         endedAt: cal.date(byAdding: .day, value: -17, to: now)),
-            SrvChallenge(id: "ch-fructan", group: .fructan, status: .pending, startedAt: nil, endedAt: nil),
-            SrvChallenge(id: "ch-polyol", group: .polyol, status: .pending, startedAt: nil, endedAt: nil)
-        ]
-    }
-
     /// A single steady assessment so the pattern card renders the full
     /// experiment + GI routing. (Module F writes the real ones.)
     static func assessments(now: Date = .init()) -> [PatternAssessmentRow] {
@@ -77,15 +60,4 @@ enum SrvSampleData {
         ]
     }
 
-    static let trackedFoods: [SrvTrackedFood] = [
-        SrvTrackedFood(name: "Oats", safety: .green, dominantGroup: nil, observedSeverity: nil),
-        SrvTrackedFood(name: "Spinach", safety: .green, dominantGroup: nil, observedSeverity: nil),
-        SrvTrackedFood(name: "Blueberry", safety: .green, dominantGroup: .fructose, observedSeverity: SrvSeverity.none),
-        SrvTrackedFood(name: "Milk", safety: .green, dominantGroup: .lactose, observedSeverity: .mild),
-        SrvTrackedFood(name: "Garlic", safety: .red, dominantGroup: .fructan, observedSeverity: .severe),
-        SrvTrackedFood(name: "Onion", safety: .red, dominantGroup: .fructan, observedSeverity: .severe),
-        SrvTrackedFood(name: "Chickpeas", safety: .yellow, dominantGroup: .gos, observedSeverity: .moderate),
-        SrvTrackedFood(name: "Mango", safety: .yellow, dominantGroup: .fructose, observedSeverity: .mild),
-        SrvTrackedFood(name: "Mushroom", safety: .yellow, dominantGroup: .polyol, observedSeverity: .moderate)
-    ]
 }

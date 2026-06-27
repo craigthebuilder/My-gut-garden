@@ -51,7 +51,9 @@ struct OnbRootView: View {
                     onChecksContinue: handleChecksContinue,
                     onStart: { Task { await vm.save() } })
             .task { await vm.loadSuccessStories() }
-            .onChange(of: vm.didFinish) { _, done in if done { onFinished?() } }
+            .onChange(of: vm.didFinish) { _, done in
+                if done { onFinished?(); vm.offerSurviveIfWarranted() }
+            }
             .overlay { modalOverlay }
     }
 
@@ -231,14 +233,10 @@ private struct ThemedShell: View {
     private var summaryStep: some View {
         OnbStepScaffold(title: "You're all set",
                         subtitle: "Here is where you are starting from.") {
-            switch vm.chosenMode {
-            case .thrive:
-                thriveGoalCard
-            case .survive:
-                surviveStartCard
-            }
-
-            modeSuggestion
+            // R5 #4: everyone starts in Thrive. If signals lean relief we OFFER a
+            // Survive reset right after, via a disclaimer pop-up (never auto-entered).
+            thriveGoalCard
+            if vm.shouldOfferSurvive { surviveOfferNote }
         }
     }
 
@@ -266,70 +264,24 @@ private struct ThemedShell: View {
         }
     }
 
-    // MARK: Survive start card
-    // No numeric ceiling is ever shown (residue_ceiling_g is internal-only).
-    // Framing: rest, identify triggers, rebuild slowly.
+    // MARK: Survive offer note
+    // Shown only when signals lean relief. Everyone still STARTS in Thrive; the
+    // actual Survive disclaimer pop-up fires after onboarding finishes (R5 #4).
     // // RD-REVIEW-REQUIRED: copy below is clinical-adjacent; confirm before launch.
 
-    private var surviveStartCard: some View {
+    private var surviveOfferNote: some View {
         Card {
-            VStack(alignment: .leading, spacing: theme.metrics.space3) {
-                Text("Let's get your gut back into shape")
+            VStack(alignment: .leading, spacing: theme.metrics.space2) {
+                Label("A gentler start might help", systemImage: "leaf.circle")
                     .font(theme.typography.body(weight: .semibold))
                     .foregroundStyle(theme.colors.textPrimary)
-                VStack(alignment: .leading, spacing: theme.metrics.space2) {
-                    survivePoint(icon: "pause.circle",
-                                 text: "For now, we will keep things low-residue to give your gut a rest.")
-                    survivePoint(icon: "magnifyingglass",
-                                 text: "We will help you find exactly which foods your gut can handle.")
-                    survivePoint(icon: "arrow.up.right",
-                                 text: "Then we will rebuild fiber slowly, at a pace that works for you.")
-                }
-                Text("You can switch to Thrive at any time.")
-                    .font(theme.typography.caption())
+                Text("From what you shared, a short low-residue reset could help settle things first. We'll offer it in a moment, no pressure, and you can always switch later.")
+                    .font(theme.typography.body())
                     .foregroundStyle(theme.colors.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             .accessibilityElement(children: .combine)
         }
-    }
-
-    private func survivePoint(icon: String, text: String) -> some View {
-        HStack(alignment: .top, spacing: theme.metrics.space3) {
-            Image(systemName: icon)
-                .foregroundStyle(theme.colors.primary)
-                .frame(width: 20)
-            Text(text)
-                .font(theme.typography.body())
-                .foregroundStyle(theme.colors.textPrimary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-    }
-
-    // MARK: Mode suggestion
-
-    private var modeSuggestion: some View {
-        Card {
-            VStack(alignment: .leading, spacing: theme.metrics.space3) {
-                Text("Where you will start")
-                    .font(theme.typography.caption(weight: .semibold))
-                    .foregroundStyle(theme.colors.textSecondary)
-                Picker("Mode", selection: modeBinding) {
-                    Text("Thrive").tag(AppMode.thrive)
-                    Text("Survive").tag(AppMode.survive)
-                }
-                .pickerStyle(.segmented)
-                Text(OnbRouting.rationale(for: vm.chosenMode))
-                    .font(theme.typography.body())
-                    .foregroundStyle(theme.colors.textSecondary)
-                Text("You can switch any time, it is always one tap away.")
-                    .font(theme.typography.caption())
-                    .foregroundStyle(theme.colors.textSecondary)
-            }
-        }
-    }
-
-    private var modeBinding: Binding<AppMode> {
-        Binding(get: { vm.chosenMode }, set: { vm.chosenModeOverride = $0 })
     }
 
     // MARK: Footer

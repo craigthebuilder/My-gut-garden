@@ -9,68 +9,8 @@ import Foundation
 import Testing
 @testable import MyGutGarden
 
-@MainActor
-struct SrvReintroEngineTests {
-
-    private func challenge(_ group: SrvFodmapGroup, _ status: SrvReintroStatus,
-                           started: Date? = nil, ended: Date? = nil) -> SrvChallenge {
-        SrvChallenge(id: group.rawValue, group: group, status: status, startedAt: started, endedAt: ended)
-    }
-
-    @Test func startingBeginsTheTestingWindow() {
-        let now = Date()
-        let started = SrvReintroEngine.started(challenge(.lactose, .pending), at: now)
-        #expect(started.status == .testing)
-        #expect(started.startedAt == now)
-        #expect(started.endedAt == nil)
-    }
-
-    @Test func tolerationPassesAndIntoleranceFails() {
-        let now = Date()
-        let testing = challenge(.fructan, .testing, started: now)
-        #expect(SrvReintroEngine.resolved(testing, tolerated: true, at: now).status == .passed)
-        #expect(SrvReintroEngine.resolved(testing, tolerated: false, at: now).status == .failed)
-    }
-
-    @Test func clearedGroupsAreOnlyPassedOnes() {
-        let cleared = SrvReintroEngine.clearedGroups([
-            challenge(.lactose, .passed),
-            challenge(.fructan, .testing),
-            challenge(.gos, .failed)
-        ])
-        #expect(cleared == Set([.lactose]))
-    }
-
-    @Test func nextSuggestionSkipsTestingAndPassed() {
-        // lactose passed, fructan testing → next should be the first remaining
-        // in canonical order: gos.
-        let next = SrvReintroEngine.nextSuggestedGroup(given: [
-            challenge(.lactose, .passed),
-            challenge(.fructan, .testing)
-        ])
-        #expect(next == .gos)
-    }
-
-    @Test func durationsComeFromConfigNotInvented() {
-        // Fence 3: the placeholders live in GameConfig, not in the engine.
-        #expect(SrvReintroEngine.challengeDays == GameConfig.shared.reintroChallengeDays)
-        #expect(SrvReintroEngine.washoutDays == GameConfig.shared.reintroWashoutDays)
-    }
-
-    @Test func progressClampsToWindow() {
-        let cal = Calendar.current
-        let now = Date()
-        let started = cal.date(byAdding: .day, value: -GameConfig.shared.reintroChallengeDays * 2, to: now)!
-        let stale = challenge(.polyol, .testing, started: started)
-        let p = SrvReintroEngine.progress(stale, now: now)
-        #expect(p == 1.0)
-        #expect(SrvReintroEngine.isWindowComplete(stale, now: now))
-    }
-
-    @Test func passedChallengeReadsAsComplete() {
-        #expect(SrvReintroEngine.progress(challenge(.lactose, .passed), now: Date()) == 1.0)
-    }
-}
+// (The legacy time-based SrvReintroEngine was retired in R5; reintro is now the
+// event-driven food-suspect system tested via FoodStatusStore.)
 
 @MainActor
 struct SrvPatternPresenterTests {

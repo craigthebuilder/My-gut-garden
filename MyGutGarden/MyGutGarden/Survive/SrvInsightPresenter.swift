@@ -21,54 +21,30 @@ import SwiftUI
 
 @MainActor
 struct SrvInsightPresenter: MealInsightPresenting {
-    /// Groups the user is actively testing, so the view can say "logging for
-    /// your challenge" when a food contains one (SPEC §11b).
-    let activeReintroGroups: [SrvFodmapGroup]
     /// Lets the view check whether a reset is active, so it can flag high-residue
     /// foods as "not for this phase" (R4) instead of a misleading FODMAP "safe".
     let appState: AppState?
 
-    init(activeReintroGroups: [SrvFodmapGroup] = [], appState: AppState? = nil) {
-        self.activeReintroGroups = activeReintroGroups
+    init(appState: AppState? = nil) {
         self.appState = appState
     }
 
     func insightView(for meal: ConfirmedMeal) -> AnyView {
-        AnyView(SrvPhotoInsightView(response: meal.response,
-                                    activeReintroGroups: activeReintroGroups, appState: appState))
+        AnyView(SrvPhotoInsightView(response: meal.response, appState: appState))
     }
 }
 
-/// One row of FODMAP safety: the food name + its SafetyChip + any reintro note.
+/// One row of FODMAP safety: the food name + its SafetyChip.
 struct SrvSafetyRow: Identifiable, Sendable {
     let foodName: String
     let safety: FodmapSafety
-    /// The active groups this food contributes to (drives the challenge note).
-    let testingGroups: [SrvFodmapGroup]
     var id: String { foodName }
 }
 
 enum SrvInsightModel {
-    /// Build the safety rows, threading in which active groups each food feeds.
-    static func safetyRows(
-        for response: RecognitionResponse,
-        activeReintroGroups: [SrvFodmapGroup]
-    ) -> [SrvSafetyRow] {
-        let attrs = FoodAttributeJoin.surfacedAttributes(response)
-        let insights = FoodAttributeJoin.surviveInsights(response)
-
-        // Map canonical name → fodmap attr so we can detect tested groups.
-        var fodmapByName: [String: FodmapAttr] = [:]
-        for a in attrs { if let f = a.fodmap { fodmapByName[a.canonicalName] = f } }
-
-        return insights.safety.map { entry in
-            let groups: [SrvFodmapGroup]
-            if let f = fodmapByName[entry.foodName] {
-                groups = activeReintroGroups.filter { $0.isPresent(in: f) }
-            } else {
-                groups = []
-            }
-            return SrvSafetyRow(foodName: entry.foodName, safety: entry.safety, testingGroups: groups)
+    static func safetyRows(for response: RecognitionResponse) -> [SrvSafetyRow] {
+        FoodAttributeJoin.surviveInsights(response).safety.map {
+            SrvSafetyRow(foodName: $0.foodName, safety: $0.safety)
         }
     }
 }
@@ -78,13 +54,12 @@ enum SrvInsightModel {
 struct SrvPhotoInsightView: View {
     @Environment(\.theme) private var theme
     let response: RecognitionResponse
-    let activeReintroGroups: [SrvFodmapGroup]
     var appState: AppState? = nil
 
     @State private var resetActive = false
 
     private var rows: [SrvSafetyRow] {
-        SrvInsightModel.safetyRows(for: response, activeReintroGroups: activeReintroGroups)
+        SrvInsightModel.safetyRows(for: response)
     }
     private var survive: SurvivePhotoInsights {
         FoodAttributeJoin.surviveInsights(response)
@@ -155,20 +130,12 @@ struct SrvPhotoInsightView: View {
                         .foregroundStyle(theme.colors.textSecondary)
                 }
                 ForEach(rows) { row in
-                    VStack(alignment: .leading, spacing: theme.metrics.space1) {
-                        HStack(spacing: theme.metrics.space2) {
-                            Text(row.foodName)
-                                .font(theme.typography.body(weight: .medium))
-                                .foregroundStyle(theme.colors.textPrimary)
-                            Spacer()
-                            SafetyChip(safety: row.safety)
-                        }
-                        ForEach(row.testingGroups) { group in
-                            Label("Contains \(group.shortName), logging for your challenge.",
-                                  systemImage: "target")
-                                .font(theme.typography.caption(weight: .medium))
-                                .foregroundStyle(theme.colors.primary)
-                        }
+                    HStack(spacing: theme.metrics.space2) {
+                        Text(row.foodName)
+                            .font(theme.typography.body(weight: .medium))
+                            .foregroundStyle(theme.colors.textPrimary)
+                        Spacer()
+                        SafetyChip(safety: row.safety)
                     }
                     if row.id != rows.last?.id {
                         Divider().overlay(theme.colors.divider)

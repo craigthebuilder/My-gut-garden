@@ -261,7 +261,9 @@ final class OnbViewModel {
             "baseline_bowel_consistency": .int(baseline.bowelConsistency),
 
             "goals":         .stringArray(goals.map(\.rawValue).sorted()),
-            "current_mode":  .string(chosenMode.rawValue),
+            // R5 #4: everyone lands in Thrive; Survive is OFFERED (a disclaimer
+            // pop-up) when signals lean relief, never auto-entered into restriction.
+            "current_mode":  .string(AppMode.thrive.rawValue),
 
             // plant_consumption_level is always written: it is the universal
             // isOnboarded marker (AppState checks fiberGoalG != nil OR plantConsumptionLevel != nil).
@@ -271,17 +273,25 @@ final class OnbViewModel {
             "other_autoimmune": .bool(seriousConditions.contains(OnbSeriousCondition.otherAutoimmune.key)),
         ]
 
-        if chosenMode == .survive {
-            // Survive: write residue_ceiling_g (INTERNAL ONLY, never surfaced or decoded
-            // into UserProfile). Do NOT write fiber_goal_g (stays null for Survive users).
+        // Everyone lands in Thrive, so the plant-adjusted fiber goal is always written
+        // (the ONLY surfaced derived number).
+        body["fiber_goal_g"] = .int(d.fiberGoalG)
+        // If signals lean relief, also stash the internal residue ceiling so an eventual
+        // Survive episode has it (INTERNAL ONLY, never surfaced/decoded, like est_daily_kcal).
+        if suggestedMode == .survive {
             body["residue_ceiling_g"] = .int(GameConfig.shared.surviveResidueCeilingStartG)
-            // TODO: fiber auto-increase is handled by coordinator (MealIngestion), not here.
-        } else {
-            // Thrive: write the plant-adjusted fiber goal. The ONLY surfaced derived number.
-            body["fiber_goal_g"] = .int(d.fiberGoalG)
         }
 
         return body
+    }
+
+    /// Whether to OFFER Survive after onboarding (signals lean relief). We never
+    /// auto-enter it; the offer is a disclaimer pop-up the user can decline (R5 #4).
+    var shouldOfferSurvive: Bool { suggestedMode == .survive }
+
+    /// Fire the Survive offer pop-up at the shell once onboarding is done.
+    func offerSurviveIfWarranted() {
+        if shouldOfferSurvive { appState.survivePrompt(.offerSurvive) }
     }
 }
 

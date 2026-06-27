@@ -79,8 +79,11 @@ struct GameConfig: Sendable {
 
     // MARK: Aggressive Survive reset (Batch E). 🔒 FENCE 6, ALL RD-REVIEW-REQUIRED
     enum ResetProgressMetric: Sendable { case symptomFreeDays, daysElapsed }
-    /// STRUCTURAL rule-#7 pin: the reset's progress is RELIEF, never restriction.
-    /// NEVER set this to .daysElapsed. Grep this line in every reset PR.
+    /// Phase ADVANCEMENT stays relief-informed (you add foods back when symptoms
+    /// settle), so this stays `.symptomFreeDays`. R5 owner decision: Survive is now
+    /// an intentional low-residue PROGRAM, so a NEUTRAL "Day N" display is fine; the
+    /// duty-of-care valves are the clinician disclaimer + frictionless Pause + Return
+    /// to Thrive. Still NO gamified rewards or streaks ON the restriction itself.
     let resetProgressMetric: ResetProgressMetric = .symptomFreeDays
     let resetNoImprovementThresholdDays = 14        // re-fire the clinician prompt
     let resetSymptomFreeDaysToAdvance = 3           // relief days before suggesting additions

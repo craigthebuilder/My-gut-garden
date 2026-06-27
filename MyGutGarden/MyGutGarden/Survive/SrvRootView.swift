@@ -151,19 +151,30 @@ private struct SrvHomeContent: View {
     private var resetCard: some View {
         Card {
             VStack(alignment: .leading, spacing: theme.metrics.space2) {
-                Text(phase.title)
-                    .font(theme.typography.title(18))
-                    .foregroundStyle(theme.colors.textPrimary)
+                HStack {
+                    Text(phase.title)
+                        .font(theme.typography.title(18))
+                        .foregroundStyle(theme.colors.textPrimary)
+                    Spacer()
+                    if let day = dayNumber {
+                        Text("Day \(day)")
+                            .font(theme.typography.caption(weight: .semibold))
+                            .foregroundStyle(theme.colors.secondary)
+                    }
+                }
                 Text(phaseBlurb)                                  // RD-REVIEW-REQUIRED (Fence 6)
                     .font(theme.typography.body())
                     .foregroundStyle(theme.colors.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
-                Text(reliefHeadline)
-                    .font(theme.typography.body(weight: .semibold))
-                    .foregroundStyle(theme.colors.primary)
-                Text("We're watching how you feel, not counting days. Off days carry no penalty.")
+                if resetModel.reliefDaysThisWeek > 0 {
+                    Text(reliefHeadline)
+                        .font(theme.typography.body(weight: .semibold))
+                        .foregroundStyle(theme.colors.primary)
+                }
+                Text("A gentle low-residue program. Stick with it as best you can, and pause or head back to Thrive anytime, no pressure.")
                     .font(theme.typography.caption())
                     .foregroundStyle(theme.colors.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
                 if resetModel.reset?.pausedAt != nil {
                     Text("Paused. Resume it from the top-right menu whenever you're ready.")
                         .font(theme.typography.caption(weight: .medium))
@@ -171,6 +182,16 @@ private struct SrvHomeContent: View {
                 }
             }
         }
+    }
+
+    /// Which day of the program you're on (a structured, program-style cue now that
+    /// Survive is an intentional low-residue reset, R5 #1). Exit/pause stay the
+    /// duty-of-care valves; we still never reward or streak the restriction itself.
+    private var dayNumber: Int? {
+        guard let started = resetModel.reset.flatMap({ SrvDateParse.timestamp($0.startedAt) }) else { return nil }
+        let cal = Calendar.current
+        let days = cal.dateComponents([.day], from: cal.startOfDay(for: started), to: cal.startOfDay(for: Date())).day ?? 0
+        return max(1, days + 1)
     }
 
     /// RD-REVIEW-REQUIRED (Fence 6): phase guidance copy.

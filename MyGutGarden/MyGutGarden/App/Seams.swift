@@ -136,11 +136,13 @@ struct ProgressionState: Sendable, Equatable {
 enum SurvivePromptEvent: Sendable, Identifiable {
     case switchToSurvivePrompt(avoidCount: Int)   // offered when ≥ N foods are set aside
     case graduateToThrive                          // offered when the reset is complete
+    case offerSurvive                              // offered right after onboarding (R5 #4)
 
     var id: String {
         switch self {
         case let .switchToSurvivePrompt(n): "switch-survive-\(n)"
         case .graduateToThrive: "graduate-thrive"
+        case .offerSurvive: "offer-survive"
         }
     }
 }

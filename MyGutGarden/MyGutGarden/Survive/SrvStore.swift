@@ -26,9 +26,7 @@ final class SrvStore {
 
     // Loaded state
     private(set) var logs: [SrvSymptomLogRow] = []
-    private(set) var challenges: [SrvChallenge] = []
     private(set) var assessments: [PatternAssessmentRow] = []
-    private(set) var trackedFoods: [SrvTrackedFood] = []
     private(set) var streak = SrvStreakEngine.Result(current: 0, longest: 0)
     private(set) var lastQualifyingDate: Date?
 
@@ -54,23 +52,13 @@ final class SrvStore {
 
     // MARK: - Derived
 
-    var clearedGroups: Set<SrvFodmapGroup> { SrvReintroEngine.clearedGroups(challenges) }
-    var activeTestingGroups: [SrvFodmapGroup] {
-        challenges.filter { $0.status == .testing }.map(\.group)
-    }
     var patternCards: [SrvPatternPresentation] {
         assessments.compactMap(SrvPatternPresenter.present)
     }
-    var safeFoods: [SrvTrackedFood] {
-        trackedFoods.filter { $0.isSafe(clearedGroups: clearedGroups) }
-    }
-    var triggerFoods: [SrvTrackedFood] {
-        trackedFoods.filter { !$0.isSafe(clearedGroups: clearedGroups) }
-    }
 
-    /// A presenter for the Survive per-photo view, aware of what's being tested.
+    /// A presenter for the Survive per-photo view (reset-aware via appState).
     func makeInsightPresenter() -> SrvInsightPresenter {
-        SrvInsightPresenter(activeReintroGroups: activeTestingGroups, appState: appState)
+        SrvInsightPresenter(appState: appState)
     }
 
     // MARK: - Load
@@ -87,7 +75,6 @@ final class SrvStore {
         usingSampleData = false
         do {
             async let logRows: [SrvSymptomLogRow] = repo.select("symptom_logs", order: "logged_at.asc")
-            async let challengeRows: [ReintroChallengeRow] = repo.select("reintro_challenges")
             async let assessmentRows: [PatternAssessmentRow] = repo.select("pattern_assessments", order: "computed_at.desc")
             async let stoolRows: [StoolEntryRow] = repo.select("stool_entries", order: "log_date.asc")
             async let symptomRows: [SymptomEntryRow] = repo.select("symptom_entries", order: "log_date.asc")
@@ -95,12 +82,10 @@ final class SrvStore {
                 "meals", columns: "id,captured_at,photo_url", order: "captured_at.desc", limit: 12)
 
             logs = try await logRows
-            challenges = try await challengeRows.compactMap(Self.challenge(from:))
             assessments = try await assessmentRows
             stoolEntries = try await stoolRows
             symptomEntries = try await symptomRows
             recentMeals = try await mealRows
-            if trackedFoods.isEmpty { trackedFoods = SrvSampleData.trackedFoods }
             recomputeStreak()
             await persistStreak()
         } catch {
@@ -150,52 +135,6 @@ final class SrvStore {
         } catch {
             errorMessage = "Couldn't save your check-in. It's still here, try again."
             return false
-        }
-    }
-
-    // MARK: - Reintro challenges
-
-    func startChallenge(_ group: SrvFodmapGroup, now: Date = .init()) async {
-        if let existing = challenges.first(where: { $0.group == group }) {
-            await write(SrvReintroEngine.started(existing, at: now))
-        } else {
-            let new = SrvChallenge(id: UUID().uuidString, group: group, status: .testing, startedAt: now, endedAt: nil)
-            await write(new, isNew: true)
-        }
-    }
-
-    func resolveChallenge(_ challenge: SrvChallenge, tolerated: Bool, now: Date = .init()) async {
-        let resolved = SrvReintroEngine.resolved(challenge, tolerated: tolerated, at: now)
-        await write(resolved)
-        // Clearing a group is a relief win, surface it via the Thrive channel
-        // only if the user is in Thrive; in Survive nothing rewards restriction.
-        if tolerated { appState.celebrate(.guildUnlock(displayName: challenge.group.displayName)) }
-    }
-
-    private func write(_ challenge: SrvChallenge, isNew: Bool = false) async {
-        // Optimistic local update so the surface responds instantly.
-        if let idx = challenges.firstIndex(where: { $0.id == challenge.id }) {
-            challenges[idx] = challenge
-        } else {
-            challenges.append(challenge)
-        }
-
-        guard let repo = appState.repository, let uid = appState.profile?.id else { return }
-        var body: [String: PGValue] = [
-            "user_id": .string(uid),
-            "fodmap_group": .string(challenge.group.rawValue),
-            "status": .string(challenge.status.rawValue)
-        ]
-        body["started_at"] = challenge.startedAt.map { .date($0) } ?? .null
-        body["ended_at"] = challenge.endedAt.map { .date($0) } ?? .null
-        do {
-            if isNew {
-                try await repo.insertVoid("reintro_challenges", body)
-            } else {
-                try await repo.update("reintro_challenges", set: body, filters: ["id": "eq.\(challenge.id)"])
-            }
-        } catch {
-            errorMessage = "Couldn't update your challenge. Try again."
         }
     }
 
@@ -311,23 +250,6 @@ final class SrvStore {
 
     // MARK: - Helpers
 
-    private nonisolated static func challenge(from row: ReintroChallengeRow) -> SrvChallenge? {
-        // Legacy FODMAP challenges only; food-suspect challenges (Batch E, no FODMAP
-        // group) are handled by Module E's own engine and are skipped here.
-        guard
-            let fodmap = row.fodmapGroup,
-            let group = SrvFodmapGroup(rawValue: fodmap),
-            let status = SrvReintroStatus(rawValue: row.status)
-        else { return nil }
-        return SrvChallenge(
-            id: row.id,
-            group: group,
-            status: status,
-            startedAt: row.startedAt.flatMap(SrvDateParse.timestamp),
-            endedAt: row.endedAt.flatMap(SrvDateParse.timestamp)
-        )
-    }
-
     private static let isoDay: DateFormatter = {
         let f = DateFormatter()
         f.dateFormat = "yyyy-MM-dd"
@@ -340,9 +262,7 @@ final class SrvStore {
     private func loadSample() {
         usingSampleData = true
         logs = SrvSampleData.logs()
-        challenges = SrvSampleData.challenges()
         assessments = SrvSampleData.assessments()
-        trackedFoods = SrvSampleData.trackedFoods
         recomputeStreak()
     }
 

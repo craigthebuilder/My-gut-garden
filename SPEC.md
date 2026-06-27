@@ -435,6 +435,22 @@ Thrive fiber goal in grams.
   grocery haul** click-in; recent meals use the **same** component as Thrive. The
   lighter-check-in is removed; **Pause** + **Return to Thrive** live in the off-ramp menu.
 
+### 16.3 Round-5 (owner direction)
+
+- **Survive is now an intentional low-residue PROGRAM** (owner decision), not an
+  apologetic "we're not counting days." Today shows a neutral **"Day N"** cue and
+  program-framed copy; the curated 7-day plan + grocery haul stand. The duty-of-care
+  that remains: persistent **clinician disclaimer**, frictionless **Pause**, always-on
+  **Return to Thrive**, never a diagnosis, never "carnivore." Phase advancement stays
+  relief-informed; still no rewards/streaks ON the restriction itself (`FENCES` Fence 5/6
+  updated).
+- **The legacy time-based FODMAP reintro engine is retired.** Reintro is the
+  event-driven food-suspect system only; the FODMAP *safety* overlay (per-food chip)
+  and `SrvFodmapGroup` remain.
+- **Onboarding never auto-enters Survive.** Everyone lands in **Thrive** (fiber goal
+  written); when signals lean relief, a **Survive offer pop-up** (program disclaimer)
+  appears right after onboarding, decline-able, never forced.
+
 ---
 
 *End of SPEC.md. Build order and agent rules: `CLAUDE.md`. Visual system: `DESIGN.md`.*

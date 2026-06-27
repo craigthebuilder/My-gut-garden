@@ -91,6 +91,25 @@ private struct ShellHome: View {
                     onConfirm: { dismissSurvivePrompt(); Task { await appState.setMode(.thrive); appState.celebrate(.graduation) } },
                     onCancel: dismissSurvivePrompt
                 )
+            case .offerSurvive:
+                // Post-onboarding OFFER (R5 #4): same program disclaimer as the
+                // "Start Survive" switch, never auto-entered.
+                ConfirmationModal(
+                    title: "Try a gentle reset?",
+                    message: "From what you shared, a short low-residue program might help settle things first. It's a roughly two-week experiment with real dietary restriction, best done with a registered dietitian's guidance and not right for everyone. You can pause or return to Thrive anytime. Want to start?",
+                    confirmTitle: "Start Survive",
+                    cancelTitle: "Not now",
+                    severity: .caution,
+                    onConfirm: {
+                        dismissSurvivePrompt()
+                        Task {
+                            await appState.setMode(.survive)
+                            await SrvEpisode.ensureStarted(appState: appState)
+                            await SrvNotifications.enableEveningReminder()
+                        }
+                    },
+                    onCancel: dismissSurvivePrompt
+                )
             }
         }
         .themed(for: appState.mode)

@@ -62,6 +62,15 @@ Single index of every clinical/claim-risk location that a registered dietitian
 - "Worth a check" on the snap gates on the **Checking list (+ an active reintro food) only** — never Avoid, never an over-eating nudge.
 - Annotations are real again: the `recognize` edge function was redeployed (it predated the annotation code); the LLM maps quantity words ("lots"/"tiny") to coarse tiers, still ID + tier only, DB derives every number (rule #2).
 
+## Phase 3 — R5 (owner decision: Survive is an intentional program)
+
+**Fence 5/6 stance change (owner-approved).** Survive is now framed openly as an intentional ~2-week **low-residue program** users opt into "to feel their best," not an apologetic "we're not counting days." This **relaxes** the earlier "never structure it / relief-only, never days" posture. What this means:
+- **Structure is intended + allowed:** a neutral **"Day N"** indicator, the curated 7-day plan, and a grocery haul are fine. Phase *advancement* still happens when symptoms settle (relief-informed, `resetProgressMetric = .symptomFreeDays`), not on a timer.
+- **The duty-of-care that REMAINS (non-negotiable):** the persistent **clinician disclaimer** naming high-risk groups (IBD, autoimmune, diabetes, disordered-eating history, pregnancy); a frictionless **Pause**; an always-available **Return to Thrive** (the full exit from restriction); **never a diagnosis**; the reset is **never named "carnivore"**.
+- **Still fenced (rule #7 narrowed, not dropped):** no celebratory juice, rewards, or streaks attached to *the restriction itself*. Relief ("feeling better") may still be surfaced positively; "Day N" is a neutral cue, not a scored streak.
+- **Entry is opt-in only:** onboarding no longer auto-places anyone in Survive; it lands everyone in Thrive and **offers** Survive via a disclaimer pop-up when signals lean relief (R5 #4).
+- The legacy time-based FODMAP reintro engine was retired; reintro is the event-driven food-suspect system only (R5 #2).
+
 ### Phase-2 invariants enforced in the spine (not fences — hard rules)
 - `residue_ceiling_g` is **internal-only** (twin of `est_daily_kcal`): written by Onboarding, never decoded into `Repository.UserProfile`, never surfaced. Only the Thrive fiber goal (g) is ever shown.
 - Mood is stored **CANONICAL high=better** via `6 - ui_value` (the single inversion point is `Shared/CheckInKit.swift`). The regulated→erratic UI flip never reaches the DB polarity; the pattern engine stays high=better.
