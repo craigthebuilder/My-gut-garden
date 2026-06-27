@@ -1,6 +1,6 @@
 //
 //  GuildConfig.swift
-//  MyGutGarden — Module D (Guild Garden) tunables that aren't already in
+//  MyGutGarden, Module D (Guild Garden) tunables that aren't already in
 //  GameConfig. Kept in ONE place (CLAUDE.md §5): nobody hardcodes a magic
 //  number for a district-unlock gate.
 //

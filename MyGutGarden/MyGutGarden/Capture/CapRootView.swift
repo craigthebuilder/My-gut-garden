@@ -1,10 +1,10 @@
 //
 //  CapRootView.swift
-//  MyGutGarden — Module B public entry point (SPEC §4, §11).
+//  MyGutGarden, Module B public entry point (SPEC §4, §11).
 //
 //  The snap flow: capture a meal (camera / library / sample) → recognize →
 //  review & confirm → hand off to the mode-specific insight view. Composes the
-//  shared DesignSystem and reads tokens from `@Environment(\.theme)` only — no
+//  shared DesignSystem and reads tokens from `@Environment(\.theme)` only, no
 //  restyling, no hardcoded values (CLAUDE.md rule #5). The AppShell injects
 //  `AppState`, the `RecognitionService`, the active theme, and the
 //  `mealInsightPresenter`; Module B never imports C/E.
@@ -16,6 +16,11 @@ import PhotosUI
 struct CapRootView: View {
     @Environment(\.theme) private var theme
     @Environment(\.mealInsightPresenter) private var insightPresenter
+    // Food-status seams (default no-ops in Seams.swift / CapModels.swift). The
+    // lead injects the real impls (Module E) in AppShell; Module B never imports E.
+    @Environment(\.suspectCheckService) private var suspectCheckService
+    @Environment(\.reintroFeelingAttacher) private var reintroFeelingAttacher
+    @Environment(\.capReintroFeelingRecorder) private var capReintroFeelingRecorder
 
     @State private var model: CapCaptureModel
     @State private var camera = CapCameraController()
@@ -30,6 +35,11 @@ struct CapRootView: View {
             content
         }
         .animation(.default, value: model.phase)
+        .onAppear {
+            model.configure(suspectCheck: suspectCheckService,
+                            reintroAttacher: reintroFeelingAttacher,
+                            reintroRecorder: capReintroFeelingRecorder)
+        }
     }
 
     @ViewBuilder
@@ -37,10 +47,10 @@ struct CapRootView: View {
         switch model.phase {
         case .capture:
             CapCaptureScreen(model: model, camera: camera)
+        case .preview:
+            CapPreviewScreen(model: model)
         case .recognizing:
             CapRecognizingScreen()
-        case .review:
-            CapReviewScreen(model: model)
         case .confirmed:
             CapResultScreen(model: model, presenter: insightPresenter)
         }
@@ -81,7 +91,7 @@ private struct CapCaptureScreen: View {
                 .font(theme.typography.display())
                 .foregroundStyle(theme.colors.textPrimary)
             Text(model.mode == .thrive
-                 ? "See what you're feeding — plants, colours, and the crews they grow."
+                 ? "See what you're feeding, plants, colours, and the crews they grow."
                  : "Check a meal for FODMAP triggers before it's on your plate.")
                 .font(theme.typography.body())
                 .foregroundStyle(theme.colors.textSecondary)
@@ -109,12 +119,12 @@ private struct CapCaptureScreen: View {
                     PrimaryButton(title: "Take photo", systemImage: "camera.fill") {
                         Task {
                             if let data = try? await camera.capturePhoto() {
-                                await model.submit(imageData: data)
+                                model.stage(imageData: data)
                             }
                         }
                     }
                 } else {
-                    Text("No camera here — pick a photo or try the sample meal below.")
+                    Text("No camera here, pick a photo or try the sample meal below.")
                         .font(theme.typography.caption())
                         .foregroundStyle(theme.colors.textSecondary)
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -132,14 +142,14 @@ private struct CapCaptureScreen: View {
                 guard let item else { return }
                 Task {
                     if let data = try? await item.loadTransferable(type: Data.self) {
-                        await model.submit(imageData: data)
+                        model.stage(imageData: data)
                     }
                     pickerItem = nil
                 }
             }
 
             SecondaryButton(title: "Use a sample meal", systemImage: "sparkles") {
-                Task { await model.useSampleMeal() }
+                model.useSampleMeal()
             }
         }
     }

@@ -1,7 +1,7 @@
 //
 //  CapMealAssemblyTests.swift
-//  MyGutGardenTests — Module B: meal_items assembly across the three sources
-//  (vision / manual / hidden_confirmed) — SPEC §5, §9.
+//  MyGutGardenTests, Module B: meal_items assembly across the three sources
+//  (vision / manual / hidden_confirmed), SPEC §5, §9.
 //
 //  Covers the load-bearing rules: surfaced vision items map straight through,
 //  `preference_intolerance` (silentlyOmitted) matches are never persisted as fed
@@ -50,7 +50,7 @@ struct CapMealAssemblyTests {
     @Test func hiddenConfirmedItemsUseTheConfirmedSourceAndCoarseDefault() {
         let items = CapMealDraftBuilder.hiddenConfirmedItems([CapResolvedHidden(foodId: "demo-onion")])
         #expect(items.first?.source == .hiddenConfirmed)
-        #expect(items.first?.portion == .serving)   // coarse default — hidden aromatics aren't sized
+        #expect(items.first?.portion == .serving)   // coarse default, hidden aromatics aren't sized
     }
 
     @Test func sourceRawValuesMatchTheDatabaseEnum() {

@@ -1,6 +1,6 @@
 //
 //  PatFingerprintTests.swift
-//  MyGutGardenTests — Module F.
+//  MyGutGardenTests, Module F.
 //
 //  Each symptom fingerprint maps to the expected leaning pattern. These pin the
 //  PLACEHOLDER (Fence 1) rules so a future RD rewrite is a deliberate, visible
@@ -60,7 +60,7 @@ struct PatFingerprintTests {
         #expect(assessment?.pattern == .fat)
     }
 
-    // histamine: aged/fermented-food triggers (± flushing/headache) — feature-only.
+    // histamine: aged/fermented-food triggers (± flushing/headache), feature-only.
     @Test func agedFermentedTriggersMapToHistamine() {
         let feats = PatFixtures.features(count: 14) {
             PatFixtures.feature(dayOffset: $0,

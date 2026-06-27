@@ -1,4 +1,4 @@
-# food_colors.csv — junction food -> rainbow color group (SPEC §5, §8). Composite PK (food_id,color_id).
+# food_colors.csv, junction food -> rainbow color group (SPEC §5, §8). Composite PK (food_id,color_id).
 # A food may map to more than one color (one row each). Color = the dominant visible pigment group.
 # Source: USDA "eat the rainbow" groupings; visible pigment of the common form of the food.
 # Format: pipe-delimited. food|color

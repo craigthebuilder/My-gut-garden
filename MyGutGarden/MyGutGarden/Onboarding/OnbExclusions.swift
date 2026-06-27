@@ -1,6 +1,6 @@
 //
 //  OnbExclusions.swift
-//  MyGutGarden — Module A: the two-faced exclusion model at intake.
+//  MyGutGarden, Module A: the two-faced exclusion model at intake.
 //
 //  ⚠️ LOAD-BEARING (SPEC §9 / CLAUDE.md hard rule #1). Every exclusion is tagged
 //  with an `ExclusionType` that drives OPPOSITE downstream behavior:
@@ -51,7 +51,7 @@ struct OnbExclusionBehavior: Equatable, Sendable {
     let isLoud: Bool
     /// Flag hidden-ingredient dishes aggressively (elevated sensitivity, §9).
     let elevatedHiddenIngredientSensitivity: Bool
-    /// Silently omitted in the Thrive photo view — no nagging (§9).
+    /// Silently omitted in the Thrive photo view, no nagging (§9).
     let silentlyOmitted: Bool
 
     static func of(_ type: ExclusionType) -> OnbExclusionBehavior {
@@ -73,7 +73,7 @@ struct OnbExclusionBehavior: Equatable, Sendable {
     static func explainer(_ type: ExclusionType) -> String {
         switch type {
         case .medicalAllergy:
-            "We'll flag this loudly — even when it's a hidden ingredient."
+            "We'll flag this loudly, even when it's a hidden ingredient."
         case .preferenceIntolerance:
             "We'll just leave this off your suggestions. No alerts."
         }
@@ -103,7 +103,7 @@ enum OnbExclusionWriter {
 /// Curated common exclusion categories shown as chips at intake (SPEC §9 names
 /// categories like "gluten", "allium"). `commonAllergen` only PRE-SELECTS the
 /// type toggle as a sensible default that leans toward the safer (loud)
-/// direction for the foods most likely to be true allergies — the user ALWAYS
+/// direction for the foods most likely to be true allergies, the user ALWAYS
 /// chooses and can flip it. We never auto-classify on the user's behalf.
 struct OnbExclusionCategory: Identifiable, Sendable, Hashable {
     var id: String { key }
@@ -111,7 +111,7 @@ struct OnbExclusionCategory: Identifiable, Sendable, Hashable {
     let label: String
     let commonAllergen: Bool
 
-    /// Pre-selection only — leans loud for likely allergens, quiet otherwise.
+    /// Pre-selection only, leans loud for likely allergens, quiet otherwise.
     var suggestedType: ExclusionType { commonAllergen ? .medicalAllergy : .preferenceIntolerance }
 
     // RD-REVIEW-REQUIRED: the category list + allergen flags are an opinionated

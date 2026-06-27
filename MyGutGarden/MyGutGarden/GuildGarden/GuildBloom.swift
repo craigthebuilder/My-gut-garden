@@ -1,13 +1,13 @@
 //
 //  GuildBloom.swift
-//  MyGutGarden — Module D's bloom state machine (SPEC §13). PURE, deterministic
+//  MyGutGarden, Module D's bloom state machine (SPEC §13). PURE, deterministic
 //  math: feeding adds `portion × relevance`, the score DECAYS ~12%/day applied
 //  ON READ from `last_fed_at` (a guild fades when it isn't fed), and the score
 //  maps to Dormant/Sprouting/Growing/Blooming via GameConfig thresholds.
 //
 //  ⚠️ Module D is the SOLE owner of `guild_state` logic. The coordinator persists
 //  the writes (decay-then-add) using exactly these functions, so the on-read view
-//  and the on-write store never disagree. Everything here is unit-tested — it is
+//  and the on-write store never disagree. Everything here is unit-tested, it is
 //  the most regression-prone code in the module (CLAUDE.md §5).
 //
 
@@ -40,7 +40,7 @@ enum GuildBloomState: String, Sendable, CaseIterable, Comparable {
         return .blooming
     }
 
-    /// Gain-framed label for the surface (never loss/shame — DESIGN.md §6).
+    /// Gain-framed label for the surface (never loss/shame, DESIGN.md §6).
     var displayLabel: String {
         switch self {
         case .dormant: "Resting"
@@ -102,7 +102,7 @@ enum GuildBloom {
     /// The full decay-then-add for ONE feeding event. Pure: give it the stored
     /// row + the feeding's points + the meal's timestamp; get back the row to
     /// store and the UI signals. The coordinator owns the actual `guild_state`
-    /// write — this function decides what that write contains.
+    /// write, this function decides what that write contains.
     ///
     /// - `points`: `GameConfig.feedingPoints(portion:relevance:)`, already summed
     ///   per guild for the meal (see `GuildIngestor.guildFeedingPoints`).
@@ -157,7 +157,7 @@ enum GuildBloom {
     static func clampScore(_ value: Double) -> Double { min(100, max(0, value)) }
 }
 
-// MARK: - Week math (Monday-start; Sunday 23:59 reset — SPEC §13)
+// MARK: - Week math (Monday-start; Sunday 23:59 reset, SPEC §13)
 
 /// Distinct-day + week-boundary helpers for the consistent-feeding bonus and the
 /// weekly reset. Monday is the week start (`weekly_summaries.week_start (Mon)`),

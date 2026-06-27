@@ -1,5 +1,5 @@
 // =====================================================================
-// AnthropicProvider — real multimodal vision call via the Anthropic
+// AnthropicProvider - real multimodal vision call via the Anthropic
 // Messages API (raw HTTP; Edge runtime is Deno). Key comes from the
 // ANTHROPIC_API_KEY Supabase secret and never touches the client (SPEC §3).
 // The model does food ID + COARSE portion tier ONLY and returns strict JSON.
@@ -21,15 +21,35 @@ const SYSTEM_PROMPT =
   `You are a food-recognition vision model for a gut-health app. ` +
   `Identify the distinct foods visible in the photo and give a COARSE visible-portion ` +
   `tier for each. Lean generous on portion. You do food identification and portion ` +
-  `tiering ONLY — never any nutrition, fiber, FODMAP, or calorie numbers; the app's ` +
+  `tiering ONLY - never any nutrition, fiber, FODMAP, or calorie numbers; the app's ` +
   `database derives all of those. When unsure, still include the item but lower its ` +
-  `confidence. Respond with STRICT JSON ONLY — no prose, no markdown fences. ` +
+  `confidence. Respond with STRICT JSON ONLY - no prose, no markdown fences. ` +
   `The JSON must match exactly this shape:\n${CONTRACT_SHAPE}\n` +
   `portion_tier is one of "trace", "serving", "lots". confidence is 0.0–1.0. ` +
   `dish_type names the prepared dish when recognizable (e.g. "curry", "stir_fry"), else null.`;
 
 const USER_PROMPT =
   `Identify the foods in this meal photo and return the strict JSON contract.`;
+
+// Batch C - the snapchat-style annotation re-prompt (SPEC §4). Text-only, SAME
+// frozen contract. The user's free-text note ("more onion not pictured",
+// "ketchup under the bun") names foods the camera could not see. We return ONLY
+// those additional foods, still ID + COARSE portion tier and NEVER any nutrition
+// number (hard rule #2); the database derives every value. dish_type stays null
+// here (there is no photographed dish to type).
+const ANNOTATION_SYSTEM_PROMPT =
+  `You are a food-extraction model for a gut-health app. The user has added a ` +
+  `free-text note about foods that were in their meal but not visible in the ` +
+  `photo (e.g. "extra onion not pictured", "ketchup under the bun"). List ONLY ` +
+  `the additional foods the note explicitly mentions - do not invent or infer ` +
+  `foods that are not named. Give a COARSE visible-portion tier for each from ` +
+  `any quantity words in the note (default to "serving"). You do food ` +
+  `identification and portion tiering ONLY - never any nutrition, fiber, ` +
+  `FODMAP, or calorie numbers; the app's database derives all of those. ` +
+  `Respond with STRICT JSON ONLY - no prose, no markdown fences. ` +
+  `The JSON must match exactly this shape:\n${CONTRACT_SHAPE}\n` +
+  `portion_tier is one of "trace", "serving", "lots". confidence is 0.0–1.0. ` +
+  `Set dish_type to null. If the note names no foods, return {"foods": [], "scene_notes": null}.`;
 
 interface AnthropicTextBlock {
   type: string;
@@ -55,6 +75,32 @@ export class AnthropicProvider implements RecognitionProvider {
     if (!input.imageBase64) {
       throw new ContractError("AnthropicProvider requires imageBase64");
     }
+    return await this.callModel(SYSTEM_PROMPT, [
+      {
+        type: "image",
+        source: {
+          type: "base64",
+          media_type: input.imageMediaType ?? "image/jpeg",
+          data: input.imageBase64,
+        },
+      },
+      { type: "text", text: USER_PROMPT },
+    ]);
+  }
+
+  /**
+   * Batch C - the SECOND, text-only call for the user's free-text annotation.
+   * Same frozen contract, validated by the SAME validateVisionResult(); the LLM
+   * still emits ID + COARSE tier only, never a number (hard rule #2).
+   */
+  async recognizeAnnotation(annotation: string): Promise<VisionResult> {
+    return await this.callModel(ANNOTATION_SYSTEM_PROMPT, [
+      { type: "text", text: `The user's note about this meal:\n"""${annotation}"""` },
+    ]);
+  }
+
+  /** Shared Messages-API call → strict-JSON parse → frozen-contract validation. */
+  private async callModel(system: string, content: unknown[]): Promise<VisionResult> {
     const res = await fetch(API_URL, {
       method: "POST",
       headers: {
@@ -65,23 +111,8 @@ export class AnthropicProvider implements RecognitionProvider {
       body: JSON.stringify({
         model: MODEL,
         max_tokens: 1024,
-        system: SYSTEM_PROMPT,
-        messages: [
-          {
-            role: "user",
-            content: [
-              {
-                type: "image",
-                source: {
-                  type: "base64",
-                  media_type: input.imageMediaType ?? "image/jpeg",
-                  data: input.imageBase64,
-                },
-              },
-              { type: "text", text: USER_PROMPT },
-            ],
-          },
-        ],
+        system,
+        messages: [{ role: "user", content }],
       }),
     });
 

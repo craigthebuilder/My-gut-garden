@@ -1,6 +1,6 @@
-# foods.csv — every recognizable food; the attribute hub the recognition pipeline joins against (SPEC §4, §5). Natural key: canonical_name.
+# foods.csv, every recognizable food; the attribute hub the recognition pipeline joins against (SPEC §4, §5). Natural key: canonical_name.
 # plant_name links to plants.name (blank => non-plant / processed food; is_plant set accordingly).
-# common_hidden_in = dish_types this food is often an INVISIBLE ingredient in (SPEC §4/§11 hidden-ingredient prompts) — semicolon-separated.
+# common_hidden_in = dish_types this food is often an INVISIBLE ingredient in (SPEC §4/§11 hidden-ingredient prompts), semicolon-separated.
 # categories = allergen + diet/functional tags (the SPEC §9 / phase-1-seams categories column). CATEGORY-level exclusions fire the §9 LOUD allergy path
 #   for allergen tags (gluten, wheat, tree_nut, peanut, soy, sesame, dairy) and the quiet preference path for fodmap. Semicolon-separated.
 # histamine_level (low|moderate|high|blank) supports the Survive histamine pattern + Fermented Finds caution. Fresh-produce 'low' values are

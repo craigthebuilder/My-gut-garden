@@ -1,4 +1,4 @@
-# fodmap_profiles.csv — per-food, per-serving FODMAP levels + derived safety (SPEC §5, §11b). PK: food_id.
+# fodmap_profiles.csv, per-food, per-serving FODMAP levels + derived safety (SPEC §5, §11b). PK: food_id.
 # levels enum: none|low|moderate|high (per fermentable group). safety enum: green|yellow|red.
 # Derivation rule used here: any group 'high' at the stated serving => red; any one group 'moderate' (others <= low) => yellow; else green.
 #

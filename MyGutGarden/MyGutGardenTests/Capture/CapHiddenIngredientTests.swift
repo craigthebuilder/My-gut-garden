@@ -1,6 +1,6 @@
 //
 //  CapHiddenIngredientTests.swift
-//  MyGutGardenTests — Module B: always-ask hidden-ingredient handling (§4, §11).
+//  MyGutGardenTests, Module B: always-ask hidden-ingredient handling (§4, §11).
 //
 //  The canonical fixture carries one hidden-ingredient prompt (carrot in a
 //  stir fry). These pin the "always ask" contract: nothing is logged until each

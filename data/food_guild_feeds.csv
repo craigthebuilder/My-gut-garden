@@ -1,4 +1,4 @@
-# food_guild_feeds.csv — junction food -> microbial guild it feeds, with relevance (SPEC §5, §8; framework §4-5 fiber->guild map).
+# food_guild_feeds.csv, junction food -> microbial guild it feeds, with relevance (SPEC §5, §8; framework §4-5 fiber->guild map).
 # relevance enum: minor|moderate|primary. Drives the guild bloom math (SPEC §13: portion_weight x relevance).
 # guild key = guilds.internal_name. Every guild has at least one feeder. recycling_engine is fed INDIRECTLY
 #   (framework: it eats Base Layer output) so it carries minor links to strong Base-Layer foods.

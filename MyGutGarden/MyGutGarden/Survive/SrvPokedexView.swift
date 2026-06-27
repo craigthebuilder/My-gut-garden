@@ -1,12 +1,12 @@
 //
 //  SrvPokedexView.swift
-//  MyGutGarden — Module E. The Survive food pokédexes (SPEC §11b, §8).
+//  MyGutGarden, Module E. The Survive food pokédexes (SPEC §11b, §8).
 //
 //  Foods, never bacteria. Four lenses:
-//    • Safe — greyed-IN as cleared (the visible win of a passed reintro),
-//    • Triggers — greyed-OUT, with the severity you observed,
-//    • Reintro progress — tested / passed / failed / pending,
-//    • Symptom-vs-food timeline — your recent evenings at a glance.
+//    • Safe, greyed-IN as cleared (the visible win of a passed reintro),
+//    • Triggers, greyed-OUT, with the severity you observed,
+//    • Reintro progress, tested / passed / failed / pending,
+//    • Symptom-vs-food timeline, your recent evenings at a glance.
 //  Greying matches §9's shared treatment; the calm Survive tone keeps it
 //  blameless (a trigger is a "resting" food, not a failure).
 //
@@ -126,7 +126,7 @@ struct SrvPokedexView: View {
     // MARK: Timeline
 
     private var timeline: some View {
-        let days = SrvStore.dailySymptoms(from: store.logs).reversed().map { $0 }
+        let days = store.mergedDailySymptoms().reversed().map { $0 }
         return Group {
             if days.isEmpty {
                 SrvEmptyHint(text: "Your evening check-ins will line up here.")

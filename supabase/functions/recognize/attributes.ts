@@ -1,6 +1,6 @@
 // =====================================================================
 // The food-attribute join (SPEC §4 step 5, §5). Turns identified foods into
-// fiber/FODMAP/phytochemical/guild/color/fermented attributes — THE database
+// fiber/FODMAP/phytochemical/guild/color/fermented attributes - THE database
 // produces these numbers, never the LLM (CLAUDE.md hard rule #2). Also runs
 // hidden-ingredient logic (§11) and the two-faced exclusion model (§9).
 // =====================================================================
@@ -33,8 +33,15 @@ export interface FoodAttributes {
 export interface ResolvedItem {
   vision: VisionFood;
   attributes: FoodAttributes | null; // null => unmatched, needs manual confirm
-  /** preference_intolerance match — UI greys the tile, no alert (SPEC §9, quiet) */
+  /** preference_intolerance match - UI greys the tile, no alert (SPEC §9, quiet) */
   silently_omitted?: boolean;
+  /**
+   * Batch C - provenance for the meal_items.source enum. 'vision' = the photo;
+   * 'annotation' = the user's free-text note (the second, text-only re-prompt).
+   * On dedup PRIMARY vision always wins, so an annotation item never upgrades a
+   * tier of a food the camera already saw.
+   */
+  source: "vision" | "annotation";
 }
 
 export interface AllergyAlert {
@@ -143,6 +150,10 @@ export async function buildResponse(
   mode: "thrive" | "survive",
   providerName: string,
   exclusions: { food_id: string | null; category: string | null; exclusion_type: string }[],
+  // Batch C - the user's annotation re-prompt result (text-only, same frozen
+  // contract). Its foods are merged into `items` with source='annotation'; the
+  // primary photo vision always wins on dedup. Undefined when no annotation.
+  annotationVision?: VisionResult,
 ): Promise<RecognitionResponse> {
   const { data: foods, error } = await service.from("foods").select(FOOD_SELECT).limit(2000);
   if (error) throw new Error(`food join failed: ${error.message}`);
@@ -160,7 +171,7 @@ export async function buildResponse(
     exclusions.filter((e) => e.exclusion_type === "preference_intolerance" && e.food_id).map((e) => e.food_id),
   );
   // §9: category-level exclusions (e.g. a celiac excluding "gluten") must ALSO
-  // fire — matched against foods.categories, not just food_id.
+  // fire - matched against foods.categories, not just food_id.
   const allergyCategories = new Set(
     exclusions.filter((e) => e.exclusion_type === "medical_allergy" && e.category).map((e) => e.category!.toLowerCase()),
   );
@@ -171,33 +182,57 @@ export async function buildResponse(
   const items: ResolvedItem[] = [];
   const unmatched: string[] = [];
   const allergy_alerts: AllergyAlert[] = [];
+  // Dedup key is the resolved food row id (1:1 with norm(canonical_name)): once a
+  // food is in the set, an annotation copy is dropped so PRIMARY vision wins and
+  // an annotation never upgrades a photographed food's tier (Batch C, rule #2).
+  const seenFoodIds = new Set<string>();
 
-  for (const vf of vision.foods) {
-    const row = byName.get(norm(vf.name));
-    if (!row) {
-      unmatched.push(vf.name); // "when unsure, flag it" → manual confirm (SPEC §4)
-      items.push({ vision: vf, attributes: null });
-      continue;
+  // Shared resolver for both passes. `pushUnmatched` is true only for the photo
+  // pass - annotation foods are free text the user typed, so an unresolved one is
+  // silently dropped rather than nagged back as a "help name this" prompt.
+  const resolveFoods = (
+    visionFoods: VisionFood[],
+    source: "vision" | "annotation",
+    pushUnmatched: boolean,
+  ) => {
+    for (const vf of visionFoods) {
+      const row = byName.get(norm(vf.name));
+      if (!row) {
+        if (pushUnmatched) {
+          unmatched.push(vf.name); // "when unsure, flag it" → manual confirm (SPEC §4)
+          items.push({ vision: vf, attributes: null, source });
+        }
+        continue;
+      }
+      const attrs = toAttributes(row);
+      // PRIMARY vision wins: skip an annotation food the photo pass already matched.
+      if (seenFoodIds.has(attrs.food_id)) continue;
+      seenFoodIds.add(attrs.food_id);
+      const item: ResolvedItem = { vision: vf, attributes: attrs, source };
+      // ⚠️ Two-faced model (§9): allergy = LOUD alert; preference = silent omit.
+      // Matches by food_id OR by category (foods.categories). LAYER 1 fires the
+      // LOUD allergy alert even for an annotation-added food (rule #1).
+      const cats: string[] = (row.categories ?? []).map((c: string) => c.toLowerCase());
+      const isAllergy = allergyFoodIds.has(attrs.food_id) || cats.some((c) => allergyCategories.has(c));
+      const isPref = prefFoodIds.has(attrs.food_id) || cats.some((c) => prefCategories.has(c));
+      if (isAllergy) {
+        allergy_alerts.push({ food_name: attrs.canonical_name, exclusion_type: "medical_allergy" });
+      } else if (isPref) {
+        item.silently_omitted = true;
+      }
+      items.push(item);
     }
-    const attrs = toAttributes(row);
-    const item: ResolvedItem = { vision: vf, attributes: attrs };
-    // ⚠️ Two-faced model (§9): allergy = LOUD alert; preference = silent omit.
-    // Matches by food_id OR by category (foods.categories).
-    const cats: string[] = (row.categories ?? []).map((c: string) => c.toLowerCase());
-    const isAllergy = allergyFoodIds.has(attrs.food_id) || cats.some((c) => allergyCategories.has(c));
-    const isPref = prefFoodIds.has(attrs.food_id) || cats.some((c) => prefCategories.has(c));
-    if (isAllergy) {
-      allergy_alerts.push({ food_name: attrs.canonical_name, exclusion_type: "medical_allergy" });
-    } else if (isPref) {
-      item.silently_omitted = true;
-    }
-    items.push(item);
-  }
+  };
+
+  resolveFoods(vision.foods, "vision", true);
+  if (annotationVision) resolveFoods(annotationVision.foods, "annotation", false);
 
   // Hidden-ingredient logic (§11): foods that often invisibly hide in the
   // recognized dish_types. Elevated sensitivity for allergy is a Phase-1 refinement.
   const dishTypes = new Set(vision.foods.map((f) => f.dish_type).filter((d): d is string => !!d));
-  const recognizedIds = new Set(items.map((i) => i.attributes?.food_id).filter(Boolean));
+  // Includes annotation-matched ids, so we never prompt for a food the user
+  // already named in their note.
+  const recognizedIds = new Set(seenFoodIds);
   const hidden_ingredient_prompts: HiddenIngredientPrompt[] = [];
   if (dishTypes.size > 0) {
     for (const f of foods ?? []) {
@@ -207,7 +242,7 @@ export async function buildResponse(
           hidden_ingredient_prompts.push({
             food_name: f.canonical_name,
             dish_type: dt,
-            prompt: `This ${dt.replace(/_/g, " ")} often contains ${f.canonical_name.toLowerCase()} — was it?`,
+            prompt: `This ${dt.replace(/_/g, " ")} often contains ${f.canonical_name.toLowerCase()} - was it?`,
           });
           break;
         }

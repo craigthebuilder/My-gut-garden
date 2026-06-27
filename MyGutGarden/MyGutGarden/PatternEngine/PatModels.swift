@@ -1,9 +1,9 @@
 //
 //  PatModels.swift
-//  MyGutGarden — Module F (Survive pattern engine), SPEC §11b / §13.
+//  MyGutGarden, Module F (Survive pattern engine), SPEC §11b / §13.
 //
 //  Pure data types for the rule-based Survive pattern engine. NO clinical
-//  decisions live here — those are isolated in `PatRules.swift` behind FENCE 1.
+//  decisions live here, those are isolated in `PatRules.swift` behind FENCE 1.
 //  These types mirror the DB enums (`pattern_kind` / `pattern_confidence` in
 //  20260625000001_schema.sql) and carry the engine's input/output.
 //
@@ -27,7 +27,7 @@ enum PatPattern: String, Sendable, CaseIterable, Equatable {
     case proteolytic                          // sour gas + low-fiber lean
 }
 
-/// Confidence tier — purely a function of how long we've been logging
+/// Confidence tier, purely a function of how long we've been logging
 /// (SPEC §13 timing), NOT of how "sure" the clinical claim is. Raw values
 /// match the DB `pattern_confidence` enum.
 enum PatConfidence: String, Sendable, CaseIterable, Equatable {
@@ -55,7 +55,7 @@ enum PatStoolForm: String, Sendable, Equatable {
     }
 }
 
-/// Gas-odor descriptor — "the single most discriminating cheap signal"
+/// Gas-odor descriptor, "the single most discriminating cheap signal"
 /// (SPEC §11b/§12). Mirrors the DB `gas_odor` enum.
 enum PatGasOdor: String, Sendable, Equatable {
     case sulfur
@@ -76,7 +76,7 @@ enum PatGasOdor: String, Sendable, Equatable {
 /// surfaces `bss`, `gasOdor`, and `confounders`, so the adapter fills the
 /// corresponding fields and leaves the rest `nil`. The richer slots
 /// (`bloating`, `worseAfterFatty`, `agedOrFermentedTrigger`, …) exist so the
-/// fingerprint machinery is built *fully* — when the data layer starts
+/// fingerprint machinery is built *fully*, when the data layer starts
 /// surfacing those columns (they exist in `symptom_logs`: bloating/gas/pain/
 /// urgency/mood/brain_fog/food_correlation), the rules already consume them.
 /// See the "input gap" note in `PatPatternEngine`.
@@ -144,7 +144,7 @@ struct PatSymptomFeatures: Sendable, Equatable {
 // MARK: - Engine output
 
 /// A surfaced pattern lean. `evidenceSummary` describes the *signal* and points
-/// to an experiment + a GI conversation — it is NEVER a verdict (FENCE 1).
+/// to an experiment + a GI conversation, it is NEVER a verdict (FENCE 1).
 struct PatAssessment: Sendable, Equatable {
     let pattern: PatPattern
     let confidence: PatConfidence

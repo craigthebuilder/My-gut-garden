@@ -1,6 +1,6 @@
 //
 //  ThrIngestorTests.swift
-//  MyGutGardenTests — Module C: the Thrive streak math + per-meal derivations.
+//  MyGutGardenTests, Module C: the Thrive streak math + per-meal derivations.
 //
 //  These are the parts most likely to silently regress (CLAUDE.md §5 testing):
 //  the weekly 30-plant streak, the daily 3-P streak, their resets, and the

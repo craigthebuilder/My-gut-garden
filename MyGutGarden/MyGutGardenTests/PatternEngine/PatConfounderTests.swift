@@ -1,6 +1,6 @@
 //
 //  PatConfounderTests.swift
-//  MyGutGardenTests — Module F.
+//  MyGutGardenTests, Module F.
 //
 //  Confounder-heavy days are down-weighted in the fingerprint (SPEC §12) so the
 //  engine doesn't blame food for an illness/stress flare. These tests show the
@@ -39,7 +39,7 @@ struct PatConfounderTests {
         #expect(assessment?.pattern == .methane)
     }
 
-    // The flip is purely from confounders — same days, only the tags differ.
+    // The flip is purely from confounders, same days, only the tags differ.
     @Test func onlyDifferenceIsTheConfounderTag() {
         let clean = engine.assess(logs: splitLogs(confoundH2SDays: false), asOf: PatFixtures.asOf)
         let flared = engine.assess(logs: splitLogs(confoundH2SDays: true), asOf: PatFixtures.asOf)

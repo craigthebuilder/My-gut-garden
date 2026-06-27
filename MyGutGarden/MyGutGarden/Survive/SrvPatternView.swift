@@ -1,6 +1,6 @@
 //
 //  SrvPatternView.swift
-//  MyGutGarden — Module E. READ-ONLY rendering of `pattern_assessments`
+//  MyGutGarden, Module E. READ-ONLY rendering of `pattern_assessments`
 //  (SPEC §11b, §13; Fence 1) + the red-flag escalation card (SPEC §11b).
 //
 //  🔒 CRITICAL (CLAUDE.md rule #4): copy stays insight → experiment → "worth
@@ -24,7 +24,7 @@ struct SrvPatternCard: View {
                     Badge(text: presentation.confidenceLabel, tint: theme.colors.secondary)
                 }
 
-                // Insight — the lean, never a label.
+                // Insight, the lean, never a label.
                 Text(presentation.insight)
                     .font(theme.typography.body(weight: .medium))
                     .foregroundStyle(theme.colors.textPrimary)
@@ -33,7 +33,7 @@ struct SrvPatternCard: View {
                     labeled("Try this", experiment, icon: "flask")
                     labeled("Then", presentation.routing, icon: "stethoscope")
                 } else {
-                    Text("Still gathering signal — keep logging and this will come into focus.")
+                    Text("Still gathering signal, keep logging and this will come into focus.")
                         .font(theme.typography.body())
                         .foregroundStyle(theme.colors.textSecondary)
                 }
@@ -45,7 +45,7 @@ struct SrvPatternCard: View {
                         .padding(.top, theme.metrics.space1)
                 }
 
-                Text("A pattern, not a diagnosis — only a clinician can confirm what's going on.")
+                Text("A pattern, not a diagnosis, only a clinician can confirm what's going on.")
                     .font(theme.typography.caption())
                     .foregroundStyle(theme.colors.textSecondary)
             }
@@ -87,7 +87,7 @@ struct SrvGatheringSignalCard: View {
                         .font(theme.typography.body(weight: .medium))
                         .foregroundStyle(theme.colors.textPrimary)
                 } else {
-                    Text("Still gathering signal — a pattern will surface as your logs settle.")
+                    Text("Still gathering signal, a pattern will surface as your logs settle.")
                         .font(theme.typography.body(weight: .medium))
                         .foregroundStyle(theme.colors.textPrimary)
                 }
@@ -99,7 +99,7 @@ struct SrvGatheringSignalCard: View {
     }
 }
 
-/// Red-flag escalation — a calm care prompt, never a block (SPEC §6, §11b).
+/// Red-flag escalation, a calm care prompt, never a block (SPEC §6, §11b).
 struct SrvRedFlagCard: View {
     @Environment(\.theme) private var theme
 

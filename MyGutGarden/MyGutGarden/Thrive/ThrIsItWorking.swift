@@ -1,6 +1,6 @@
 //
 //  ThrIsItWorking.swift
-//  MyGutGarden — Module C: the "Is it working?" dashboard (SPEC §11a, §12).
+//  MyGutGarden, Module C: the "Is it working?" dashboard (SPEC §11a, §12).
 //
 //  The retention engine for users with no symptoms to chase: mood / energy /
 //  clarity tracked against the onboarding baseline (`users.baseline_*`), plus a
@@ -139,7 +139,7 @@ struct ThrIsItWorkingView: View {
     }
 
     private var intro: some View {
-        Text("How you feel, tracked against where you started. No pressure — one tap a day is plenty.")
+        Text("How you feel, tracked against where you started. No pressure, one tap a day is plenty.")
             .font(theme.typography.body())
             .foregroundStyle(theme.colors.textSecondary)
             .fixedSize(horizontal: false, vertical: true)
@@ -150,7 +150,7 @@ struct ThrIsItWorkingView: View {
     private var todayCheckCard: some View {
         Card {
             VStack(alignment: .leading, spacing: theme.metrics.space3) {
-                SectionHeader(title: model.loggedToday ? "Logged today — thanks" : "How are you today?")
+                SectionHeader(title: model.loggedToday ? "Logged today, thanks" : "How are you today?")
                 ThrScalePicker(label: "Mood", selection: model.todayMood) { value in
                     Task { await model.tapMood(value, appState: appState) }
                 }
@@ -198,7 +198,7 @@ struct ThrIsItWorkingView: View {
         return "up since you started"
     }
 
-    // MARK: Off-ramp (Fence 5 — blameless break from tracking)
+    // MARK: Off-ramp (Fence 5, blameless break from tracking)
 
     private var offRamp: some View {
         VStack(spacing: theme.metrics.space2) {
@@ -210,7 +210,7 @@ struct ThrIsItWorkingView: View {
             }
             .buttonStyle(.plain)
             if showBreakNote {
-                Text("Totally fine to take a break. Your garden and lifetime collection stay exactly as they are — come back whenever you like.")
+                Text("Totally fine to take a break. Your garden and lifetime collection stay exactly as they are, come back whenever you like.")
                     .font(theme.typography.caption())
                     .foregroundStyle(theme.colors.textSecondary)
                     .multilineTextAlignment(.center)

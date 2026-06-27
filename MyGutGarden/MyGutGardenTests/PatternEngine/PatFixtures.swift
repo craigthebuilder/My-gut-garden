@@ -1,6 +1,6 @@
 //
 //  PatFixtures.swift
-//  MyGutGardenTests — Module F (Survive pattern engine) test data builders.
+//  MyGutGardenTests, Module F (Survive pattern engine) test data builders.
 //
 //  Deterministic, wall-clock-free fabrication of `SymptomLogRow` and
 //  `PatSymptomFeatures` arrays. Days are anchored to a fixed UTC date and
@@ -32,6 +32,100 @@ enum PatFixtures {
         let f = ISO8601DateFormatter()
         f.formatOptions = [.withInternetDateTime]
         return f.string(from: date)
+    }
+
+    /// UTC "yyyy-MM-dd" key for the day `offset` days after the anchor, matching
+    /// `PatPatternEngine.parseLogDate` so the aggregator buckets them correctly.
+    static let logDateFmt: DateFormatter = {
+        let f = DateFormatter()
+        f.calendar = Calendar(identifier: .gregorian)
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.timeZone = TimeZone(identifier: "UTC")
+        f.dateFormat = "yyyy-MM-dd"
+        return f
+    }()
+
+    static func logDate(_ offset: Int) -> String { logDateFmt.string(from: day(offset)) }
+
+    // MARK: - Sub-entry row builders (Batch D read cutover)
+
+    static func symptomEntry(
+        dayOffset: Int,
+        type: String,
+        severity: Int,
+        gasOdor: String? = nil,
+        occurredAt: Date? = nil,
+        linkedMealId: String? = nil
+    ) -> SymptomEntryRow {
+        SymptomEntryRow(
+            id: "sym-\(dayOffset)-\(type)-\(severity)-\(gasOdor ?? "x")",
+            userId: "user-1",
+            logDate: logDate(dayOffset),
+            symptomType: type,
+            severity: severity,
+            gasOdor: gasOdor,
+            occurredAt: occurredAt.map(iso),
+            linkedMealId: linkedMealId
+        )
+    }
+
+    static func moodEntry(
+        dayOffset: Int,
+        moodScore: Int,                       // CANONICAL high=better (5=regulated)
+        context: String = "survive_logger",
+        occurredAt: Date? = nil,
+        linkedMealId: String? = nil
+    ) -> MoodEntryRow {
+        MoodEntryRow(
+            id: "mood-\(dayOffset)-\(moodScore)",
+            userId: "user-1",
+            logDate: logDate(dayOffset),
+            moodScore: moodScore,
+            context: context,
+            occurredAt: occurredAt.map(iso),
+            linkedMealId: linkedMealId
+        )
+    }
+
+    static func stoolEntry(
+        dayOffset: Int,
+        bss: Int?,
+        occurredAt: Date? = nil,
+        linkedMealId: String? = nil
+    ) -> StoolEntryRow {
+        StoolEntryRow(
+            id: "stool-\(dayOffset)-\(bss.map(String.init) ?? "x")",
+            userId: "user-1",
+            logDate: logDate(dayOffset),
+            bss: bss,
+            occurredAt: occurredAt.map(iso),
+            linkedMealId: linkedMealId,
+            loggedAt: iso(day(dayOffset).addingTimeInterval(20 * 3600))
+        )
+    }
+
+    /// A 14-day sulfur+loose window expressed entirely through the NEW sub-entry
+    /// tables (so the cutover is exercised end-to-end). Maps to the h2s lean.
+    static func h2sSubEntries(days: Int = 14)
+        -> (symptoms: [SymptomEntryRow], moods: [MoodEntryRow], stools: [StoolEntryRow]) {
+        var symptoms: [SymptomEntryRow] = []
+        var stools: [StoolEntryRow] = []
+        for d in 0..<days {
+            symptoms.append(symptomEntry(dayOffset: d, type: "gas", severity: 2, gasOdor: "sulfur"))
+            stools.append(stoolEntry(dayOffset: d, bss: 6))
+        }
+        return (symptoms, [], stools)
+    }
+
+    // MARK: - Meal + meal_items builders (Fence 7 suspect gate)
+
+    static func meal(id: String, capturedAt: Date) -> MealRow {
+        MealRow(id: id, mode: .survive, photoUrl: nil, capturedAt: iso(capturedAt),
+                confirmed: true, userAnnotation: nil, photoExpiresAt: nil)
+    }
+
+    static func mealItem(mealId: String, foodId: String) -> PatMealItemRow {
+        PatMealItemRow(mealId: mealId, foodId: foodId)
     }
 
     // MARK: - SymptomLogRow builders

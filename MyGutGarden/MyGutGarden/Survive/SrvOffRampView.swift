@@ -1,10 +1,10 @@
 //
 //  SrvOffRampView.swift
-//  MyGutGarden — Module E. The blameless off-ramp from tracking
+//  MyGutGarden, Module E. The blameless off-ramp from tracking
 //  (🔒 Fence 5 / CLAUDE.md §3, rule #7; SPEC §14).
 //
 //  Tracking should help, not stress. This screen makes softening, pausing, or
-//  leaving tracking easy and shame-free — reachable directly from the Survive
+//  leaving tracking easy and shame-free, reachable directly from the Survive
 //  home. Nothing here frames stopping as failure; switching to Thrive is "back
 //  to basics," not a demotion (SPEC §2). No streak, count, or restriction
 //  metric is shown here.
@@ -34,7 +34,7 @@ struct SrvOffRampView: View {
 
                     option(
                         title: "Switch to a light check-in",
-                        body: "Just the essentials — form, gas, and how you felt. Fewer taps, less to think about.",
+                        body: "Just the essentials, form, gas, and how you felt. Fewer taps, less to think about.",
                         systemImage: "minus.circle",
                         isOn: store.trackingPreference == .lite
                     ) { store.trackingPreference = .lite }
@@ -62,7 +62,7 @@ struct SrvOffRampView: View {
             .sheet(isPresented: $confirmLeave) {
                 ConfirmationModal(
                     title: "Move to Thrive?",
-                    message: "We'll switch you to the garden side — same data, lighter touch. You can come back to Survive anytime it helps.",
+                    message: "We'll switch you to the garden side, same data, lighter touch. You can come back to Survive anytime it helps.",
                     confirmTitle: "Take me to Thrive",
                     cancelTitle: "Stay here",
                     severity: .info,
@@ -78,7 +78,7 @@ struct SrvOffRampView: View {
     }
 
     private var intro: some View {
-        Text("Tracking is here to help you feel better — not to be one more thing to keep up. Choose what fits right now.")
+        Text("Tracking is here to help you feel better, not to be one more thing to keep up. Choose what fits right now.")
             .font(theme.typography.body())
             .foregroundStyle(theme.colors.textSecondary)
     }

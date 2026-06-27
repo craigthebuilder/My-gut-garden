@@ -1,12 +1,12 @@
 //
 //  GuildRootView.swift
-//  MyGutGarden — Module D's public entry point: the four-district Guild Garden.
+//  MyGutGarden, Module D's public entry point: the four-district Guild Garden.
 //
 //  A fog-of-war trail (GuildDistrictMap) of the four districts; tapping an
 //  unlocked guild pushes its collectible field-guide card (GuildDetailView).
 //  Thrive-only (SPEC §8: the Guild Garden never appears in Survive). Reads the
 //  bloom state on the fly (decay applied on read) and the unlock state from the
-//  ProgressionState read surface — it never writes `guild_state`/`user_districts`.
+//  ProgressionState read surface, it never writes `guild_state`/`user_districts`.
 //
 
 import SwiftUI
@@ -78,7 +78,7 @@ struct GuildRootView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    // MARK: Tier-2 gate (the whole garden is a Tier-2 unlock — SPEC §13)
+    // MARK: Tier-2 gate (the whole garden is a Tier-2 unlock, SPEC §13)
 
     private var tier2LockedBanner: some View {
         Card {
@@ -90,7 +90,7 @@ struct GuildRootView: View {
                     Text("Earn your garden first")
                         .font(theme.typography.title(18))
                         .foregroundStyle(theme.colors.textPrimary)
-                    Text("Finish your first week — hit 30 plants once, or log \(GameConfig.shared.tier2MinLoggedDaysFirstWeek) days — and the Guild Garden opens.")
+                    Text("Finish your first week, hit 30 plants once, or log \(GameConfig.shared.tier2MinLoggedDaysFirstWeek) days, and the Guild Garden opens.")
                         .font(theme.typography.body())
                         .foregroundStyle(theme.colors.textSecondary)
                 }
@@ -121,18 +121,18 @@ struct GuildRootView: View {
     }
 }
 
-#Preview("Guild Garden — partial unlock") {
+#Preview("Guild Garden, partial unlock") {
     GuildRootView(viewModel: .preview())
         .themed(for: .thrive)
 }
 
-#Preview("Guild Garden — Tier 2 locked") {
+#Preview("Guild Garden, Tier 2 locked") {
     GuildRootView(viewModel: .preview(
         progression: ProgressionState(isTier2Unlocked: false, unlockedDistrictOrders: [], cumulativeTier2Days: 0)))
         .themed(for: .thrive)
 }
 
-#Preview("Guild Garden — fully unlocked") {
+#Preview("Guild Garden, fully unlocked") {
     GuildRootView(viewModel: .preview(
         progression: ProgressionState(isTier2Unlocked: true, unlockedDistrictOrders: [1, 2, 3, 4], cumulativeTier2Days: 30)))
         .themed(for: .thrive)

@@ -1,13 +1,13 @@
 //
 //  ThrIngestor.swift
-//  MyGutGarden — Module C: the Thrive ingestion seam (PURE functions only).
+//  MyGutGarden, Module C: the Thrive ingestion seam (PURE functions only).
 //
 //  Conforms to `ThriveIngesting` (App/Seams.swift). The MealIngestion
 //  coordinator owns ALL persistence (`user_plant_collection`, `weekly_summaries`,
 //  streak writes); this type only *computes*. Keeping it pure is what makes the
 //  streak math unit-testable with deterministic inputs (CLAUDE.md §5 testing).
 //
-//  Streaks attach to POSITIVE outcomes only — weeks hitting the 30-plant target
+//  Streaks attach to POSITIVE outcomes only, weeks hitting the 30-plant target
 //  and days completing the 3 P's. Never "days restricted" (CLAUDE.md rule #7 /
 //  SPEC §14 Fence 5).
 //
@@ -18,10 +18,10 @@ struct ThrIngestor: ThriveIngesting {
 
     init() {}
 
-    // MARK: - Per-meal derivations (reuse the Phase-0 join — no new science here)
+    // MARK: - Per-meal derivations (reuse the Phase-0 join, no new science here)
 
     /// Unique plant names this meal contributes, in first-seen order. Variety
-    /// is presence-based (one garlic counts once — SPEC §8).
+    /// is presence-based (one garlic counts once, SPEC §8).
     func plantNames(for context: MealContext) -> [String] {
         var seen = Set<String>()
         var ordered: [String] = []
@@ -38,7 +38,7 @@ struct ThrIngestor: ThriveIngesting {
         FoodAttributeJoin.threePs(for: context.items.map(\.attributes))
     }
 
-    // MARK: - Streak transition (positive outcomes only — rule #7)
+    // MARK: - Streak transition (positive outcomes only, rule #7)
 
     /// Pure transition for the two Thrive streaks (SPEC §13):
     /// - `weekly30Streak` counts consecutive weeks hitting the 30-plant target;
@@ -71,7 +71,7 @@ struct ThrIngestor: ThriveIngesting {
     }
 
     /// Whether a week's unique-plant count met the target (SPEC §8/§13). 30 is a
-    /// target, not a cap — logging past it still counts (`>=`).
+    /// target, not a cap, logging past it still counts (`>=`).
     static func weekHit30(uniquePlantCount: Int, target: Int = GameConfig.shared.weeklyPlantTarget) -> Bool {
         uniquePlantCount >= target
     }

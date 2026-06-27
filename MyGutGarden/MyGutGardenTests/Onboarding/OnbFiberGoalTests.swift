@@ -1,6 +1,6 @@
 //
 //  OnbFiberGoalTests.swift
-//  MyGutGardenTests — Module A: the fiber-goal derivation (SPEC §10).
+//  MyGutGardenTests, Module A: the fiber-goal derivation (SPEC §10).
 //
 //  Pins the Mifflin–St Jeor → est_daily_kcal → fiber_goal_g chain against known
 //  inputs so it can't silently regress (CLAUDE.md §5 testing).
@@ -52,29 +52,46 @@ struct OnbFiberGoalTests {
 
     // MARK: - fiber_goal_g = round(14 * kcal / 1000) (the ONLY surfaced number)
 
-    @Test func fiberGoalRoundsCorrectly() {
-        // 14 * 1584.3 / 1000 = 22.1802 → 22
-        #expect(OnbFiberGoal.fiberGoalGrams(estDailyKcal: 1584.3) == 22)
+    @Test func baseFiberGoalRoundsCorrectly() {
+        // The pre-multiplier base: 14 * 1584.3 / 1000 = 22.1802 → 22
+        #expect(OnbFiberGoal.baseFiberGoalGrams(estDailyKcal: 1584.3) == 22)
         // 14 * 2759 / 1000 = 38.626 → 39
-        #expect(OnbFiberGoal.fiberGoalGrams(estDailyKcal: 2759) == 39)
+        #expect(OnbFiberGoal.baseFiberGoalGrams(estDailyKcal: 2759) == 39)
         // exact half-up: 14 * 2000 / 1000 = 28
-        #expect(OnbFiberGoal.fiberGoalGrams(estDailyKcal: 2000) == 28)
+        #expect(OnbFiberGoal.baseFiberGoalGrams(estDailyKcal: 2000) == 28)
     }
 
     @Test func deriveProducesBothNumbers() {
-        // Female 165cm/60kg/30/sedentary → kcal 1584.3, fiber 22 g
+        // Female 165cm/60kg/30/sedentary → kcal 1584.3, base 22 g.
+        // Default plant consumption (.moderate = 0.60): 22 × 0.60 = 13.2 → 13.
         let d = OnbFiberGoal.derive(heightCm: 165, weightKg: 60, age: 30,
                                     sex: .female, activity: .sedentary)
         #expect(abs(d.estDailyKcal - 1584.3) < 0.0001)
-        #expect(d.fiberGoalG == 22)
+        #expect(d.baseFiberGoalG == 22)
+        #expect(d.fiberGoalG == 13)
+    }
+
+    @Test func plantConsumptionScalesTheGoal() {
+        // Same female base 22 g, scaled by each plant-consumption tier (Batch B).
+        func goal(_ tier: PlantConsumptionTier) -> Int {
+            OnbFiberGoal.derive(heightCm: 165, weightKg: 60, age: 30,
+                                sex: .female, activity: .sedentary,
+                                plantConsumptionLevel: tier).fiberGoalG
+        }
+        #expect(goal(.low) == 6)          // 22 × 0.25 = 5.5  → 6
+        #expect(goal(.moderate) == 13)    // 22 × 0.60 = 13.2 → 13
+        #expect(goal(.high) == 20)        // 22 × 0.90 = 19.8 → 20
+        #expect(goal(.mostOfDiet) == 24)  // 22 × 1.10 = 24.2 → 24
     }
 
     @Test func maleModerateEndToEnd() {
-        // Male 180cm/80kg/30/moderate → BMR 1780 × 1.55 = 2759 → 39 g
+        // Male 180cm/80kg/30/moderate → kcal 2759, base 39 g.
+        // .moderate (0.60): 39 × 0.60 = 23.4 → 23.
         let d = OnbFiberGoal.derive(heightCm: 180, weightKg: 80, age: 30,
                                     sex: .male, activity: .moderate)
         #expect(abs(d.estDailyKcal - 2759) < 0.0001)
-        #expect(d.fiberGoalG == 39)
+        #expect(d.baseFiberGoalG == 39)
+        #expect(d.fiberGoalG == 23)
     }
 
     @Test func sexDbValueOmitsUnspecified() {

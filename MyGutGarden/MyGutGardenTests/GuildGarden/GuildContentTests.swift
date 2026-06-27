@@ -1,6 +1,6 @@
 //
 //  GuildContentTests.swift
-//  MyGutGardenTests — Module D content: collectible numbering (must match the
+//  MyGutGardenTests, Module D content: collectible numbering (must match the
 //  reference cards), 🔒 Fence-2 claim-risk propagation, and gain-framed,
 //  Fence-2-safe notification copy.
 //
@@ -28,7 +28,7 @@ struct GuildContentTests {
         #expect(Set(numbers.values) == Set(1...GuildSampleData.guilds.count))
     }
 
-    // MARK: Fence 2 — claim_risk flags survive the join (Mood/Estrogen/Mito/Tumor)
+    // MARK: Fence 2, claim_risk flags survive the join (Mood/Estrogen/Mito/Tumor)
 
     @Test func claimRiskGuildsAreFlagged() {
         let built = GuildGardenAssembler.build(districts: GuildSampleData.districts,
@@ -40,7 +40,7 @@ struct GuildContentTests {
         for risky in ["mood_regulators", "estrogen_regulators", "mitochondria_boosters", "tumor_preventors"] {
             #expect(byName[risky]?.claimRisk == true, "\(risky) must be claim_risk (Fence 2)")
         }
-        // Backbone crews are established science — not claim-risk.
+        // Backbone crews are established science, not claim-risk.
         #expect(byName["base_layer"]?.claimRisk == false)
         #expect(byName["anti_inflammatory_arsenal"]?.claimRisk == false)
     }
@@ -58,7 +58,7 @@ struct GuildContentTests {
         #expect(display.state != .blooming)        // and dropped out of Blooming
     }
 
-    // MARK: Notification content — gain-framed + Fence-2-safe
+    // MARK: Notification content, gain-framed + Fence-2-safe
 
     @Test func hungryNotificationIsGainFramed() {
         let n = GuildNotifications.hungry(displayName: "The Anti-inflammatory Arsenal",

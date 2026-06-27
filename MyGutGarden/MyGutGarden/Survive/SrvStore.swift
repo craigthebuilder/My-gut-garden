@@ -1,6 +1,6 @@
 //
 //  SrvStore.swift
-//  MyGutGarden — Module E. The Survive surface's observable view-model.
+//  MyGutGarden, Module E. The Survive surface's observable view-model.
 //
 //  Reads `appState` (CLAUDE.md / Seams.swift) for the RLS-scoped Repository and
 //  the signed-in profile, loads the Survive tables (`symptom_logs`,
@@ -19,7 +19,10 @@ import Observation
 @MainActor
 @Observable
 final class SrvStore {
-    private let appState: AppState
+    /// Exposed (read-only-by-convention) so Module-E satellites built from this
+    /// store, the FoodStatusStore, the logger's CheckInWriter, the reset, can
+    /// reach the RLS-scoped repository + signed-in profile without re-plumbing.
+    let appState: AppState
 
     // Loaded state
     private(set) var logs: [SrvSymptomLogRow] = []
@@ -29,13 +32,20 @@ final class SrvStore {
     private(set) var streak = SrvStreakEngine.Result(current: 0, longest: 0)
     private(set) var lastQualifyingDate: Date?
 
+    // Batch-D multi-entry check-in (new writes go ONLY to these sub-tables; the
+    // legacy `symptom_logs` rows above are kept for history). Both feed the streak.
+    private(set) var stoolEntries: [StoolEntryRow] = []
+    private(set) var symptomEntries: [SymptomEntryRow] = []
+    /// Recent meals offered in the logger's "tie this to a photo" control.
+    private(set) var recentMeals: [SrvRecentMeal] = []
+
     // UI state
     private(set) var isLoading = false
     var errorMessage: String?
     /// True when running against the offline sample (no Supabase configured).
     private(set) var usingSampleData = false
 
-    /// Off-ramp preference (Fence 5). In-memory for v1 — see report's "gaps".
+    /// Off-ramp preference (Fence 5). In-memory for v1, see report's "gaps".
     var trackingPreference: SrvTrackingPreference = .full
 
     init(appState: AppState) {
@@ -79,15 +89,46 @@ final class SrvStore {
             async let logRows: [SrvSymptomLogRow] = repo.select("symptom_logs", order: "logged_at.asc")
             async let challengeRows: [ReintroChallengeRow] = repo.select("reintro_challenges")
             async let assessmentRows: [PatternAssessmentRow] = repo.select("pattern_assessments", order: "computed_at.desc")
+            async let stoolRows: [StoolEntryRow] = repo.select("stool_entries", order: "log_date.asc")
+            async let symptomRows: [SymptomEntryRow] = repo.select("symptom_entries", order: "log_date.asc")
+            async let mealRows: [SrvRecentMeal] = repo.select(
+                "meals", columns: "id,captured_at,photo_url", order: "captured_at.desc", limit: 12)
 
             logs = try await logRows
             challenges = try await challengeRows.compactMap(Self.challenge(from:))
             assessments = try await assessmentRows
+            stoolEntries = try await stoolRows
+            symptomEntries = try await symptomRows
+            recentMeals = try await mealRows
             if trackedFoods.isEmpty { trackedFoods = SrvSampleData.trackedFoods }
             recomputeStreak()
             await persistStreak()
         } catch {
             errorMessage = "Couldn't load your Survive data. Pull to retry."
+        }
+    }
+
+    // MARK: - Daily check-in (Batch D, via the shared CheckInKit writer)
+
+    /// Persist a multi-entry evening check-in through the SPINE `CheckInWriter`
+    /// (the single mood-inversion point). New rows land in the sub-entry tables
+    /// only, never a fresh `symptom_logs` row. Refreshes the streak after.
+    @discardableResult
+    func saveCheckIn(_ draft: CheckInDraft) async -> Bool {
+        guard let repo = appState.repository, let uid = appState.profile?.id else {
+            // Offline/demo: keep the surface live by folding the draft into the
+            // in-memory sub-entry arrays so the streak still responds.
+            appendLocalCheckIn(draft)
+            recomputeStreak()
+            return true
+        }
+        do {
+            try await CheckInWriter(repository: repo, userId: uid).save(draft)
+            await load()
+            return true
+        } catch {
+            errorMessage = "Couldn't save your check-in. It's still here, try again."
+            return false
         }
     }
 
@@ -107,7 +148,7 @@ final class SrvStore {
             await load()
             return true
         } catch {
-            errorMessage = "Couldn't save your check-in. It's still here — try again."
+            errorMessage = "Couldn't save your check-in. It's still here, try again."
             return false
         }
     }
@@ -126,7 +167,7 @@ final class SrvStore {
     func resolveChallenge(_ challenge: SrvChallenge, tolerated: Bool, now: Date = .init()) async {
         let resolved = SrvReintroEngine.resolved(challenge, tolerated: tolerated, at: now)
         await write(resolved)
-        // Clearing a group is a relief win — surface it via the Thrive channel
+        // Clearing a group is a relief win, surface it via the Thrive channel
         // only if the user is in Thrive; in Survive nothing rewards restriction.
         if tolerated { appState.celebrate(.guildUnlock(displayName: challenge.group.displayName)) }
     }
@@ -160,7 +201,7 @@ final class SrvStore {
 
     // MARK: - Off-ramp (Fence 5)
 
-    /// Leave Survive for Thrive — blameless, "let's go back to basics" (SPEC §2).
+    /// Leave Survive for Thrive, blameless, "let's go back to basics" (SPEC §2).
     func leaveSurvive() async {
         await appState.setMode(.thrive)
     }
@@ -168,10 +209,54 @@ final class SrvStore {
     // MARK: - Streak math
 
     func recomputeStreak() {
-        let days = Self.dailySymptoms(from: logs)
+        let days = mergedDailySymptoms()
         streak = SrvStreakEngine.reduce(days.map { SrvStreakEngine.outcome(for: $0.symptoms) })
         lastQualifyingDate = days.last { SrvStreakEngine.outcome(for: $0.symptoms) == .feltGood }?.date
     }
+
+    /// The streak's view of every day, merging legacy `symptom_logs` history with
+    /// the new Batch-D sub-entry tables (`stool_entries` + `symptom_entries`),
+    /// worst-of-day. Output shape is unchanged so SrvStreakEngine input is too.
+    /// (The static `dailySymptoms(from:)` below is retained for the unit tests.)
+    func mergedDailySymptoms() -> [(date: Date, symptoms: SrvDaySymptoms)] {
+        var byDay: [Date: SrvDaySymptoms] = [:]
+        for (date, symptoms) in Self.dailySymptoms(from: logs) { byDay[date] = symptoms }
+
+        // Sub-entry stool rows → Bristol per day.
+        for s in stoolEntries {
+            guard let day = Self.dayDate(s.logDate),
+                  let bss = s.bss, let bristol = SrvBristolType(rawValue: bss) else { continue }
+            let incoming = SrvDaySymptoms(bristol: bristol)
+            byDay[day] = byDay[day].map { Self.merge($0, incoming) } ?? incoming
+        }
+        // Sub-entry symptom rows → per-type severity per day.
+        for e in symptomEntries {
+            guard let day = Self.dayDate(e.logDate) else { continue }
+            let sev = SrvSeverity(clampingDBValue: e.severity)
+            var incoming = SrvDaySymptoms()
+            switch e.symptomType {
+            case "bloating": incoming.bloating = sev
+            case "gas": incoming.gas = sev
+            case "pain": incoming.pain = sev
+            case "urgency": incoming.urgency = sev
+            default: continue
+            }
+            byDay[day] = byDay[day].map { Self.merge($0, incoming) } ?? incoming
+        }
+        return byDay.keys.sorted().map { (date: $0, symptoms: byDay[$0]!) }
+    }
+
+    /// "yyyy-MM-dd" (sub-entry `log_date`) → start-of-day Date.
+    private nonisolated static func dayDate(_ logDate: String) -> Date? {
+        dayParser.date(from: logDate).map { Calendar.current.startOfDay(for: $0) }
+    }
+    private nonisolated static let dayParser: DateFormatter = {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.dateFormat = "yyyy-MM-dd"
+        f.timeZone = .current
+        return f
+    }()
 
     private func persistStreak() async {
         guard let repo = appState.repository, let uid = appState.profile?.id else { return }
@@ -227,8 +312,11 @@ final class SrvStore {
     // MARK: - Helpers
 
     private nonisolated static func challenge(from row: ReintroChallengeRow) -> SrvChallenge? {
+        // Legacy FODMAP challenges only; food-suspect challenges (Batch E, no FODMAP
+        // group) are handled by Module E's own engine and are skipped here.
         guard
-            let group = SrvFodmapGroup(rawValue: row.fodmapGroup),
+            let fodmap = row.fodmapGroup,
+            let group = SrvFodmapGroup(rawValue: fodmap),
             let status = SrvReintroStatus(rawValue: row.status)
         else { return nil }
         return SrvChallenge(
@@ -258,6 +346,25 @@ final class SrvStore {
         recomputeStreak()
     }
 
+    /// Offline fold of a multi-entry check-in into the in-memory sub-entry arrays
+    /// so the streak responds without a backend (demo/preview only).
+    private func appendLocalCheckIn(_ draft: CheckInDraft) {
+        let day = Self.dayParser.string(from: draft.logDate)
+        let uid = appState.profile?.id ?? "local"
+        let now = ISO8601DateFormatter().string(from: Date())
+        for s in draft.stools {
+            stoolEntries.append(StoolEntryRow(
+                id: UUID().uuidString, userId: uid, logDate: day, bss: s.bss,
+                occurredAt: nil, linkedMealId: s.linkedMealId, loggedAt: now))
+        }
+        for s in draft.symptoms {
+            symptomEntries.append(SymptomEntryRow(
+                id: UUID().uuidString, userId: uid, logDate: day,
+                symptomType: s.symptomType, severity: s.severity, gasOdor: s.gasOdor,
+                occurredAt: nil, linkedMealId: s.linkedMealId))
+        }
+    }
+
     private func appendLocalLog(_ draft: SrvSymptomDraft) {
         let iso = ISO8601DateFormatter()
         logs.append(SrvSymptomLogRow(
@@ -276,6 +383,25 @@ final class SrvStore {
             confounders: draft.confounders.map(\.rawValue),
             notes: draft.notes.isEmpty ? nil : draft.notes
         ))
+    }
+}
+
+// MARK: - Recent meal (tie-to-photo target in the logger)
+
+/// A lightweight recent meal for the logger's "tie this to a photo" control.
+/// Decoded from `meals` (id + captured_at + photo presence only).
+struct SrvRecentMeal: Decodable, Sendable, Identifiable, Equatable {
+    let id: String
+    let capturedAt: String
+    let photoUrl: String?
+
+    var capturedDate: Date? { SrvDateParse.timestamp(capturedAt) }
+
+    /// A short, human label, e.g. "1:30 PM meal". No meal-type in the schema yet,
+    /// so we anchor on time of day (DESIGN copy stays calm + concrete).
+    var label: String {
+        guard let d = capturedDate else { return "a recent meal" }
+        return "\(d.formatted(date: .omitted, time: .shortened)) meal"
     }
 }
 

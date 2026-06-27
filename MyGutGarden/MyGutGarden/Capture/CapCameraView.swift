@@ -1,6 +1,6 @@
 //
 //  CapCameraView.swift
-//  MyGutGarden — Module B camera capture (AVFoundation).
+//  MyGutGarden, Module B camera capture (AVFoundation).
 //
 //  Live capture on real hardware; graceful degradation everywhere else (the
 //  Simulator has no camera). The capture screen always offers library + sample

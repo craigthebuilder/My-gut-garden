@@ -1,5 +1,5 @@
 // =====================================================================
-// FixtureProvider — offline stub so the whole app runs without a network or
+// FixtureProvider - offline stub so the whole app runs without a network or
 // an Anthropic key (SPEC §4, CLAUDE.md Phase-0 exit criteria). Returns a
 // canned-but-contract-valid result. Mirrors fixtures/sample_meal.json.
 // =====================================================================
@@ -23,5 +23,12 @@ export class FixtureProvider implements RecognitionProvider {
   // deno-lint-ignore require-await
   async recognize(_input: RecognitionInput): Promise<VisionResult> {
     return validateVisionResult(SAMPLE_MEAL);
+  }
+
+  // Batch C - the annotation re-prompt is a no-op offline: an EMPTY, deterministic
+  // result so non-anthropic builds never depend on a live LLM (SPEC §4, rule #9).
+  // deno-lint-ignore require-await
+  async recognizeAnnotation(_annotation: string): Promise<VisionResult> {
+    return validateVisionResult({ foods: [], scene_notes: null });
   }
 }

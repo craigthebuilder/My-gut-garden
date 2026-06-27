@@ -1,138 +1,185 @@
 //
 //  SrvReintroView.swift
-//  MyGutGarden — Module E. Reintro-as-leveling (SPEC §11b, §13; Fence 3).
+//  MyGutGarden, Module E. The food-suspect Re-intro tab (Batch E; Fence 3).
 //
-//  Each FODMAP group is a level to clear. Starting a challenge begins the
-//  testing window (length from GameConfig — Fence 3); clearing it unlocks the
-//  food back into the collection (a visible win) and advances the symptom-free
-//  streak. Framing is relief + progress — NEVER gamified restriction (rule #7):
-//  a "failed" challenge is a blameless "needs a rest", retry-able later.
+//  Easing ONE food back in at a time. The bar is EVENT-DRIVEN and ADDITIVE: it
+//  advances only on (meal-with-the-food AND felt-fine at a real serving), NEVER on
+//  elapsed time (the legacy time-based SrvReintroEngine path is FODMAP-only and is
+//  not inherited here). Reaching the goal is a GAIN, "you can enjoy it again",
+//  never "you got through it". Restriction is never gamified (rule #7).
+//
+//  🔒 FENCE 3 (RD-REVIEW-REQUIRED): reintroMealsToPass + reintroMinPortionToCount
+//  live in GameConfig; nothing clinical is invented here.
 //
 
 import SwiftUI
 
 struct SrvReintroView: View {
     @Environment(\.theme) private var theme
-    @Bindable var store: SrvStore
+    @Bindable var foodStore: FoodStatusStore
 
-    private var ordered: [SrvChallenge] {
-        // Stable display order: by canonical group order.
-        SrvFodmapGroup.allCases.compactMap { group in
-            store.challenges.first { $0.group == group }
-                ?? SrvChallenge(id: "new-\(group.rawValue)", group: group, status: .pending, startedAt: nil, endedAt: nil)
-        }
-    }
+    @State private var logPortion: PortionTier = .serving
+    @State private var offerDismissed = false
+
+    private let config = GameConfig.shared
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: theme.metrics.space4) {
-                header
-                ForEach(ordered) { challenge in
-                    SrvChallengeRow(store: store, challenge: challenge)
+                if let cleared = foodStore.lastClearedFoodName { clearGain(cleared) }
+                if let ch = foodStore.activeFoodChallenge {
+                    activeCard(ch)
+                    if let offerFood = foodStore.shouldOfferAvoid(), !offerDismissed {
+                        avoidOffer(offerFood)
+                    }
+                } else {
+                    emptyState
                 }
                 fenceNote
             }
             .padding(theme.metrics.space4)
         }
-        .background(theme.colors.background.ignoresSafeArea())
-        .navigationTitle("Reintroductions")
-        .navigationBarTitleDisplayMode(.inline)
     }
 
-    private var header: some View {
-        VStack(alignment: .leading, spacing: theme.metrics.space2) {
-            Text("One group at a time")
-                .font(theme.typography.title())
-                .foregroundStyle(theme.colors.textPrimary)
-            Text("Test a fiber group back in over \(SrvReintroEngine.challengeDays) days. Clear it and the foods it gates rejoin your collection.")
-                .font(theme.typography.body())
+    // MARK: Active challenge
+
+    private func activeCard(_ ch: ReintroChallengeRow) -> some View {
+        let name = foodStore.foodName(ch.foodId ?? "")   // food_suspect rows always carry food_id (DB CHECK)
+        return Card {
+            VStack(alignment: .leading, spacing: theme.metrics.space3) {
+                Text("Testing \(name)")
+                    .font(theme.typography.title(18))
+                    .foregroundStyle(theme.colors.textPrimary)
+
+                ProgressView(value: Double(foodStore.challengeProgressPct()) / 100)
+                    .tint(theme.colors.primary)
+                Text("Building toward \(name), \(ch.mealsFeelingFineCount) of \(config.reintroMealsToPass) good meals.")
+                    .font(theme.typography.body())
+                    .foregroundStyle(theme.colors.textSecondary)
+
+                if foodStore.titrationFoodId == ch.foodId {
+                    // Coarse-tier titration only, never grams (rule #3).
+                    Label("That was a small taste. Try a normal serving next time, a bit more tells you more.",
+                          systemImage: "arrow.up.circle")
+                        .font(theme.typography.caption())
+                        .foregroundStyle(theme.colors.secondary)
+                }
+
+                Divider().background(theme.colors.divider)
+
+                Text("Just ate \(name)? Log how it felt.")
+                    .font(theme.typography.body(weight: .medium))
+                    .foregroundStyle(theme.colors.textPrimary)
+                portionPicker
+                HStack(spacing: theme.metrics.space2) {
+                    PrimaryButton(title: "Felt fine", systemImage: "checkmark") {
+                        record(ch, feltFine: true)
+                    }
+                    SecondaryButton(title: "A bit rough", systemImage: "cloud") {
+                        record(ch, feltFine: false)
+                    }
+                }
+
+                Button("End this challenge for now") {
+                    Task { await foodStore.endActiveChallenge() }
+                }
+                .font(theme.typography.caption())
                 .foregroundStyle(theme.colors.textSecondary)
+            }
+        }
+    }
+
+    private var portionPicker: some View {
+        HStack(spacing: theme.metrics.space2) {
+            ForEach([PortionTier.trace, .serving, .lots], id: \.rawValue) { tier in
+                let isOn = logPortion == tier
+                Button { logPortion = tier } label: {
+                    Text(tier.coarseLabel)
+                        .font(theme.typography.caption(weight: isOn ? .semibold : .regular))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, theme.metrics.space2)
+                        .foregroundStyle(isOn ? theme.colors.surface : theme.colors.textSecondary)
+                        .background(isOn ? theme.colors.primary : theme.colors.background)
+                        .clipShape(RoundedRectangle(cornerRadius: theme.metrics.radiusSmall, style: .continuous))
+                }
+                .accessibilityLabel("Portion \(tier.coarseLabel)")
+                .accessibilityAddTraits(isOn ? .isSelected : [])
+            }
+        }
+    }
+
+    private func record(_ ch: ReintroChallengeRow, feltFine: Bool) {
+        offerDismissed = false
+        Task {
+            await foodStore.recordReintroMeal(foodId: ch.foodId ?? "", mealId: nil, portion: logPortion, feltFine: feltFine)
+        }
+    }
+
+    // MARK: Avoid offer (a user-tap question, fenced wording)
+
+    private func avoidOffer(_ s: FoodSuspectRow) -> some View {
+        Card {
+            VStack(alignment: .leading, spacing: theme.metrics.space3) {
+                // 🔒 FENCE 1/7 (RD-REVIEW-REQUIRED): never "cannot tolerate".
+                Text("Everyone's gut is different, and yours doesn't seem to love \(foodStore.foodName(s.foodId)) right now. Want to set it aside for a while? You can always revisit it.")
+                    .font(theme.typography.body())
+                    .foregroundStyle(theme.colors.textPrimary)
+                HStack(spacing: theme.metrics.space2) {
+                    PrimaryButton(title: "Set aside for now") {
+                        Task { await foodStore.moveToAvoid(s) }
+                    }
+                    SecondaryButton(title: "Keep checking") { offerDismissed = true }
+                }
+            }
+        }
+    }
+
+    // MARK: Clear gain (additive, a food RETURNING)
+
+    private func clearGain(_ name: String) -> some View {
+        Card {
+            HStack(spacing: theme.metrics.space3) {
+                Image(systemName: "checkmark.seal.fill").foregroundStyle(theme.colors.safetyGreen)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("\(name) is back on the menu")
+                        .font(theme.typography.body(weight: .semibold))
+                        .foregroundStyle(theme.colors.textPrimary)
+                    Text("You've eaten \(name) and felt fine. Looks like you can enjoy it again.")
+                        .font(theme.typography.caption())
+                        .foregroundStyle(theme.colors.textSecondary)
+                }
+            }
+        }
+    }
+
+    private var emptyState: some View {
+        Card {
+            VStack(alignment: .leading, spacing: theme.metrics.space2) {
+                Text("Nothing in re-intro right now")
+                    .font(theme.typography.body(weight: .semibold))
+                    .foregroundStyle(theme.colors.textPrimary)
+                Text("When you're ready, pick a food from Checking and ease it back in, one at a time.")
+                    .font(theme.typography.body())
+                    .foregroundStyle(theme.colors.textSecondary)
+            }
         }
     }
 
     private var fenceNote: some View {
-        Text("Phase lengths are starting points your dietitian can tune.")
+        Text("How many good meals it takes is a starting point your dietitian can tune.")
             .font(theme.typography.caption())
             .foregroundStyle(theme.colors.textSecondary)
     }
 }
 
-struct SrvChallengeRow: View {
-    @Environment(\.theme) private var theme
-    let store: SrvStore
-    let challenge: SrvChallenge
+// MARK: - Coarse portion label (never grams, rule #3)
 
-    private var isResolved: Bool { challenge.status == .passed || challenge.status == .failed }
-
-    var body: some View {
-        Card {
-            VStack(alignment: .leading, spacing: theme.metrics.space3) {
-                HStack(alignment: .firstTextBaseline) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(challenge.group.displayName)
-                            .font(theme.typography.body(weight: .semibold))
-                            .foregroundStyle(theme.colors.textPrimary)
-                        Text("e.g. \(challenge.group.exampleFood)")
-                            .font(theme.typography.caption())
-                            .foregroundStyle(theme.colors.textSecondary)
-                    }
-                    Spacer()
-                    Label(challenge.status.label, systemImage: challenge.status.systemImage)
-                        .font(theme.typography.caption(weight: .medium))
-                        .foregroundStyle(statusTint)
-                }
-
-                if challenge.status == .testing {
-                    testingDetail
-                }
-
-                actions
-            }
-        }
-    }
-
-    @ViewBuilder private var testingDetail: some View {
-        let progress = SrvReintroEngine.progress(challenge, now: Date())
-        VStack(alignment: .leading, spacing: theme.metrics.space1) {
-            ProgressView(value: progress)
-                .tint(theme.colors.primary)
-            Text(SrvReintroEngine.isWindowComplete(challenge, now: Date())
-                 ? "Window complete — how did it go?"
-                 : "Keep eating a little each day. We'll watch how you feel.")
-                .font(theme.typography.caption())
-                .foregroundStyle(theme.colors.textSecondary)
-        }
-    }
-
-    @ViewBuilder private var actions: some View {
-        switch challenge.status {
-        case .pending, .failed:
-            SecondaryButton(title: challenge.status == .failed ? "Try this one again" : "Start this challenge",
-                            systemImage: "play.circle") {
-                Task { await store.startChallenge(challenge.group) }
-            }
-        case .testing:
-            HStack(spacing: theme.metrics.space2) {
-                PrimaryButton(title: "Felt fine", systemImage: "checkmark") {
-                    Task { await store.resolveChallenge(challenge, tolerated: true) }
-                }
-                SecondaryButton(title: "Rough", systemImage: "arrow.counterclockwise") {
-                    Task { await store.resolveChallenge(challenge, tolerated: false) }
-                }
-            }
-        case .passed:
-            Label("Cleared — these foods are back in your collection.", systemImage: "checkmark.seal.fill")
-                .font(theme.typography.caption(weight: .medium))
-                .foregroundStyle(theme.colors.safetyGreen)
-        }
-    }
-
-    private var statusTint: Color {
-        switch challenge.status {
-        case .pending: theme.colors.textSecondary
-        case .testing: theme.colors.primary
-        case .passed: theme.colors.safetyGreen
-        case .failed: theme.colors.warning
+extension PortionTier {
+    var coarseLabel: String {
+        switch self {
+        case .trace: "A taste"
+        case .serving: "A serving"
+        case .lots: "A lot"
         }
     }
 }

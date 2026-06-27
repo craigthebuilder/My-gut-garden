@@ -1,6 +1,6 @@
 //
 //  GuildDistrictMap.swift
-//  MyGutGarden — the top-down district MAP with fog-of-war (design/references/
+//  MyGutGarden, the top-down district MAP with fog-of-war (design/references/
 //  example-district-map-*.jpg). Four districts ascend a winding trail from the
 //  foundation (World 1) to the endgame (World 4). Locked districts are fogged
 //  and show "???"; unlocked ones reveal their guild pins with live bloom rings.
@@ -8,7 +8,7 @@
 
 import SwiftUI
 
-// MARK: - Unlock hints (built from GuildConfig — no magic numbers)
+// MARK: - Unlock hints (built from GuildConfig, no magic numbers)
 
 enum GuildUnlockHint {
     static func text(forDistrictOrder order: Int) -> String {
@@ -19,7 +19,7 @@ enum GuildUnlockHint {
         case g.scientistOrder:
             return "Bloom a Keystone and keep logging for \(GameConfig.shared.district3MinCumulativeTier2Days) days to open."
         case g.hiddenGemsOrder:
-            return "The endgame — bloom a Scientist to uncover the crews you host."
+            return "The endgame, bloom a Scientist to uncover the crews you host."
         default:
             return "Keep feeding your garden to open this district."
         }

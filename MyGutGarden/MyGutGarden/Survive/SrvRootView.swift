@@ -1,11 +1,11 @@
 //
 //  SrvRootView.swift
-//  MyGutGarden — Module E PUBLIC ENTRY. The calm Survive home (SPEC §11b).
+//  MyGutGarden, Module E PUBLIC ENTRY. The calm Survive home (SPEC §11b).
 //
 //  Survive's register is steady and reassuring (DESIGN.md §1, §3): cool, quiet,
 //  lots of whitespace, gentle motion, no celebratory bursts. This screen brings
-//  the surface together — the symptom-free streak (framed "days feeling good",
-//  never "days restricted" — rule #7), the evening logger, the read-only
+//  the surface together, the symptom-free streak (framed "days feeling good",
+//  never "days restricted", rule #7), the evening logger, the read-only
 //  pattern insight, reintro progress, the food pokédexes, and the blameless
 //  off-ramp (Fence 5).
 //
@@ -17,6 +17,7 @@ import SwiftUI
 
 struct SrvRootView: View {
     @State private var store: SrvStore
+    @State private var foodStore: FoodStatusStore?
     @State private var showLogger = false
     @State private var showOffRamp = false
 
@@ -31,7 +32,8 @@ struct SrvRootView: View {
 
     var body: some View {
         NavigationStack {
-            SrvHomeContent(store: store, showLogger: $showLogger, showOffRamp: $showOffRamp)
+            SrvHomeContent(store: store, foodStore: foodStore,
+                           showLogger: $showLogger, showOffRamp: $showOffRamp)
                 .navigationTitle("My Gut Garden")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
@@ -46,7 +48,19 @@ struct SrvRootView: View {
                 }
         }
         .themed(for: .survive)
-        .task { await store.load() }
+        .task {
+            await store.load()
+            // The shared food-status store needs a live repository + signed-in user.
+            // The lead may also construct/share this once at the shell, this is the
+            // in-module fallback so the surface works standalone + in previews.
+            if foodStore == nil,
+               let repo = store.appState.repository,
+               let uid = store.appState.profile?.id {
+                let fs = FoodStatusStore(repository: repo, userId: uid, appState: store.appState)
+                await fs.load()
+                foodStore = fs
+            }
+        }
         .sheet(isPresented: $showLogger) {
             SrvSymptomLoggerView(store: store, lite: store.trackingPreference == .lite)
                 .themed(for: .survive)
@@ -61,10 +75,11 @@ struct SrvRootView: View {
 private struct SrvHomeContent: View {
     @Environment(\.theme) private var theme
     @Bindable var store: SrvStore
+    let foodStore: FoodStatusStore?
     @Binding var showLogger: Bool
     @Binding var showOffRamp: Bool
 
-    private var loggedDays: Int { SrvStore.dailySymptoms(from: store.logs).count }
+    private var loggedDays: Int { store.mergedDailySymptoms().count }
 
     var body: some View {
         ScrollView {
@@ -76,6 +91,7 @@ private struct SrvHomeContent: View {
                 activeChallengeCard
                 patternSection
                 navCards
+                resetEntry
                 SrvRedFlagCard()
                 if store.usingSampleData { sampleNote }
             }
@@ -97,7 +113,7 @@ private struct SrvHomeContent: View {
         }
     }
 
-    // MARK: Streak (relief-framed — never restriction)
+    // MARK: Streak (relief-framed, never restriction)
 
     private var streakCard: some View {
         Card {
@@ -122,7 +138,7 @@ private struct SrvHomeContent: View {
     }
 
     private var streakHeadline: String {
-        store.streak.current == 0 ? "Let's find your good days"
+        store.streak.current == 0 ? "Time to rebuild."
             : "\(store.streak.current) \(store.streak.current == 1 ? "day" : "days") feeling good"
     }
 
@@ -148,7 +164,7 @@ private struct SrvHomeContent: View {
         Card {
             HStack(spacing: theme.metrics.space2) {
                 Image(systemName: "pause.circle").foregroundStyle(theme.colors.secondary)
-                Text("Tracking is paused. Everything's saved — log whenever you're ready.")
+                Text("Tracking is paused. Everything's saved, log whenever you're ready.")
                     .font(theme.typography.caption())
                     .foregroundStyle(theme.colors.textSecondary)
             }
@@ -160,7 +176,7 @@ private struct SrvHomeContent: View {
     @ViewBuilder private var activeChallengeCard: some View {
         if let active = store.challenges.first(where: { $0.status == .testing }) {
             NavigationLink {
-                SrvReintroView(store: store)
+                SrvPokedexView(store: store)
             } label: {
                 Card {
                     VStack(alignment: .leading, spacing: theme.metrics.space2) {
@@ -193,26 +209,44 @@ private struct SrvHomeContent: View {
 
     private var navCards: some View {
         VStack(spacing: theme.metrics.space3) {
-            NavigationLink {
-                SrvReintroView(store: store)
-            } label: {
-                SrvNavRow(title: "Reintroductions", subtitle: reintroSubtitle, systemImage: "arrow.up.forward.circle")
+            if let foodStore {
+                NavigationLink {
+                    SrvFoodSurfaceView(foodStore: foodStore)
+                } label: {
+                    SrvNavRow(title: "Foods you're checking", subtitle: checkingSubtitle,
+                              systemImage: "list.bullet.clipboard")
+                }
+                .buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
 
             NavigationLink {
                 SrvPokedexView(store: store)
             } label: {
-                SrvNavRow(title: "Your foods", subtitle: foodsSubtitle, systemImage: "square.grid.2x2")
+                SrvNavRow(title: "Your food guide", subtitle: foodsSubtitle, systemImage: "square.grid.2x2")
             }
             .buttonStyle(.plain)
         }
     }
 
-    private var reintroSubtitle: String {
-        let cleared = store.clearedGroups.count
-        return cleared == 0 ? "Test fiber groups back, one at a time"
-            : "\(cleared) cleared so far — keep leveling up"
+    /// A calm, user-initiated entry to the low-residue reset (Survive-contained,
+    /// never reachable directly from Thrive). Fence 6.
+    private var resetEntry: some View {
+        NavigationLink {
+            SrvResetView(store: store)
+        } label: {
+            SrvNavRow(title: "Give your gut a break",
+                      subtitle: "A gentle low-residue reset, then rebuild slowly",
+                      systemImage: "leaf.circle")
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var checkingSubtitle: String {
+        guard let foodStore else { return "Keep an eye on foods, ease them back in" }
+        let checking = foodStore.checking().count
+        let paused = foodStore.avoided().count
+        if checking == 0 && paused == 0 { return "Keep an eye on foods, ease them back in" }
+        return "\(checking) checking · \(paused) on pause"
     }
 
     private var foodsSubtitle: String {
@@ -220,7 +254,7 @@ private struct SrvHomeContent: View {
     }
 
     private var sampleNote: some View {
-        Text("Showing sample data — connect an account to track your own.")
+        Text("Showing sample data, connect an account to track your own.")
             .font(theme.typography.caption())
             .foregroundStyle(theme.colors.textSecondary)
             .frame(maxWidth: .infinity, alignment: .center)

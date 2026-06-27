@@ -1,9 +1,9 @@
 //
 //  Components.swift
-//  MyGutGarden — shared DesignSystem primitives (Phase 1 scaffolding).
+//  MyGutGarden, shared DesignSystem primitives (Phase 1 scaffolding).
 //
 //  Every module composes these instead of re-styling, so the app reads as one
-//  product (DESIGN.md). They read ONLY Theme tokens — never hardcode a color,
+//  product (DESIGN.md). They read ONLY Theme tokens, never hardcode a color,
 //  font, spacing, or radius. VoiceOver labels + reduced-motion are baked in.
 //  Visual language derived from design/references/* (DESIGN.md §4).
 //
@@ -143,7 +143,7 @@ struct StatPill: View {
     }
 }
 
-/// Fence 2 — render on any guild whose `claim_risk == true` so an associational/
+/// Fence 2, render on any guild whose `claim_risk == true` so an associational/
 /// emerging claim never reads as established. Never ship the bare name.
 struct EmergingScienceTag: View {
     @Environment(\.theme) private var theme
@@ -159,7 +159,7 @@ struct EmergingScienceTag: View {
         .background(theme.colors.warning.opacity(0.18))
         .foregroundStyle(theme.colors.warning)
         .clipShape(Capsule())
-        .accessibilityLabel("Emerging science — not an established claim")
+        .accessibilityLabel("Emerging science, not an established claim")
     }
 }
 

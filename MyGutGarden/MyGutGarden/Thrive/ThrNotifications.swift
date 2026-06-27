@@ -1,10 +1,10 @@
 //
 //  ThrNotifications.swift
-//  MyGutGarden — Module C: gain-framed Thrive nudges (SPEC §11a, DESIGN.md
+//  MyGutGarden, Module C: gain-framed Thrive nudges (SPEC §11a, DESIGN.md
 //  "Writing"). Thin copy layer over the shared `NotificationScheduler`.
 //
-//  Every nudge attaches to a POSITIVE outcome — plants toward 30, completing the
-//  3 P's, keeping the "is it working?" picture sharp — never restriction (rule
+//  Every nudge attaches to a POSITIVE outcome, plants toward 30, completing the
+//  3 P's, keeping the "is it working?" picture sharp, never restriction (rule
 //  #7). GUILD nudges ("your Arsenal is hungry") are Module D's; nothing here
 //  references guilds, bacteria, or districts.
 //
@@ -22,7 +22,7 @@ enum ThrNotifications {
         static let all = [plantNudge, threeP, moodCheck, rareCelebration]
     }
 
-    /// "27/30 plants — 3 to go before Sunday resets." Only fires when there's
+    /// "27/30 plants, 3 to go before Sunday resets." Only fires when there's
     /// genuine headroom (and never frames the gap as failure).
     static func schedulePlantNudge(uniqueThisWeek: Int,
                                    target: Int = GameConfig.shared.weeklyPlantTarget,
@@ -32,12 +32,12 @@ enum ThrNotifications {
         NotificationScheduler.schedule(
             id: ID.plantNudge,
             title: "Your garden",
-            body: "\(uniqueThisWeek)/\(target) plants — \(remaining) to go before Sunday resets.",
+            body: "\(uniqueThisWeek)/\(target) plants, \(remaining) to go before Sunday resets.",
             at: date
         )
     }
 
-    /// "Prebiotic + Polyphenol done — one fermented food completes your 3 P's."
+    /// "Prebiotic + Polyphenol done, one fermented food completes your 3 P's."
     /// Skips entirely when the day is already complete (no nagging).
     static func scheduleThreePNudge(threePs: ThreePs, at date: DateComponents) {
         guard !threePs.allThree else { return }
@@ -55,7 +55,7 @@ enum ThrNotifications {
         NotificationScheduler.schedule(
             id: ID.threeP,
             title: "Almost there",
-            body: "\(lead) — \(missingFood) completes today's 3 P's.",
+            body: "\(lead), \(missingFood) completes today's 3 P's.",
             at: date
         )
     }
@@ -77,7 +77,7 @@ enum ThrNotifications {
         NotificationScheduler.scheduleIn(
             id: ID.rareCelebration,
             title: "\(rarity.label) find!",
-            body: "\(plant) joined your field guide — a \(rarity.label.lowercased()) one. Nicely spotted.",
+            body: "\(plant) joined your field guide, a \(rarity.label.lowercased()) one. Nicely spotted.",
             seconds: afterSeconds
         )
     }

@@ -1,6 +1,6 @@
-# success_stories.csv — intake social proof (SPEC §5, §6). Natural key (idempotency): text.
+# success_stories.csv, intake social proof (SPEC §5, §6). Natural key (idempotency): text.
 # ⚠️ SPEC §2/§6: truthful + REPRESENTATIVE only. No cherry-picked medical claims, no cure language, no named conditions.
-#    These are REPRESENTATIVE composite testimonials written for the build (verified=false) — replace with
+#    These are REPRESENTATIVE composite testimonials written for the build (verified=false), replace with
 #    real, consented user quotes before launch; only mark verified=true once a real attributable quote exists.
 # Format: pipe-delimited. text|attribution|verified
 text|attribution|verified

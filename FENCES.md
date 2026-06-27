@@ -27,3 +27,20 @@ Single index of every clinical/claim-risk location that a registered dietitian
 | **3 — Reintro durations & sequencing** | Placeholder durations in `Config/GameConfig.swift` (`reintroChallengeDays`/`reintroWashoutDays`/`patternExperimentDays`, marked RD-REVIEW-REQUIRED), consumed by `Survive/SrvReintroEngine.swift`. |
 | **4 — FODMAP thresholds** | `/data/fodmap_profiles.csv` + `food_fibers.est_grams_per_serving` (reverse-engineered placeholder, marked); `/data/README.md` carries the Monash-source licensing note. Unprofiled foods → "unknown, flag" (not green). |
 | **5 — Disordered-eating duty of care** | Blameless off-ramp built in `Survive/SrvOffRampView.swift` + a "take a break" entry on the Thrive dashboard; `est_daily_kcal` written by Onboarding but never decoded into a view (`Repository.UserProfile` omits it); streaks/celebrations attach only to positive outcomes. |
+
+## Phase 2 — new + extended fences (Batches B–E)
+
+| Fence | What is fenced + where |
+|---|---|
+| **6 — Low-residue / "fresh start" gut-reset clinical protocol** (NEW, sharpest DE risk) | Fenced **content**: reset durations ("typically 1–3 weeks"), the elimination food list, the reintroduction sequence + amounts, `resetNoImprovementThresholdDays`, `resetSymptomFreeDaysToAdvance`, and all reset/phase copy. Where: `Survive/SrvResetEngine.swift` (Module E), `GameConfig` `reset*` constants, `reset_instructions` seed table + migration `20260627000007`, `survive_reset.phase`. Every constant + seeded string carries `// RD-REVIEW-REQUIRED`. **DE machinery that ships in v1 (not fenced):** persistent clinician disclaimer naming high-risk groups; always-visible frictionless Pause; user-initiated only; Survive-contained (never reachable directly from Thrive); progress pinned to symptom-free days (`GameConfig.resetProgressMetric = .symptomFreeDays`), never a restriction counter. The reset is **never named "carnivore"** in any copy. |
+| **7 — Suspect/Avoid thresholds + pattern-engine auto-suggest gate** (NEW) | Fenced **content**: `suspectSuggestionMinMeals/MinSeverity/ProximityHours` (when the app SUGGESTS a suspect), `avoidOfferAfterUnwellCount` (Avoid OFFER), `reintroMealsToPass` + `reintroMinPortionToCount` (suspect clear), and the move-to-Avoid copy. Where: `PatternEngine/PatSuspectGate.swift` (the auto-suggestion gate), `GameConfig` (reintro/avoid/suggestion constants), `Survive/FoodStatusStore.swift` + `Survive/SrvReintroView.swift` (move-to-Avoid copy + thresholds). All `// RD-REVIEW-REQUIRED`. **Framing invariant (copy-review convention, not content):** the whole Suspects/Avoid/reset system is USER-EXPERIMENT framed at every layer — investigation not accusation, "on pause" not "intolerance", relief not restriction, no severity column, no accumulating meter, no named condition/microbe. |
+
+**Extends Fence 3** — now also covers the suspect-clear pass threshold (`reintroMealsToPass`) and the reset reintroduction sequencing (see Fence 6).
+**Extends Fence 5** — the low-residue reset is the headline DE location; its disclaimer + Pause + relief-only progress are the duty-of-care machinery.
+
+### Phase-2 invariants enforced in the spine (not fences — hard rules)
+- `residue_ceiling_g` is **internal-only** (twin of `est_daily_kcal`): written by Onboarding, never decoded into `Repository.UserProfile`, never surfaced. Only the Thrive fiber goal (g) is ever shown.
+- Mood is stored **CANONICAL high=better** via `6 - ui_value` (the single inversion point is `Shared/CheckInKit.swift`). The regulated→erratic UI flip never reaches the DB polarity; the pattern engine stays high=better.
+- `food_suspects` has **no** severity/score/confidence column — no accumulating bad-guy meter (rule #4).
+- `food_suspects.avoid` is **not** an `exclusion_type` and is never merged into `exclusions`; `medical_allergy` fires LOUD independently (rule #1).
+- The food-suspect reintro bar is **event-driven** (felt-fine meals), never time-based (rule #7). Restriction prompts use `AppState.pendingSurvivePrompt`, never the celebration channel.

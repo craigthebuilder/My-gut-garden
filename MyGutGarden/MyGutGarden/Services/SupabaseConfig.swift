@@ -1,9 +1,9 @@
 //
 //  SupabaseConfig.swift
-//  MyGutGarden — backend connection (SPEC §3).
+//  MyGutGarden, backend connection (SPEC §3).
 //
 //  TODO(owner): fill `projectRef` and `anonKey` from your Supabase project's
-//  API settings. The anon key is a PUBLIC client key — RLS (20260625000002_rls.sql)
+//  API settings. The anon key is a PUBLIC client key, RLS (20260625000002_rls.sql)
 //  is what protects data, so it is safe to commit. The service-role key and the
 //  Anthropic key NEVER live in the app (SPEC §3); they stay server-side.
 //

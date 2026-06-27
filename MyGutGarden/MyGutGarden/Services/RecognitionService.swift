@@ -1,6 +1,6 @@
 //
 //  RecognitionService.swift
-//  MyGutGarden — the recognition pipeline client (SPEC §4).
+//  MyGutGarden, the recognition pipeline client (SPEC §4).
 //
 //  When the backend is configured + the user is signed in, this POSTs to the
 //  `recognize` Edge Function (which itself picks the Anthropic or fixture
@@ -40,7 +40,7 @@ final class RecognitionService {
         }
     }
 
-    /// Decodes the bundled fixture — a representative `recognize` response for
+    /// Decodes the bundled fixture, a representative `recognize` response for
     /// the sample meal joined against the Phase-0 demo seed.
     nonisolated static func offlineFixture() throws -> RecognitionResponse {
         let decoder = JSONDecoder()
@@ -126,7 +126,7 @@ final class RecognitionService {
       ],
       "unmatched": [],
       "hidden_ingredient_prompts": [
-        { "food_name": "Carrot", "dish_type": "stir_fry", "prompt": "This stir fry often contains carrot — was it?" }
+        { "food_name": "Carrot", "dish_type": "stir_fry", "prompt": "This stir fry often contains carrot, was it?" }
       ],
       "allergy_alerts": [],
       "thrive": {

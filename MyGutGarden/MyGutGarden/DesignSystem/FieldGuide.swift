@@ -1,6 +1,6 @@
 //
 //  FieldGuide.swift
-//  MyGutGarden — the collectible field-guide card system (the signature element).
+//  MyGutGarden, the collectible field-guide card system (the signature element).
 //
 //  Modeled on design/references/double-click-into-the-*-example.jpg (guild cards)
 //  and the trading-card framing in rare-accent-outline.jpg. Reused by D (guild
@@ -58,16 +58,16 @@ struct IllustrationPlaceholder: View {
     }
 }
 
-/// The detail collectible card — guild detail, rare-plant reveal, pokédex entry.
+/// The detail collectible card, guild detail, rare-plant reveal, pokédex entry.
 struct FieldGuideCard<Illustration: View>: View {
     @Environment(\.theme) private var theme
     var number: Int? = nil
-    var eyebrow: String? = nil          // e.g. "World 1 — The Backbone District"
+    var eyebrow: String? = nil          // e.g. "World 1, The Backbone District"
     let title: String
     var subtitle: String? = nil
     var bodyText: String? = nil
     var rarity: RarityTier? = nil
-    var emergingScience = false         // Fence 2 — set for claim_risk guilds
+    var emergingScience = false         // Fence 2, set for claim_risk guilds
     @ViewBuilder var illustration: () -> Illustration
 
     var body: some View {
@@ -122,7 +122,7 @@ struct FieldGuideCard<Illustration: View>: View {
     }
 }
 
-/// Compact grid tile for pokédex collections (locked tiles grey out — §9 greying).
+/// Compact grid tile for pokédex collections (locked tiles grey out, §9 greying).
 struct CollectibleTile<Illustration: View>: View {
     @Environment(\.theme) private var theme
     let name: String

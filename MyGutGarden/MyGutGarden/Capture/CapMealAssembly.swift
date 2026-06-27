@@ -1,22 +1,22 @@
 //
 //  CapMealAssembly.swift
-//  MyGutGarden — Module B pure assembly logic (SPEC §4, §9, §11).
+//  MyGutGarden, Module B pure assembly logic (SPEC §4, §9, §11).
 //
 //  These are the deterministic helpers the view-model + persistence compose and
 //  the unit tests pin down: how always-ask hidden-ingredient answers are
 //  tracked, how unmatched items become manual corrections, and how the three
 //  sources (vision / manual / hidden_confirmed) fold into one ordered set of
-//  `meal_items`. No SwiftUI, no networking — easy to test against fixtures.
+//  `meal_items`. No SwiftUI, no networking, easy to test against fixtures.
 //
 
 import Foundation
 
-// MARK: - Hidden-ingredient handling (§4 step 6, §11 — "always ask")
+// MARK: - Hidden-ingredient handling (§4 step 6, §11, "always ask")
 
 enum CapHiddenIngredients {
 
     /// The initial unanswered set from a recognize response. Every prompt is
-    /// surfaced — hidden-ingredient detection is mitigated, not solved, so we
+    /// surfaced, hidden-ingredient detection is mitigated, not solved, so we
     /// ask rather than guess (§4 "when unsure, flag it").
     static func initialAnswers(_ response: RecognitionResponse) -> [CapHiddenIngredientAnswer] {
         response.hiddenIngredientPrompts.map {
@@ -30,7 +30,7 @@ enum CapHiddenIngredients {
         answers.allSatisfy { $0.wasPresent != nil }
     }
 
-    /// Food names the user confirmed were present — candidates for resolution
+    /// Food names the user confirmed were present, candidates for resolution
     /// into `hidden_confirmed` meal_items.
     static func confirmedPresentFoodNames(_ answers: [CapHiddenIngredientAnswer]) -> [String] {
         answers.filter { $0.wasPresent == true }.map(\.prompt.foodName)
@@ -60,7 +60,7 @@ enum CapManualConfirm {
     }
 
     /// Only the items the user actually resolved. The rest are intentionally
-    /// dropped — logging an unconfirmed guess would claim a precision we don't
+    /// dropped, logging an unconfirmed guess would claim a precision we don't
     /// have (§4). Skipping is a valid, blameless choice.
     static func resolved(_ items: [CapUnmatchedItem]) -> [CapUnmatchedItem] {
         items.filter(\.isResolved)
@@ -74,18 +74,23 @@ enum CapMealDraftBuilder {
     /// Matched, surfaced vision items → `vision` meal_items. `preference_intolerance`
     /// matches (`silentlyOmitted`) are dropped, consistent with the surfaced-
     /// attributes seam: a quiet omission is never persisted as something fed
-    /// (§9 — the two-faced model is honoured, not flattened).
-    static func visionItems(items: [ResolvedItem]) -> [CapMealItem] {
+    /// (§9, the two-faced model is honoured, not flattened). Items whose `food_id`
+    /// the server marked `source='annotation'` (the user's note) persist as
+    /// `annotation` instead of `vision` (Batch C).
+    static func visionItems(items: [ResolvedItem],
+                            annotationFoodIds: Set<String> = []) -> [CapMealItem] {
         items.compactMap { item in
             guard item.silentlyOmitted != true, let attrs = item.attributes else { return nil }
+            let source: CapItemSource = annotationFoodIds.contains(attrs.foodId) ? .annotation : .vision
             return CapMealItem(foodId: attrs.foodId,
                                portion: item.vision.portionTier,
-                               source: .vision)
+                               source: source)
         }
     }
 
-    static func visionItems(_ response: RecognitionResponse) -> [CapMealItem] {
-        visionItems(items: response.items)
+    static func visionItems(_ response: RecognitionResponse,
+                            annotationFoodIds: Set<String> = []) -> [CapMealItem] {
+        visionItems(items: response.items, annotationFoodIds: annotationFoodIds)
     }
 
     /// Resolved unmatched corrections → `manual` meal_items.
@@ -106,7 +111,7 @@ enum CapMealDraftBuilder {
     /// The complete item set in a stable, debuggable order:
     /// vision first, then manual corrections, then confirmed hidden ingredients.
     /// Duplicate `food_id`s are collapsed, keeping the first (most-confident)
-    /// source — a food shouldn't be logged twice if the user also corrects it.
+    /// source, a food shouldn't be logged twice if the user also corrects it.
     static func allItems(vision: [CapMealItem],
                          manual: [CapMealItem],
                          hidden: [CapMealItem]) -> [CapMealItem] {

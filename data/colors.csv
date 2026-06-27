@@ -1,4 +1,4 @@
-# colors.csv — the 6 rainbow groups (SPEC §8). Natural key: id (enum color_name).
+# colors.csv, the 6 rainbow groups (SPEC §8). Natural key: id (enum color_name).
 # Copy is curated + truthful, gut-framed (DESIGN "Writing": gain-framed, non-clinical).
 # Source: USDA "eat the rainbow" phytochemical groupings; Phenol-Explorer compound→color mapping.
 # Format: pipe-delimited. id|meaning_copy|what_it_does_copy

@@ -1,17 +1,17 @@
 //
 //  SrvInsightPresenter.swift
-//  MyGutGarden — Module E. The Survive per-photo view (SPEC §11b).
+//  MyGutGarden, Module E. The Survive per-photo view (SPEC §11b).
 //
 //  Conforms to the `MealInsightPresenting` seam (Seams.swift): the AppShell
 //  injects this presenter while in Survive mode, so Module B (capture) never
 //  imports Module E. It reuses `FoodAttributeJoin.surviveInsights(_:)` for the
-//  FODMAP overlay — no insight logic is re-implemented here.
+//  FODMAP overlay, no insight logic is re-implemented here.
 //
 //  What it shows, in Survive's calm register:
 //    • a FODMAP safety check per food via the shared `SafetyChip`
-//      (color + shape + label, never color alone — DESIGN.md §5),
-//    • hidden-trigger flags ("this dish often contains onion — was it?"),
-//    • during reintro: "contains [the group you're testing] — logging for your
+//      (color + shape + label, never color alone, DESIGN.md §5),
+//    • hidden-trigger flags ("this dish often contains onion, was it?"),
+//    • during reintro: "contains [the group you're testing], logging for your
 //      challenge,"
 //    • medical-allergy alerts, which stay LOUD even here (SPEC §9 / rule #1).
 //  No bacteria, no diagnosis, no scores.
@@ -94,7 +94,7 @@ struct SrvPhotoInsightView: View {
                 if !survive.fermentedCaution.isEmpty { fermentCautionCard }
                 if !survive.hiddenIngredientPrompts.isEmpty { hiddenIngredientCard }
 
-                Text("Safety here is a per-serving guide, not a verdict — your own logs are the real signal.")
+                Text("Safety here is a per-serving guide, not a verdict, your own logs are the real signal.")
                     .font(theme.typography.caption())
                     .foregroundStyle(theme.colors.textSecondary)
                     .padding(.horizontal, theme.metrics.space2)
@@ -123,7 +123,7 @@ struct SrvPhotoInsightView: View {
                             SafetyChip(safety: row.safety)
                         }
                         ForEach(row.testingGroups) { group in
-                            Label("Contains \(group.shortName) — logging for your challenge.",
+                            Label("Contains \(group.shortName), logging for your challenge.",
                                   systemImage: "target")
                                 .font(theme.typography.caption(weight: .medium))
                                 .foregroundStyle(theme.colors.primary)
@@ -143,7 +143,7 @@ struct SrvPhotoInsightView: View {
                 Label("Fermented foods", systemImage: "leaf")
                     .font(theme.typography.body(weight: .semibold))
                     .foregroundStyle(theme.colors.textPrimary)
-                Text("\(survive.fermentedCaution.joined(separator: ", ")) — great for many guts, but ferments can provoke a histamine-sensitive day. Worth noting how you feel.")
+                Text("\(survive.fermentedCaution.joined(separator: ", ")), great for many guts, but ferments can provoke a histamine-sensitive day. Worth noting how you feel.")
                     .font(theme.typography.body())
                     .foregroundStyle(theme.colors.textSecondary)
             }
@@ -166,7 +166,7 @@ struct SrvPhotoInsightView: View {
     }
 }
 
-/// Medical-allergy alert — serious and clear even on the calm Survive surface
+/// Medical-allergy alert, serious and clear even on the calm Survive surface
 /// (SPEC §9: `medical_allergy` is LOUD across both modes).
 struct SrvAllergyBanner: View {
     @Environment(\.theme) private var theme
@@ -176,7 +176,7 @@ struct SrvAllergyBanner: View {
         Card {
             VStack(alignment: .leading, spacing: theme.metrics.space2) {
                 ForEach(alerts, id: \.foodName) { alert in
-                    Label("Contains \(alert.foodName) — this is on your allergy list.",
+                    Label("Contains \(alert.foodName), this is on your allergy list.",
                           systemImage: "exclamationmark.triangle.fill")
                         .font(theme.typography.body(weight: .semibold))
                         .foregroundStyle(theme.colors.error)

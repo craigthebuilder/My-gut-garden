@@ -1,6 +1,6 @@
 //
 //  CapServices.swift
-//  MyGutGarden — Module B I/O: photo upload (Supabase Storage), food search,
+//  MyGutGarden, Module B I/O: photo upload (Supabase Storage), food search,
 //  and meal persistence (SPEC §4, §5). Table CRUD goes through the shared
 //  `Repository`; the Storage upload is Module B's own small call (Repository
 //  covers PostgREST, not the Storage API).
@@ -75,6 +75,83 @@ struct CapStorageUploader: Sendable {
     }
 }
 
+// MARK: - Recognition client with the Batch C annotation (SPEC §4)
+
+/// The result of one recognize call: the frozen `RecognitionResponse` plus the
+/// set of `food_id`s the server marked `source='annotation'` (from the user's
+/// note). Module B re-decodes the per-item `source` because the spine
+/// `ResolvedItem` (SharedModels) intentionally does not carry it.
+struct CapRecognitionResult: Sendable {
+    let response: RecognitionResponse
+    let annotationFoodIds: Set<String>
+}
+
+/// A thin, Capture-owned recognize client that can carry `user_annotation` - the
+/// spine `RecognitionService.recognize(...)` signature can't, so the annotated
+/// path goes through here. It reuses the spine `SupabaseConfig` + the offline
+/// fixture; it never changes the request shape for the un-annotated path (that
+/// still flows through the injected `RecognitionService`).
+struct CapRecognizer: Sendable {
+
+    /// Probe just the per-item `source` + `food_id` from the same JSON body the
+    /// frozen `RecognitionResponse` decodes (it drops `source`).
+    private struct SourceProbe: Decodable {
+        struct Item: Decodable {
+            struct Attr: Decodable { let foodId: String }
+            let source: String?
+            let attributes: Attr?
+        }
+        let items: [Item]
+    }
+
+    /// `accessToken` is resolved by the (@MainActor) caller from `AuthService`,
+    /// keeping this client free of actor-isolated state so the network await can
+    /// run off the main actor.
+    func recognize(mode: AppMode, accessToken: String?,
+                   imageBase64: String?, userAnnotation: String?) async throws -> CapRecognitionResult {
+        let annotation = userAnnotation?.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard SupabaseConfig.isConfigured, let token = accessToken else {
+            // Offline / signed-out demo path: deterministic fixture, no annotation.
+            return CapRecognitionResult(response: try RecognitionService.offlineFixture(),
+                                        annotationFoodIds: [])
+        }
+
+        var body: [String: Any] = ["mode": mode.rawValue]
+        if let imageBase64 {
+            body["image_base64"] = imageBase64
+        } else {
+            body["provider"] = "fixture"          // no photo (sample meal) → fixture
+        }
+        if let annotation, !annotation.isEmpty {
+            body["user_annotation"] = annotation
+        }
+
+        let url = SupabaseConfig.baseURL.appendingPathComponent("functions/v1/recognize")
+        var req = URLRequest(url: url)
+        req.httpMethod = "POST"
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.setValue(SupabaseConfig.anonKey, forHTTPHeaderField: "apikey")
+        req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        req.httpBody = try JSONSerialization.data(withJSONObject: body)
+
+        let (data, resp) = try await URLSession.shared.data(for: req)
+        guard let http = resp as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+            let message = String(data: data, encoding: .utf8) ?? ""
+            throw SupabaseError.server(status: (resp as? HTTPURLResponse)?.statusCode ?? -1, message: message)
+        }
+
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        let response = try decoder.decode(RecognitionResponse.self, from: data)
+        let probe = (try? decoder.decode(SourceProbe.self, from: data)) ?? SourceProbe(items: [])
+        let annotationFoodIds = Set(
+            probe.items.compactMap { $0.source == "annotation" ? $0.attributes?.foodId : nil }
+        )
+        return CapRecognitionResult(response: response, annotationFoodIds: annotationFoodIds)
+    }
+}
+
 // MARK: - Food search (manual-confirm + hidden-ingredient resolution)
 
 /// Searches `foods` by canonical name for the manual-confirm picker and to
@@ -105,7 +182,7 @@ struct CapFoodSearchService: Sendable {
     }
 }
 
-// MARK: - Meal persistence (SPEC §5 — `meals` + `meal_items`)
+// MARK: - Meal persistence (SPEC §5, `meals` + `meal_items`)
 
 /// Writes one confirmed meal and its items, RLS-scoped by the caller's token.
 struct CapMealPersistence: Sendable {
@@ -123,6 +200,11 @@ struct CapMealPersistence: Sendable {
             "confirmed": .bool(true)
         ]
         if let photoURL = draft.photoURL { mealBody["photo_url"] = .string(photoURL) }
+        // Batch C: the snapchat-style note (feeds the re-prompt; never a number).
+        if let annotation = draft.userAnnotation?.trimmingCharacters(in: .whitespacesAndNewlines),
+           !annotation.isEmpty {
+            mealBody["user_annotation"] = .string(annotation)
+        }
         // jsonb-as-string (see file header caveat).
         if let visionJSON = CapJSON.string(from: draft.response.vision) {
             mealBody["vision_raw_json"] = .string(visionJSON)
@@ -138,13 +220,27 @@ struct CapMealPersistence: Sendable {
         }
 
         for item in draft.items {
-            try await repository.insertVoid("meal_items", [
-                "meal_id": .string(mealId),
-                "food_id": .string(item.foodId),
-                "portion_tier": .string(item.portion.rawValue),
-                "source": .string(item.source.rawValue)
-            ])
+            try await insertItem(mealId: mealId, item: item)
         }
         return mealId
+    }
+
+    /// Edit-meal save (SPEC §4): replace this meal's items wholesale
+    /// (delete-then-reinsert). Coarse portion tiers only - never grams (rule #3).
+    /// The `meals` row (photo, annotation, vision_raw_json) is untouched.
+    func updateItems(mealId: String, items: [CapMealItem]) async throws {
+        try await repository.delete("meal_items", filters: ["meal_id": "eq.\(mealId)"])
+        for item in items {
+            try await insertItem(mealId: mealId, item: item)
+        }
+    }
+
+    private func insertItem(mealId: String, item: CapMealItem) async throws {
+        try await repository.insertVoid("meal_items", [
+            "meal_id": .string(mealId),
+            "food_id": .string(item.foodId),
+            "portion_tier": .string(item.portion.rawValue),
+            "source": .string(item.source.rawValue)
+        ])
     }
 }

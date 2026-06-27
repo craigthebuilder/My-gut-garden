@@ -1,6 +1,6 @@
 //
 //  Repository.swift
-//  MyGutGarden — the typed data layer (Phase 1 scaffolding). PostgREST CRUD
+//  MyGutGarden, the typed data layer (Phase 1 scaffolding). PostgREST CRUD
 //  over the per-user + reference tables, RLS-scoped by the caller's token.
 //  This is the internal data contract every module calls; nobody hand-rolls
 //  REST. Generic primitives + shared row types; modules add their own row
@@ -34,6 +34,11 @@ struct Repository: Sendable {
     let baseURL: URL
     let anonKey: String
     let accessToken: String
+    /// Called once on a 401 (expired JWT) to mint a fresh access token via the
+    /// refresh-token grant. Returns the new token, or nil if refresh is
+    /// unavailable, in which case the original 401 propagates. Defaulted so
+    /// existing call sites that build a Repository without it still compile.
+    var refreshAccessToken: (@Sendable () async -> String?)? = nil
 
     private var restURL: URL { baseURL.appendingPathComponent("rest/v1") }
 
@@ -56,7 +61,15 @@ struct Repository: Sendable {
     }
 
     private func run(_ req: URLRequest) async throws -> Data {
-        let (data, resp) = try await URLSession.shared.data(for: req)
+        var req = req
+        var (data, resp) = try await URLSession.shared.data(for: req)
+        // Transparently recover from an expired access token (JWT expired): mint a
+        // fresh token via the refresh grant and retry the same request once.
+        if (resp as? HTTPURLResponse)?.statusCode == 401,
+           let refresh = refreshAccessToken, let fresh = await refresh() {
+            req.setValue("Bearer \(fresh)", forHTTPHeaderField: "Authorization")
+            (data, resp) = try await URLSession.shared.data(for: req)
+        }
         guard let http = resp as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
             let body = String(data: data, encoding: .utf8) ?? ""
             throw SupabaseError.server(status: (resp as? HTTPURLResponse)?.statusCode ?? -1, message: body)
@@ -117,7 +130,7 @@ struct Repository: Sendable {
                                       prefer: "return=minimal"))
     }
 
-    // MARK: Convenience — profile & exclusions
+    // MARK: Convenience, profile & exclusions
 
     func fetchProfile() async throws -> UserProfile? {
         let rows: [UserProfile] = try await select("users")
@@ -128,16 +141,25 @@ struct Repository: Sendable {
         try await select("exclusions")
     }
 
-    // MARK: Convenience — reference reads (cacheable)
+    // MARK: Convenience, reference reads (cacheable)
 
     func fetchPlants() async throws -> [PlantRow] { try await select("plants", order: "name") }
     func fetchGuilds() async throws -> [GuildRow] { try await select("guilds") }
     func fetchDistricts() async throws -> [DistrictRow] { try await select("districts", order: "order") }
+
+    // MARK: Convenience, Phase 2
+    func fetchResetInstructions() async throws -> [ResetInstructionRow] {
+        try await select("reset_instructions", order: "sort_order")
+    }
+    func fetchSurviveReset() async throws -> SurviveResetRow? {
+        let rows: [SurviveResetRow] = try await select("survive_reset")
+        return rows.first
+    }
 }
 
 // MARK: - Shared row types (used across modules + the coordinator)
 
-/// Surfaced user fields. `est_daily_kcal` is deliberately NOT decoded here —
+/// Surfaced user fields. `est_daily_kcal` is deliberately NOT decoded here, 
 /// it is internal-only and must never reach a view (SPEC §10 / Fence 5).
 struct UserProfile: Decodable, Sendable {
     let id: String
@@ -148,10 +170,16 @@ struct UserProfile: Decodable, Sendable {
     let sex: String?
     let activityLevel: String?
     let fiberGoalG: Int?
-    let baselineMood: Int?
+    let baselineMood: Int?            // CANONICAL high=better (UI flips regulated→erratic via 6 - ui)
     let baselineEnergy: Int?
     let baselineClarity: Int?
     let goals: [String]
+    // Phase 2 (Batch B). `residue_ceiling_g` is INTENTIONALLY NOT decoded, it is
+    // internal-only, exactly like est_daily_kcal (SPEC §10 / Fence 5).
+    let plantConsumptionLevel: String?   // low | moderate | high | most_of_diet → fiber multiplier
+    let baselineBowelConsistency: Int?   // 1=inconsistent .. 5=consistent (high=better)
+    let otherAutoimmune: Bool
+    let fiberGoalAdjustedWeekStart: String?  // last week the Thrive auto-increase fired (idempotency)
 }
 
 struct ExclusionRow: Decodable, Sendable {
@@ -167,6 +195,8 @@ struct MealRow: Decodable, Sendable {
     let photoUrl: String?
     let capturedAt: String
     let confirmed: Bool
+    let userAnnotation: String?      // Batch C snapchat-style note (feeds the re-prompt)
+    let photoExpiresAt: String?      // captured_at + 5d; photo_url nulled by the retention sweep after
 }
 
 struct GuildStateRow: Decodable, Sendable {
@@ -200,6 +230,12 @@ struct ThriveCheckinRow: Decodable, Sendable {
     let mood: Int?
     let energy: Int?
     let clarity: Int?
+    // Phase 2 (Batch D/E). `var … = default` so the in-code constructor stays
+    // source-compatible; PostgREST always returns the columns so decoding fills them.
+    var checkinMode: String = "full"     // light | full
+    var bowelConsistency: Int? = nil     // 1=inconsistent .. 5=consistent (high=better)
+    var reintroFoodId: String? = nil     // a reintro food present in this day's test
+    var reintroFeltFine: Bool? = nil
 }
 
 struct SymptomLogRow: Decodable, Sendable {
@@ -212,10 +248,19 @@ struct SymptomLogRow: Decodable, Sendable {
 
 struct ReintroChallengeRow: Decodable, Sendable {
     let id: String
-    let fodmapGroup: String
+    let fodmapGroup: String?         // nil for food_suspect challenges (branch on challengeKind)
     let status: String
     let startedAt: String?
     let endedAt: String?
+    // Phase 2 (Batch E). food_suspect challenges are EVENT-DRIVEN: the bar advances
+    // on felt-fine meals, never on elapsed time (rule #7). FODMAP challenges keep the
+    // legacy time-based path (GameConfig.reintroChallengeDays).
+    let challengeKind: String        // fodmap | food_suspect
+    let foodId: String?
+    let suspectId: String?
+    let mealsFeelingFineCount: Int
+    let consecutiveUnwellCount: Int  // UNSURFACED gate for the Avoid offer only
+    let progressPct: Int
 }
 
 struct PatternAssessmentRow: Decodable, Sendable {
@@ -256,4 +301,66 @@ struct DistrictRow: Decodable, Sendable {
     let order: Int
     let name: String
     let unlockRuleKey: String
+}
+
+// MARK: - Phase 2 row types (multi-entry check-in, food-status, reset)
+
+struct StoolEntryRow: Decodable, Sendable {
+    let id: String; let userId: String; let logDate: String
+    let bss: Int?; let occurredAt: String?; let linkedMealId: String?; let loggedAt: String
+}
+
+struct SymptomEntryRow: Decodable, Sendable {
+    let id: String; let userId: String; let logDate: String
+    let symptomType: String; let severity: Int; let gasOdor: String?
+    let occurredAt: String?; let linkedMealId: String?
+}
+
+struct MoodEntryRow: Decodable, Sendable {
+    let id: String; let userId: String; let logDate: String
+    let moodScore: Int                 // CANONICAL high=better (5=regulated)
+    let context: String; let occurredAt: String?; let linkedMealId: String?
+}
+
+struct CheckinNoteRow: Decodable, Sendable {
+    let id: String; let userId: String; let logDate: String
+    let content: String; let context: String; let linkedMealId: String?; let createdAt: String
+}
+
+/// A food the user is keeping an eye on. NO severity/score/confidence field, by
+/// design, there is never an accumulating "bad-guy" meter (rule #4). `avoid` is
+/// NOT an exclusion_type and is never merged into `exclusions` (rule #1).
+struct FoodSuspectRow: Decodable, Sendable {
+    let id: String; let userId: String; let foodId: String
+    let addedBy: String                // user | system (system = a dismissible suggestion)
+    let status: String                 // suspect | reintroducing | avoided | cleared
+    let userVerdict: String?           // nil = pending; the user authors every negative transition
+    let avoid: Bool
+    let createdAt: String; let updatedAt: String
+}
+
+struct ReintroMealCheckRow: Decodable, Sendable {
+    let id: String; let userId: String; let challengeId: String; let mealId: String
+    let feltFine: Bool?                 // nil = auto-attached, awaiting the user
+    let portionTier: String; let loggedAt: String
+}
+
+struct WeeklyColorAmountRow: Decodable, Sendable {
+    let weekStart: String; let colorId: String; let maxTier: String
+}
+
+/// The low-residue reset. Progress is RELIEF only (`symptomFreeDays`); there is no
+/// days-restricted column by design (rule #7).
+struct SurviveResetRow: Decodable, Sendable {
+    let id: String; let userId: String; let startedAt: String
+    let pausedAt: String?; let endedAt: String?
+    let phase: String                  // reset | reintroduction_phase | graduated
+    let symptomFreeDays: Int; let noImprovementAlerts: Int
+    let clinicianPromptedAt: String?; let graduatedAt: String?
+}
+
+/// Curated reset guidance (Fence 6, RD-REVIEW-REQUIRED). Not runtime-generated.
+struct ResetInstructionRow: Decodable, Sendable {
+    let id: String; let phase: String; let sortOrder: Int
+    let instructionCopy: String; let foodSuggestions: [String]; let claimRisk: Bool
 }

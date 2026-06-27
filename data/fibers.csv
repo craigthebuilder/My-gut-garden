@@ -1,4 +1,4 @@
-# fibers.csv — fermentable fiber types (framework §5 fiber→guild map; SPEC §5). Natural key: name.
+# fibers.csv, fermentable fiber types (framework §5 fiber→guild map; SPEC §5). Natural key: name.
 # is_fodmap_trigger flags the molecules that are simultaneously top bacterial fuel AND top IBS trigger (SPEC §1).
 # Source: framework §5; Monash University FODMAP program (which fibers are FODMAPs); USDA dietary-fiber definitions.
 # Format: pipe-delimited. name|is_fodmap_trigger|notes

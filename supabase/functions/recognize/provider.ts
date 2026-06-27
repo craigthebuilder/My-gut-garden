@@ -17,4 +17,12 @@ export interface RecognitionInput {
 export interface RecognitionProvider {
   readonly name: string;
   recognize(input: RecognitionInput): Promise<VisionResult>;
+  /**
+   * Batch C: the snapchat-style annotation re-prompt (SPEC §4). A SECOND,
+   * text-only structured call that returns the SAME frozen vision contract -
+   * food IDs + coarse portion tier ONLY, never nutrition numbers (hard rule #2).
+   * The DB join in attributes.ts produces every number. FixtureProvider returns
+   * an empty result so offline / non-anthropic builds stay deterministic.
+   */
+  recognizeAnnotation(annotation: string): Promise<VisionResult>;
 }

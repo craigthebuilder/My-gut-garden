@@ -1,15 +1,15 @@
 //
 //  ThrComponents.swift
-//  MyGutGarden — Module C: small Thrive views composed from DesignSystem
-//  primitives + Theme tokens. New compositions only — never restyling an
+//  MyGutGarden, Module C: small Thrive views composed from DesignSystem
+//  primitives + Theme tokens. New compositions only, never restyling an
 //  existing DesignSystem component (DESIGN.md, CLAUDE.md ownership rules).
 //
 
 import SwiftUI
 
-// MARK: - Medical-allergy banner (LOUD across both modes — SPEC §9, rule #1)
+// MARK: - Medical-allergy banner (LOUD across both modes, SPEC §9, rule #1)
 
-/// Fires even mid-celebration on the Thrive surface. `medical_allergy` only —
+/// Fires even mid-celebration on the Thrive surface. `medical_allergy` only, 
 /// `preference_intolerance` is silently omitted upstream and never reaches here.
 struct ThrAllergyBanner: View {
     @Environment(\.theme) private var theme
@@ -22,7 +22,7 @@ struct ThrAllergyBanner: View {
                     HStack(alignment: .top, spacing: theme.metrics.space2) {
                         Image(systemName: "exclamationmark.triangle.fill")
                             .foregroundStyle(theme.colors.error)
-                        Text("Heads up — this contains \(alert.foodName), one of your flagged allergies.")
+                        Text("Heads up, this contains \(alert.foodName), one of your flagged allergies.")
                             .font(theme.typography.body(weight: .semibold))
                             .foregroundStyle(theme.colors.textPrimary)
                             .fixedSize(horizontal: false, vertical: true)
@@ -43,47 +43,120 @@ struct ThrAllergyBanner: View {
     }
 }
 
-// MARK: - The 3 P's (prebiotic / probiotic / polyphenol) — SPEC §11a
+// MARK: - The 3 P's (prebiotic / probiotic / polyphenol), SPEC §11a
+
+/// Relative amount per P from today's coarse portion tiers (rule #3). A hit is
+/// any amount; the tile turns fully green with white text only when a lot landed.
+struct ThrThreePAmounts: Sendable, Equatable {
+    var prebiotic: ThrColorAmount
+    var probiotic: ThrColorAmount
+    var polyphenol: ThrColorAmount
+
+    init(prebiotic: ThrColorAmount = .none, probiotic: ThrColorAmount = .none, polyphenol: ThrColorAmount = .none) {
+        self.prebiotic = prebiotic
+        self.probiotic = probiotic
+        self.polyphenol = polyphenol
+    }
+    /// Map a yes/no `ThreePs` to amounts (a hit reads as a serving for display).
+    init(presence p: ThreePs) {
+        self.init(prebiotic: p.prebiotic ? .serving : .none,
+                  probiotic: p.probiotic ? .serving : .none,
+                  polyphenol: p.polyphenol ? .serving : .none)
+    }
+
+    var prebioticHit: Bool { prebiotic.countsTowardSix }
+    var probioticHit: Bool { probiotic.countsTowardSix }
+    var polyphenolHit: Bool { polyphenol.countsTowardSix }
+    var count: Int { (prebioticHit ? 1 : 0) + (probioticHit ? 1 : 0) + (polyphenolHit ? 1 : 0) }
+    var allThree: Bool { count == 3 }
+    /// Yes/no shape for nudge copy.
+    var hits: ThreePs { ThreePs(prebiotic: prebioticHit, probiotic: probioticHit, polyphenol: polyphenolHit) }
+}
 
 struct ThrThreePsRow: View {
     @Environment(\.theme) private var theme
-    let threePs: ThreePs
+    let amounts: ThrThreePAmounts
 
-    private struct P: Identifiable { let id: String; let title: String; let icon: String; let hit: Bool }
+    private struct P: Identifiable { let id: String; let title: String; let icon: String; let amount: ThrColorAmount }
 
     private var items: [P] {
         [
-            P(id: "pre", title: "Prebiotic", icon: "leaf.fill", hit: threePs.prebiotic),
-            P(id: "pro", title: "Probiotic", icon: "drop.fill", hit: threePs.probiotic),
-            P(id: "poly", title: "Polyphenol", icon: "sparkles", hit: threePs.polyphenol),
+            P(id: "pre", title: "Prebiotic", icon: "leaf.fill", amount: amounts.prebiotic),
+            P(id: "pro", title: "Probiotic", icon: "drop.fill", amount: amounts.probiotic),
+            P(id: "poly", title: "Polyphenol", icon: "sparkles", amount: amounts.polyphenol),
         ]
     }
 
     var body: some View {
         HStack(spacing: theme.metrics.space2) {
             ForEach(items) { p in
+                let hit = p.amount.countsTowardSix
+                let full = p.amount.isFull
                 VStack(spacing: theme.metrics.space1) {
-                    Image(systemName: p.hit ? "checkmark.circle.fill" : p.icon)
-                        .foregroundStyle(p.hit ? theme.colors.success : theme.colors.textSecondary)
+                    Image(systemName: hit ? "checkmark.circle.fill" : p.icon)
+                        .foregroundStyle(full ? theme.colors.surface
+                                         : (hit ? theme.colors.success : theme.colors.textSecondary))
                     Text(p.title)
                         .font(theme.typography.caption(weight: .medium))
-                        .foregroundStyle(p.hit ? theme.colors.textPrimary : theme.colors.textSecondary)
+                        .foregroundStyle(full ? theme.colors.surface
+                                         : (hit ? theme.colors.textPrimary : theme.colors.textSecondary))
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, theme.metrics.space3)
-                .background(p.hit ? theme.colors.success.opacity(0.12) : theme.colors.background)
+                // Fill deepens with the amount; fully green only at "lots".
+                .background(full ? theme.colors.success
+                            : theme.colors.success.opacity(Double(p.amount.ringsFilled) * 0.12))
                 .clipShape(RoundedRectangle(cornerRadius: theme.metrics.radiusSmall, style: .continuous))
                 .accessibilityElement(children: .combine)
-                .accessibilityLabel("\(p.title): \(p.hit ? "done" : "not yet")")
+                .accessibilityLabel("\(p.title): \(hit ? "done" : "not yet")")
             }
         }
     }
 }
 
-// MARK: - Radial goal card (the reference's hero arc — fiber goal / 30 plants)
+// MARK: - Compact fiber mini-bar (header top-right; the only surfaced number, §10)
+
+/// A small capsule fill + "Xg / Yg", token-driven, with a "directional" caption.
+/// Fiber in grams is the ONLY anthropometric-derived number ever shown (rule #6);
+/// kcal/deficit are never surfaced.
+struct ThrFiberMiniBar: View {
+    @Environment(\.theme) private var theme
+    let consumedG: Double
+    let goalG: Int?
+    let fraction: Double
+
+    var body: some View {
+        VStack(alignment: .trailing, spacing: 2) {
+            if let goal = goalG {
+                Text("\(Int(consumedG.rounded()))g / \(goal)g")
+                    .font(theme.typography.data(13, weight: .semibold))
+                    .foregroundStyle(theme.colors.textPrimary)
+                GeometryReader { geo in
+                    ZStack(alignment: .leading) {
+                        Capsule().fill(theme.colors.divider)
+                        Capsule().fill(theme.colors.accent)
+                            .frame(width: max(4, geo.size.width * CGFloat(max(0, min(1, fraction)))))
+                    }
+                }
+                .frame(width: 88, height: 6)
+                Text("fiber, directional")
+                    .font(theme.typography.caption(11))
+                    .foregroundStyle(theme.colors.textSecondary)
+            } else {
+                Text("Fiber goal in setup")
+                    .font(theme.typography.caption(11))
+                    .foregroundStyle(theme.colors.textSecondary)
+            }
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(goalG.map { "Fiber today \(Int(consumedG.rounded())) of \($0) grams, directional" } ?? "Fiber goal pending setup")
+    }
+}
+
+// MARK: - Radial goal card (the reference's hero arc, fiber goal / 30 plants)
 
 /// Wraps the shared `ProgressArc` with a centered count + caption. Used for both
-/// the daily fiber goal (grams — the ONLY surfaced anthropometric number, §10)
+/// the daily fiber goal (grams, the ONLY surfaced anthropometric number, §10)
 /// and weekly plant variety toward 30.
 struct ThrGoalArcCard: View {
     @Environment(\.theme) private var theme
@@ -118,7 +191,7 @@ struct ThrGoalArcCard: View {
     }
 }
 
-// MARK: - Curiosity fact (variable reward — curated, never generated — rule #9)
+// MARK: - Curiosity fact (variable reward, curated, never generated, rule #9)
 
 struct ThrCuriosityCard: View {
     @Environment(\.theme) private var theme
@@ -186,7 +259,7 @@ struct ThrNavRow: View {
     }
 }
 
-// MARK: - Streak chip (positive outcomes only — rule #7 / Fence 5)
+// MARK: - Streak chip (positive outcomes only, rule #7 / Fence 5)
 
 struct ThrStreakChip: View {
     @Environment(\.theme) private var theme

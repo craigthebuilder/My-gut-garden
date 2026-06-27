@@ -1,6 +1,6 @@
 //
 //  ThrPreviewData.swift
-//  MyGutGarden — Module C: SwiftUI-preview fixtures only (DEBUG).
+//  MyGutGarden, Module C: SwiftUI-preview fixtures only (DEBUG).
 //
 //  Reuses the bundled recognition fixture so previews render the real shapes
 //  without a backend. Never compiled into release.

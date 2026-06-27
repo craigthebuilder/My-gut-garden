@@ -1,4 +1,4 @@
-# districts.csv — the 4 Thrive guild-garden districts, unlocked in sequence (framework §4; SPEC §8, §13). Natural key: order.
+# districts.csv, the 4 Thrive guild-garden districts, unlocked in sequence (framework §4; SPEC §8, §13). Natural key: order.
 # unlock_rule_key matches SPEC §13 district-unlock logic (resolved by Module D config).
 # Format: pipe-delimited. order|name|unlock_rule_key
 order|name|unlock_rule_key

@@ -1,6 +1,6 @@
 //
 //  Theme.swift
-//  GutApp — Design System (single source of truth for all UI tokens)
+//  GutApp, Design System (single source of truth for all UI tokens)
 //
 //  Goes in e.g. /ios/GutApp/DesignSystem/Theme.swift
 //
@@ -20,7 +20,7 @@ import SwiftUI
 protocol Theme {
     var colors: ThemeColors { get }
     var typography: ThemeTypography { get }
-    var metrics: ThemeMetrics { get }   // spacing, radius, elevation — shared shape language
+    var metrics: ThemeMetrics { get }   // spacing, radius, elevation, shared shape language
 }
 
 // MARK: - Color tokens
@@ -28,15 +28,15 @@ protocol Theme {
 struct ThemeColors {
     let primary: Color
     let secondary: Color
-    let accent: Color          // celebration / emphasis — used with restraint (loud in Thrive, quiet in Survive)
+    let accent: Color          // celebration / emphasis, used with restraint (loud in Thrive, quiet in Survive)
 
     // Semantic
     let success: Color
     let warning: Color
     let error: Color
 
-    // FODMAP safety (Survive). Must be legible AND gentle — never a shame signal.
-    // Pair with shape/label, never color alone (accessibility — DESIGN.md §5).
+    // FODMAP safety (Survive). Must be legible AND gentle, never a shame signal.
+    // Pair with shape/label, never color alone (accessibility, DESIGN.md §5).
     let safetyGreen: Color
     let safetyYellow: Color
     let safetyRed: Color
@@ -81,7 +81,7 @@ struct ThemeTypography {
 // MARK: - Metric tokens (shared shape language; tweak per-theme if you want)
 
 struct ThemeMetrics {
-    // Spacing scale — TODO(owner): confirm.
+    // Spacing scale, TODO(owner): confirm.
     let space1: CGFloat = 4
     let space2: CGFloat = 8
     let space3: CGFloat = 12
@@ -90,12 +90,12 @@ struct ThemeMetrics {
     let space6: CGFloat = 32
     let space7: CGFloat = 48
 
-    // Corner radius — carries a lot of feel (organic vs crisp). TODO(owner).
+    // Corner radius, carries a lot of feel (organic vs crisp). TODO(owner).
     let radiusSmall: CGFloat = 8
     let radiusMedium: CGFloat = 16
     let radiusLarge: CGFloat = 28
 
-    // Elevation — TODO(owner).
+    // Elevation, TODO(owner).
     let shadowRadius: CGFloat = 12
     let shadowOpacity: Double = 0.10
 }
@@ -104,12 +104,12 @@ struct ThemeMetrics {
 
 struct ThriveTheme: Theme {
     // Warm field-guide world: cream/parchment + forest-green ink + terracotta
-    // accent. Derived from design/references/* (DESIGN.md §4 — the reference
+    // accent. Derived from design/references/* (DESIGN.md §4, the reference
     // wins). Owner-tunable; the structure is the source of truth.
     let colors = ThemeColors(
         primary:      Color(hex: "#3B6B43"),   // forest-green ink (field-guide titles, primary)
         secondary:    Color(hex: "#8FA983"),   // sage
-        accent:       Color(hex: "#D9794E"),   // terracotta — celebration / rare-find pop, dashboard arc
+        accent:       Color(hex: "#D9794E"),   // terracotta, celebration / rare-find pop, dashboard arc
         success:      Color(hex: "#3B6B43"),
         warning:      Color(hex: "#D9A441"),
         error:        Color(hex: "#C2553F"),
@@ -129,18 +129,18 @@ struct ThriveTheme: Theme {
 }
 
 struct SurviveTheme: Theme {
-    // Calm, cool, reassuring — low-stimulation, more whitespace, gentle motion.
+    // Calm, cool, reassuring, low-stimulation, more whitespace, gentle motion.
     let colors = ThemeColors(
-        primary:      Color(hex: "#4A7FA5"),   // TODO placeholder — calm blue
+        primary:      Color(hex: "#4A7FA5"),   // TODO placeholder, calm blue
         secondary:    Color(hex: "#9DB9CC"),   // TODO
-        accent:       Color(hex: "#6E8FA6"),   // TODO — kept quiet on purpose
+        accent:       Color(hex: "#6E8FA6"),   // TODO, kept quiet on purpose
         success:      Color(hex: "#5C9A78"),   // TODO
         warning:      Color(hex: "#D6A356"),   // TODO
         error:        Color(hex: "#C76B6B"),   // TODO
         safetyGreen:  Color(hex: "#6FB089"),   // legible + gentle, not alarming
         safetyYellow: Color(hex: "#E3C067"),
         safetyRed:    Color(hex: "#D58A8A"),
-        background:   Color(hex: "#F8FAFB"),   // TODO — softer than Thrive
+        background:   Color(hex: "#F8FAFB"),   // TODO, softer than Thrive
         surface:      Color(hex: "#FFFFFF"),   // TODO
         textPrimary:  Color(hex: "#1F2A30"),   // TODO
         textSecondary:Color(hex: "#5E6E76"),   // TODO

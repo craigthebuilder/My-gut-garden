@@ -1,6 +1,6 @@
 //
 //  SrvSampleData.swift
-//  MyGutGarden — Module E. Clearly-labelled sample data for the offline build
+//  MyGutGarden, Module E. Clearly-labelled sample data for the offline build
 //  and SwiftUI previews ONLY. Never shown when a real backend is configured.
 //
 //  This is demo scaffolding, not seed content: it lets the whole Survive
@@ -13,7 +13,7 @@ import Foundation
 enum SrvSampleData {
 
     /// A fortnight of evening check-ins: mostly good, a couple of rough days,
-    /// one confounder-tagged day — enough to exercise the streak freeze rule.
+    /// one confounder-tagged day, enough to exercise the streak freeze rule.
     static func logs(now: Date = .init()) -> [SrvSymptomLogRow] {
         let calendar = Calendar.current
         let iso = ISO8601DateFormatter()
@@ -71,7 +71,7 @@ enum SrvSampleData {
                 computedAt: iso.string(from: now),
                 pattern: SrvPattern.h2s.rawValue,
                 confidence: SrvPatternConfidence.consistent.rawValue,
-                // RD-REVIEW-REQUIRED — placeholder evidence note (Fence 1)
+                // RD-REVIEW-REQUIRED, placeholder evidence note (Fence 1)
                 evidenceSummary: "Sulfur-smelling gas on 6 of the last 10 logged days, often after richer meals."
             )
         ]

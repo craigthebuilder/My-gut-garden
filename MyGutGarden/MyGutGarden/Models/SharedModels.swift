@@ -1,6 +1,6 @@
 //
 //  SharedModels.swift
-//  MyGutGarden — Phase 0 shared types (SPEC §5).
+//  MyGutGarden, Phase 0 shared types (SPEC §5).
 //
 //  The typed Swift mirror of the data model + the frozen recognition contract
 //  (SPEC §4). Every module decodes the `recognize` Edge Function response into
@@ -28,7 +28,7 @@ enum FodmapSafety: String, Codable, Sendable {
     case green, yellow, red
 }
 
-/// ⚠️ THE load-bearing enum (SPEC §9). Drives OPPOSITE behavior — never flatten.
+/// ⚠️ THE load-bearing enum (SPEC §9). Drives OPPOSITE behavior, never flatten.
 /// `medicalAllergy` is LOUD across both modes; `preferenceIntolerance` is quiet.
 enum ExclusionType: String, Codable, Sendable {
     case medicalAllergy = "medical_allergy"
@@ -49,7 +49,7 @@ struct VisionResult: Codable, Sendable {
     let sceneNotes: String?
 }
 
-// MARK: - Food attributes (produced by the DB join, NOT the LLM — rule #2)
+// MARK: - Food attributes (produced by the DB join, NOT the LLM, rule #2)
 
 struct PlantRef: Codable, Sendable, Hashable {
     let name: String

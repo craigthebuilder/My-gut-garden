@@ -1,10 +1,10 @@
 //
 //  SrvStreakEngineTests.swift
-//  MyGutGardenTests — Module E. The symptom-free streak math, INCLUDING the
+//  MyGutGardenTests, Module E. The symptom-free streak math, INCLUDING the
 //  confounder-freeze rule (SPEC §12, §13). Deterministic inputs only.
 //
 //  The contract under test (CLAUDE.md §5 testing): a good day advances, a bad
-//  day resets, and a confounder-heavy day FREEZES — it neither advances nor
+//  day resets, and a confounder-heavy day FREEZES, it neither advances nor
 //  breaks the streak. This is the positive-outcome streak ("days feeling
 //  good"), never restriction (rule #7).
 //
@@ -40,14 +40,14 @@ struct SrvStreakEngineTests {
     }
 
     @Test func confounderFreezesEvenWhenSymptomatic() {
-        // A confounder-tagged day freezes regardless of symptoms — the
+        // A confounder-tagged day freezes regardless of symptoms, the
         // confounder explains it, so it's set aside (SPEC §12).
         let day = SrvDaySymptoms(bloating: .severe, pain: .severe, confounders: [.sick])
         #expect(SrvStreakEngine.outcome(for: day) == .confounded)
     }
 
     @Test func confounderFreezesEvenWhenSymptomFree() {
-        // Frozen means frozen in BOTH directions — a good-but-confounded day
+        // Frozen means frozen in BOTH directions, a good-but-confounded day
         // does not advance either.
         let day = SrvDaySymptoms(bloating: .none, confounders: [.menstruating])
         #expect(SrvStreakEngine.outcome(for: day) == .confounded)

@@ -1,10 +1,10 @@
 //
 //  FoodAttributeJoin.swift
-//  MyGutGarden — Phase 0 food-attribute derivation (SPEC §5, §10, §11).
+//  MyGutGarden, Phase 0 food-attribute derivation (SPEC §5, §10, §11).
 //
 //  The Edge Function performs the DB join (identified foods → fiber/FODMAP/
 //  phytochemical/guild/color attributes). This client layer turns that joined
-//  response into the per-photo insights each surface shows — the "3 P's",
+//  response into the per-photo insights each surface shows, the "3 P's",
 //  plant variety, rainbow contribution (Thrive); FODMAP safety + cautions
 //  (Survive). It never invents nutrition numbers (CLAUDE.md rule #2).
 //

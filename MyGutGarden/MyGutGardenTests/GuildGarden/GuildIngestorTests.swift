@@ -1,6 +1,6 @@
 //
 //  GuildIngestorTests.swift
-//  MyGutGardenTests — Module D's `GuildIngesting` seam: feeding-point summation
+//  MyGutGardenTests, Module D's `GuildIngesting` seam: feeding-point summation
 //  and the sequential district-unlock gates (SPEC §13). Each gate is covered
 //  independently so a regression in one doesn't hide behind another.
 //

@@ -1,6 +1,6 @@
 //
 //  PatTimingGateTests.swift
-//  MyGutGardenTests — Module F.
+//  MyGutGardenTests, Module F.
 //
 //  The §13 confidence ladder (config-driven): < patternMinDays (with ≥
 //  patternMinSymptomDays symptomatic) → nil; 14 → tentative; 21 → emerging;

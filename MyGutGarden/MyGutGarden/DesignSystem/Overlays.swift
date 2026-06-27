@@ -1,9 +1,9 @@
 //
 //  Overlays.swift
-//  MyGutGarden — celebration + confirmation surfaces.
+//  MyGutGarden, celebration + confirmation surfaces.
 //
 //  CelebrationOverlay is the orchestrated reward moment (guild bloom, rare-find,
-//  graduation — the signature juice, Thrive only). ConfirmationModal is the
+//  graduation, the signature juice, Thrive only). ConfirmationModal is the
 //  disclaimer / click-to-confirm gate (A celiac/IBD ack + red-flag, mode switch).
 //  Both respect reduced motion (DESIGN.md §3, §5).
 //
@@ -19,6 +19,11 @@ struct CelebrationOverlay: View {
     let message: String
     var systemImage: String = "sparkles"
     var tint: Color? = nil
+    /// Primary-button label (defaults to a gentle acknowledgment).
+    var primaryTitle: String = "Lovely"
+    /// Primary-button action; defaults to dismissing. Set it to route somewhere
+    /// (e.g. a district unlock jumps to the garden map).
+    var onPrimary: (() -> Void)? = nil
     var onDismiss: () -> Void
 
     @State private var appeared = false
@@ -40,12 +45,24 @@ struct CelebrationOverlay: View {
                     .font(theme.typography.body())
                     .foregroundStyle(theme.colors.textSecondary)
                     .multilineTextAlignment(.center)
-                PrimaryButton(title: "Lovely", action: onDismiss)
-                    .fixedSize()
+                // Full-width button (reads as the clear next step, wider than its label).
+                PrimaryButton(title: primaryTitle, action: onPrimary ?? onDismiss)
             }
             .padding(theme.metrics.space6)
+            .frame(maxWidth: 360)
             .background(theme.colors.surface)
             .clipShape(RoundedRectangle(cornerRadius: theme.metrics.radiusLarge, style: .continuous))
+            // Close affordance, top-left, so the moment is dismissable without acting.
+            .overlay(alignment: .topLeading) {
+                Button(action: onDismiss) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(theme.colors.textSecondary)
+                        .padding(theme.metrics.space4)
+                        .contentShape(Rectangle())
+                }
+                .accessibilityLabel("Close")
+            }
             .padding(theme.metrics.space5)
             .opacity(reduceMotion ? 1 : (appeared ? 1 : 0))
         }
@@ -59,13 +76,29 @@ struct CelebrationOverlay: View {
     }
 }
 
+/// Dims the screen and centers `content`, the standard dialog backdrop, so a
+/// confirmation card never floats on an opaque white sheet. Pair with a
+/// `.fullScreenCover` whose `presentationBackground` is `.clear`.
+struct ModalScrim<Content: View>: View {
+    var onTapOutside: (() -> Void)? = nil
+    @ViewBuilder var content: () -> Content
+
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.35).ignoresSafeArea()
+                .onTapGesture { onTapOutside?() }
+            content()
+        }
+    }
+}
+
 /// Disclaimer + click-to-confirm. Nobody is locked out (SPEC §6): the modal
 /// informs, the user acknowledges, then proceeds. `severity` shifts tone.
 struct ConfirmationModal: View {
     @Environment(\.theme) private var theme
     let title: String
     let message: String
-    var confirmTitle: String = "I understand — continue"
+    var confirmTitle: String = "I understand, continue"
     var cancelTitle: String? = "Not now"
     var severity: Severity = .info
     var onConfirm: () -> Void

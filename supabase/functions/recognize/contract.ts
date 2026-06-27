@@ -1,7 +1,7 @@
 // =====================================================================
 // THE FROZEN vision-LLM JSON output contract (SPEC §4).
 // Every food-side feature depends on this shape. Do not change it without
-// versioning. The LLM does food ID + COARSE portion tier ONLY — never
+// versioning. The LLM does food ID + COARSE portion tier ONLY - never
 // nutrition numbers (CLAUDE.md hard rule #2). The database produces all
 // fiber/FODMAP/phytochemical/guild values (see attributes.ts).
 // =====================================================================
@@ -12,11 +12,11 @@ export type PortionTier = (typeof PORTION_TIERS)[number];
 export interface VisionFood {
   /** best guess, canonical-ish */
   name: string;
-  /** coarse tier only — never precise grams (SPEC §4) */
+  /** coarse tier only - never precise grams (SPEC §4) */
   portion_tier: PortionTier;
   /** 0.0–1.0 */
   confidence: number;
-  /** e.g. 'curry', 'stir_fry' — used for hidden-ingredient lookup; may be null */
+  /** e.g. 'curry', 'stir_fry' - used for hidden-ingredient lookup; may be null */
   dish_type: string | null;
 }
 
@@ -26,7 +26,7 @@ export interface VisionResult {
   scene_notes: string | null;
 }
 
-/** The exact JSON the vision model must return — single-sourced for the prompt. */
+/** The exact JSON the vision model must return - single-sourced for the prompt. */
 export const CONTRACT_SHAPE = `{
   "foods": [
     {

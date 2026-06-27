@@ -1,7 +1,7 @@
 //
 //  GuildBloomCelebrationView.swift
-//  MyGutGarden — THE signature moment (DESIGN.md §1, §3): a guild's nourishment
-//  crossing into Blooming. An orchestrated bloom — petals unfurl from the guild's
+//  MyGutGarden, THE signature moment (DESIGN.md §1, §3): a guild's nourishment
+//  crossing into Blooming. An orchestrated bloom, petals unfurl from the guild's
 //  mascot in a warm burst. This is where Module D spends its boldness.
 //
 //  Thrive-only juice. Respects reduced motion (DESIGN.md §3/§5): when reduced,
@@ -45,7 +45,7 @@ struct GuildBloomCelebrationView: View {
                     Text("is blooming")
                         .font(theme.typography.title(20))
                         .foregroundStyle(theme.colors.textSecondary)
-                    if claimRisk { EmergingScienceTag() } // Fence 2 — even mid-celebration
+                    if claimRisk { EmergingScienceTag() } // Fence 2, even mid-celebration
                     Text("Sustained feeding paid off. Keep the rhythm going.")
                         .font(theme.typography.body())
                         .foregroundStyle(theme.colors.textSecondary)
@@ -119,13 +119,13 @@ struct GuildBloomCelebrationView: View {
     }
 }
 
-#Preview("Bloom — standard") {
+#Preview("Bloom, standard") {
     GuildBloomCelebrationView(guildDisplayName: "The Anti-inflammatory Arsenal",
                               claimRisk: false) {}
         .themed(for: .thrive)
 }
 
-#Preview("Bloom — claim-risk (Fence 2 tag)") {
+#Preview("Bloom, claim-risk (Fence 2 tag)") {
     GuildBloomCelebrationView(guildDisplayName: "The Mood Regulators",
                               claimRisk: true) {}
         .themed(for: .thrive)

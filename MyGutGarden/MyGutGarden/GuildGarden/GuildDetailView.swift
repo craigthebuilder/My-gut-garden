@@ -1,6 +1,6 @@
 //
 //  GuildDetailView.swift
-//  MyGutGarden — the collectible field-guide card for one guild (the Pokédex
+//  MyGutGarden, the collectible field-guide card for one guild (the Pokédex
 //  "double-click" view from design/references/double-click-into-the-*.jpg).
 //
 //  Composes the shared `FieldGuideCard` (numbered, eyebrow, mascot slot, ornate
@@ -14,7 +14,7 @@ import SwiftUI
 // MARK: - Bloom meter (the §13 state machine, made visible)
 
 /// Four-state nourishment meter. Shows the bloom STATE (gain-framed label), a
-/// fill bar, and the well-fed rhythm badge. Deliberately directional — no precise
+/// fill bar, and the well-fed rhythm badge. Deliberately directional, no precise
 /// number is surfaced (SPEC §1: never claim precision the model can't deliver).
 struct GuildBloomMeter: View {
     @Environment(\.theme) private var theme
@@ -170,7 +170,7 @@ struct GuildDetailView: View {
     }
 }
 
-#Preview("Guild detail — Blooming") {
+#Preview("Guild detail, Blooming") {
     NavigationStack {
         GuildDetailView(guild: GuildGardenViewModel.preview().districts[0].guilds[0],
                         districtName: "The Backbone District")
@@ -178,7 +178,7 @@ struct GuildDetailView: View {
     .themed(for: .thrive)
 }
 
-#Preview("Guild detail — claim-risk (Fence 2)") {
+#Preview("Guild detail, claim-risk (Fence 2)") {
     let vm = GuildGardenViewModel.preview()
     let scientists = vm.districts.first { $0.order == 3 }!
     return NavigationStack {

@@ -1,4 +1,4 @@
-# plants.csv — the master list that defines the "30 unique plants per week" count (SPEC §8, §13). Natural key: name.
+# plants.csv, the master list that defines the "30 unique plants per week" count (SPEC §8, §13). Natural key: name.
 # rarity_tier (common|uncommon|rare|legendary) assigned HEURISTICALLY by dietary commonness for v1
 #   (SPEC §13: "Assigned manually in the plants master list for v1; data-driven later"). Tunable by owner/RD.
 # NOTE: mushrooms (fungi) and sea vegetables (algae) are not botanically "plants" but count toward the

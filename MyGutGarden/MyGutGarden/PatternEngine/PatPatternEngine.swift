@@ -1,26 +1,31 @@
 //
 //  PatPatternEngine.swift
-//  MyGutGarden — Module F (Survive pattern engine), SPEC §11b / §13.
+//  MyGutGarden, Module F (Survive pattern engine), SPEC §11b / §13.
 //
 //  The rule-based, content-FREE plumbing of the invisible Survive pattern
 //  engine: windowing logs into days, applying the §13 timing/confidence gates
 //  from GameConfig, down-weighting confounder-heavy days, and picking the
 //  leading pattern. All clinical decision content lives in `PatRules.swift`
-//  behind 🔒 FENCE 1 — this file only orchestrates and reads config.
+//  behind 🔒 FENCE 1, this file only orchestrates and reads config.
 //
 //  ⚠️ Output is structurally pattern → experiment → confirm. NEVER a diagnosis,
 //  named condition (SIBO/IBS/IMO), named bug, or accumulating bad-guy meter
 //  (CLAUDE.md hard rule #4, SPEC §11b/§14).
 //
-//  ── INPUT GAP (documented, intentional) ───────────────────────────────────
-//  `assess(logs:asOf:)` takes the shared `SymptomLogRow`, which today only
-//  carries bss / gasOdor / confounders. Stool-form + gas-odor cleanly reach the
-//  methane / h2s / hydrogen_sibo / proteolytic leans. The fat and histamine
-//  leans depend on food-correlation signals (worse-after-fatty, aged/fermented
-//  triggers) that live in `symptom_logs` (food_correlation, bloating, …) but
-//  aren't decoded by `SymptomLogRow` yet. The feature-based `assess(features:)`
-//  surface exercises those rules; when the data layer surfaces the extra
-//  columns, only the `features(from:)` adapter below needs to grow.
+//  ── READ SHAPE (Batch D cutover) ──────────────────────────────────────────
+//  New check-in signal is written ONLY to the sub-entry tables, so `refresh`
+//  aggregates per `log_date` from:
+//    • symptom_entries  → severity by symptom_type (bloating/gas/pain/urgency)
+//                         + gas_odor (the H2S / odor lean's discriminating cue)
+//    • mood_entries     → mood_score, CANONICAL high=better (NEVER inverted here;
+//                         the single 6 - ui inversion lives in CheckInKit)
+//    • stool_entries    → bss → coarse Bristol bucket
+//  The flat `symptom_logs` table is kept ONLY as a FALLBACK for legacy/history
+//  days that have no sub-entry data (so older logs and confounder tags survive).
+//  `Self.features(symptomEntries:moodEntries:stoolEntries:legacyLogs:)` builds
+//  the per-day `PatSymptomFeatures`; the pure `assess(features:)` core is
+//  unchanged. The legacy `assess(logs:)` / `features(from:)` surface remains for
+//  the fallback path and the existing fixtures.
 //
 
 import Foundation
@@ -35,7 +40,7 @@ struct PatPatternEngine: Sendable {
         self.config = config
     }
 
-    // MARK: - Public entry points (SymptomLogRow surface — the mandated API)
+    // MARK: - Public entry points (SymptomLogRow surface, the mandated API)
 
     /// PURE. Returns a pattern lean, or `nil` when there isn't enough signal yet.
     func assess(logs: [SymptomLogRow], asOf: Date) -> PatAssessment? {
@@ -49,7 +54,7 @@ struct PatPatternEngine: Sendable {
         evaluate(features: logs.compactMap(Self.features(from:)), asOf: asOf)
     }
 
-    // MARK: - Public entry points (feature surface — richer / future inputs)
+    // MARK: - Public entry points (feature surface, richer / future inputs)
 
     /// PURE. Same logic, over the normalized feature model.
     func assess(features: [PatSymptomFeatures], asOf: Date) -> PatAssessment? {
@@ -91,7 +96,7 @@ struct PatPatternEngine: Sendable {
         for logs in symptomaticDayLogs {
             // SPEC §12: a confounder-heavy day is trusted less, so the engine
             // doesn't blame food for an illness/stress flare. It still COUNTS as
-            // a logged/symptomatic day for the timing gate above — only its
+            // a logged/symptomatic day for the timing gate above, only its
             // fingerprint contribution is down-weighted.
             let dayWeight = logs.contains(where: { $0.hasConfounder })
                 ? config.confounderDownweight
@@ -127,7 +132,7 @@ struct PatPatternEngine: Sendable {
             }
         }
 
-        // No pattern clears the minimum — signal is too mixed to claim a lean.
+        // No pattern clears the minimum, signal is too mixed to claim a lean.
         guard leadingScore >= PatRules.minLeanEvidence else {
             return .gathering(progress(loggedDays: loggedDays, symptomaticDays: symptomaticDays,
                                        mixed: true))
@@ -140,7 +145,7 @@ struct PatPatternEngine: Sendable {
                                    evidenceSummary: summary))
     }
 
-    // MARK: - Confidence tier (§13 timing) — config-driven
+    // MARK: - Confidence tier (§13 timing), config-driven
 
     private func confidenceTier(forLoggedDays loggedDays: Int) -> PatConfidence {
         if loggedDays >= config.patternConsistentDays { return .consistent }
@@ -154,13 +159,13 @@ struct PatPatternEngine: Sendable {
         let message: String
         if loggedDays < config.patternMinDays {
             let remaining = config.patternMinDays - loggedDays
-            message = "Still gathering signal — \(remaining) more day\(remaining == 1 ? "" : "s") "
+            message = "Still gathering signal, \(remaining) more day\(remaining == 1 ? "" : "s") "
                 + "of logs to spot your first pattern."
         } else if symptomaticDays < config.patternMinSymptomDays {
-            message = "Still gathering signal — keep logging on the days you don't feel great, "
+            message = "Still gathering signal, keep logging on the days you don't feel great, "
                 + "and a pattern can start to show."
         } else if mixed {
-            message = "Still gathering signal — the picture is mixed so far. A bit more logging "
+            message = "Still gathering signal, the picture is mixed so far. A bit more logging "
                 + "should sharpen it."
         } else {
             message = "Still gathering signal."
@@ -189,30 +194,137 @@ struct PatPatternEngine: Sendable {
         )
     }
 
-    // MARK: - Persistence (I/O — not pure)
+    // MARK: - Sub-entry tables → features adapter (Batch D read cutover)
 
-    /// Fetches the user's symptom history, runs `assess`, and records the lean.
+    /// PURE. Aggregates the new per-`log_date` sub-entry rows into the engine's
+    /// daily feature model. `legacyLogs` is a FALLBACK only: a flat `symptom_logs`
+    /// row contributes a day ONLY when that calendar date has no sub-entry data
+    /// (so history + confounder tags survive without double-counting new signal).
+    ///
+    /// Mood is read CANONICAL high=better and is NEVER inverted; it does not, by
+    /// itself, mark a day symptomatic (a good mood must never read as "worse").
+    static func features(
+        symptomEntries: [SymptomEntryRow],
+        moodEntries: [MoodEntryRow],
+        stoolEntries: [StoolEntryRow],
+        legacyLogs: [SymptomLogRow] = []
+    ) -> [PatSymptomFeatures] {
+        var symByDate: [String: [SymptomEntryRow]] = [:]
+        var moodByDate: [String: [MoodEntryRow]] = [:]
+        var stoolByDate: [String: [StoolEntryRow]] = [:]
+        var dates = Set<String>()
+        for e in symptomEntries { symByDate[e.logDate, default: []].append(e); dates.insert(e.logDate) }
+        for m in moodEntries { moodByDate[m.logDate, default: []].append(m); dates.insert(m.logDate) }
+        for s in stoolEntries { stoolByDate[s.logDate, default: []].append(s); dates.insert(s.logDate) }
+
+        var out: [PatSymptomFeatures] = []
+        for dateStr in dates {
+            guard let day = parseLogDate(dateStr) else { continue }
+            out.append(aggregateDay(
+                day: day,
+                symptoms: symByDate[dateStr] ?? [],
+                stools: stoolByDate[dateStr] ?? [],
+                moods: moodByDate[dateStr] ?? []
+            ))
+        }
+
+        // Legacy fallback: keep only days the sub-entry tables don't already cover.
+        for row in legacyLogs {
+            guard let f = features(from: row) else { continue }
+            let key = dayString(f.day)
+            guard !dates.contains(key) else { continue }
+            out.append(f)
+        }
+        return out
+    }
+
+    /// Collapses one calendar day's sub-entries into a single feature row.
+    /// The aggregation choices below (most-extreme stool, most-discriminating gas
+    /// odor, max severity per symptom type) are PLACEHOLDER and must be
+    /// RD-reviewed before launch. // RD-REVIEW-REQUIRED (Fence 1)
+    static func aggregateDay(
+        day: Date,
+        symptoms: [SymptomEntryRow],
+        stools: [StoolEntryRow],
+        moods: [MoodEntryRow]
+    ) -> PatSymptomFeatures {
+        // Stool: the most extreme BSS (largest deviation from a "normal" 4), so a
+        // looser/constipated day is not masked by an averaged-out normal one.
+        // // RD-REVIEW-REQUIRED (Fence 1)
+        let aggBss = stools.compactMap(\.bss).max(by: { abs($0 - 4) < abs($1 - 4) })
+
+        // Symptom severity by type: the day's strongest reading per symptom.
+        // // RD-REVIEW-REQUIRED (Fence 1)
+        func maxSeverity(_ type: String) -> Int? {
+            symptoms.filter { $0.symptomType == type }.map(\.severity).max()
+        }
+
+        // Gas odor (only carried on gas entries). Prefer the most discriminating
+        // cue: sulfur > sour > odorless. // RD-REVIEW-REQUIRED (Fence 1)
+        let odorRank: [String: Int] = ["sulfur": 0, "sour": 1, "odorless": 2]
+        let odor = symptoms
+            .filter { $0.symptomType == "gas" }
+            .compactMap(\.gasOdor)
+            .min(by: { (odorRank[$0] ?? 99) < (odorRank[$1] ?? 99) })
+
+        // Mood: CANONICAL high=better, NEVER inverted. Keep the day's most-erratic
+        // (lowest) reading for completeness; it never marks the day symptomatic.
+        let aggMood = moods.map(\.moodScore).min()
+
+        return PatSymptomFeatures(
+            day: day,
+            stool: PatStoolForm(bss: aggBss),
+            gasOdor: PatGasOdor(raw: odor),
+            confounders: [],   // sub-entry tables carry no confounder tags
+            bloating: maxSeverity("bloating"),
+            gas: maxSeverity("gas"),
+            pain: maxSeverity("pain"),
+            urgency: maxSeverity("urgency"),
+            mood: aggMood
+        )
+    }
+
+    // MARK: - Persistence (I/O, not pure)
+
+    /// Fetches the user's check-in history from the sub-entry tables, runs
+    /// `assess` over the aggregated features, records any lean, then runs the
+    /// Fence-7 suspect auto-suggestion gate (see `PatSuspectGate.swift`).
     ///
     /// `pattern_assessments` has no unique constraint on `user_id` (id PK +
-    /// `computed_at`), so this APPENDS a fresh assessment — the table is an
+    /// `computed_at`), so this APPENDS a fresh assessment, the table is an
     /// evolving history (tentative → emerging → consistent); the latest by
     /// `computed_at` is the current lean. When there isn't enough signal yet,
     /// nothing is written (the UI shows the "gathering" state from `evaluate`).
     func refresh(repository: Repository, userId: String, asOf: Date = Date()) async throws {
-        let logs: [SymptomLogRow] = try await repository.select(
-            "symptom_logs",
-            filters: ["user_id": "eq.\(userId)"],
-            order: "logged_at.asc"
-        )
-        guard let assessment = assess(logs: logs, asOf: asOf) else { return }
+        // ── Read cutover: new signal comes from the sub-entry tables. ──────────
+        let symptomEntries: [SymptomEntryRow] = try await repository.select(
+            "symptom_entries", filters: ["user_id": "eq.\(userId)"], order: "log_date.asc")
+        let moodEntries: [MoodEntryRow] = try await repository.select(
+            "mood_entries", filters: ["user_id": "eq.\(userId)"], order: "log_date.asc")
+        let stoolEntries: [StoolEntryRow] = try await repository.select(
+            "stool_entries", filters: ["user_id": "eq.\(userId)"], order: "log_date.asc")
+        // Flat history is a FALLBACK only (fills days with no sub-entry data).
+        let legacy: [SymptomLogRow] = try await repository.select(
+            "symptom_logs", filters: ["user_id": "eq.\(userId)"], order: "logged_at.asc")
 
-        try await repository.insertVoid("pattern_assessments", [
-            "user_id": .string(userId),
-            "computed_at": .date(asOf),
-            "pattern": .string(assessment.pattern.rawValue),
-            "confidence": .string(assessment.confidence.rawValue),
-            "evidence_summary": .string(assessment.evidenceSummary),
-        ])
+        let features = Self.features(
+            symptomEntries: symptomEntries, moodEntries: moodEntries,
+            stoolEntries: stoolEntries, legacyLogs: legacy)
+
+        if let assessment = assess(features: features, asOf: asOf) {
+            try await repository.insertVoid("pattern_assessments", [
+                "user_id": .string(userId),
+                "computed_at": .date(asOf),
+                "pattern": .string(assessment.pattern.rawValue),
+                "confidence": .string(assessment.confidence.rawValue),
+                "evidence_summary": .string(assessment.evidenceSummary),
+            ])
+        }
+
+        // ── Fence 7: run the suspect auto-suggestion gate alongside the read. ──
+        try await suggestSuspects(
+            repository: repository, userId: userId,
+            symptomEntries: symptomEntries, asOf: asOf)
     }
 
     // MARK: - Helpers
@@ -234,4 +346,26 @@ struct PatPatternEngine: Sendable {
         plain.formatOptions = [.withInternetDateTime]
         return plain.date(from: string)
     }
+
+    /// Parse a SQL `date` (`log_date`, e.g. "2026-06-26") to UTC midnight. Falls
+    /// back to the timestamp parser if a full timestamp is handed in.
+    static func parseLogDate(_ string: String) -> Date? {
+        if let d = logDateFormatter.date(from: string) { return d }
+        return parseTimestamp(string)
+    }
+
+    /// Render a `Date` as a UTC "yyyy-MM-dd" key, for deduping legacy fallback
+    /// rows against the sub-entry `log_date` keys.
+    static func dayString(_ date: Date) -> String {
+        logDateFormatter.string(from: date)
+    }
+
+    static let logDateFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.calendar = Calendar(identifier: .gregorian)
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.timeZone = TimeZone(identifier: "UTC")
+        f.dateFormat = "yyyy-MM-dd"
+        return f
+    }()
 }

@@ -1,6 +1,6 @@
 //
 //  Fixtures.swift
-//  MyGutGardenTests — canonical test data shared by every module's test suite,
+//  MyGutGardenTests, canonical test data shared by every module's test suite,
 //  so nobody re-invents a sample. Add module-specific fixtures in your own
 //  MyGutGardenTests/<Module>/ folder; put anything shared here.
 //

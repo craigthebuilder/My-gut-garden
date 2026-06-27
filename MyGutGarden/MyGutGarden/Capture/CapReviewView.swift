@@ -1,10 +1,10 @@
 //
 //  CapReviewView.swift
-//  MyGutGarden — Module B review & confirm screen (SPEC §4 step 4/6, §9, §11).
+//  MyGutGarden, Module B review & confirm screen (SPEC §4 step 4/6, §9, §11).
 //
 //  The honesty layer of the snap flow: the user confirms what the camera saw,
 //  answers the always-ask hidden-ingredient prompts, and corrects anything the
-//  database couldn't match — before a single row is logged. Medical-allergy
+//  database couldn't match, before a single row is logged. Medical-allergy
 //  alerts fire LOUD here regardless of mode (§9). Portion stays a coarse tier,
 //  never a measured gram (rule #3).
 //
@@ -42,7 +42,7 @@ struct CapReviewScreen: View {
         .accessibilityElement(children: .combine)
     }
 
-    // MARK: Allergy alerts — LOUD across both modes (§9)
+    // MARK: Allergy alerts, LOUD across both modes (§9)
 
     @ViewBuilder
     private var allergyBanner: some View {
@@ -51,7 +51,7 @@ struct CapReviewScreen: View {
                 ForEach(model.allergyAlerts, id: \.foodName) { alert in
                     HStack(spacing: theme.metrics.space2) {
                         Image(systemName: "exclamationmark.triangle.fill")
-                        Text("Heads up — this looks like it contains \(alert.foodName), one of your flagged allergies.")
+                        Text("Heads up, this looks like it contains \(alert.foodName), one of your flagged allergies.")
                             .font(theme.typography.body(weight: .semibold))
                     }
                     .foregroundStyle(theme.colors.error)
@@ -90,7 +90,7 @@ struct CapReviewScreen: View {
         (model.response?.items ?? []).filter { $0.silentlyOmitted != true && $0.attributes != nil }
     }
 
-    // MARK: Hidden-ingredient prompts — always-ask yes/no (§4 step 6, §11)
+    // MARK: Hidden-ingredient prompts, always-ask yes/no (§4 step 6, §11)
 
     @ViewBuilder
     private var hiddenPrompts: some View {
@@ -106,7 +106,7 @@ struct CapReviewScreen: View {
         }
     }
 
-    // MARK: Manual confirm — unmatched guesses (§4 step 4)
+    // MARK: Manual confirm, unmatched guesses (§4 step 4)
 
     @ViewBuilder
     private var manualConfirm: some View {
@@ -280,7 +280,7 @@ private struct CapManualConfirmRow: View {
     }
 }
 
-// MARK: - Portion labels (coarse tiers only — rule #3)
+// MARK: - Portion labels (coarse tiers only, rule #3)
 
 enum CapPortion {
     static func label(_ tier: PortionTier) -> String {

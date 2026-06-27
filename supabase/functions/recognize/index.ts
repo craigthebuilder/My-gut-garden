@@ -1,13 +1,13 @@
 // =====================================================================
-// recognize — the Phase-0 recognition pipeline (SPEC §4).
+// recognize - the Phase-0 recognition pipeline (SPEC §4).
 // photo → provider (Anthropic vision | offline fixture) → frozen contract →
 // resolve foods → database attribute join → mode-specific response.
 //
 // Secrets (server-side only, SPEC §3):
-//   SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY  — auto-injected by the platform
-//   ANTHROPIC_API_KEY                        — `supabase secrets set` (optional;
+//   SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY  - auto-injected by the platform
+//   ANTHROPIC_API_KEY                        - `supabase secrets set` (optional;
 //                                              absent => fixture provider, offline)
-//   RECOGNITION_PROVIDER                     — optional "anthropic" | "fixture"
+//   RECOGNITION_PROVIDER                     - optional "anthropic" | "fixture"
 // =====================================================================
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
@@ -37,6 +37,10 @@ interface RequestBody {
   image_media_type?: string;
   storage_bucket?: string;
   storage_path?: string;
+  // Batch C - the user's free-text note ("more onion not pictured"). When present
+  // it drives a SECOND, text-only structured call (same frozen contract); those
+  // foods are merged as source='annotation', primary vision wins (SPEC §4, rule #2).
+  user_annotation?: string;
 }
 
 Deno.serve(async (req) => {
@@ -99,7 +103,13 @@ Deno.serve(async (req) => {
   // --- run the pipeline ---
   try {
     const vision = await provider.recognize({ imageBase64, imageMediaType });
-    const response = await buildResponse(service, vision, mode, provider.name, exclusions);
+    // Batch C - annotation second call: text-only, ID + coarse tier ONLY, no
+    // numbers (rule #2). Fixture returns empty so offline builds stay deterministic.
+    const annotation = (body.user_annotation ?? "").trim();
+    const annotationVision = annotation
+      ? await provider.recognizeAnnotation(annotation)
+      : undefined;
+    const response = await buildResponse(service, vision, mode, provider.name, exclusions, annotationVision);
     return json(response);
   } catch (err) {
     const status = err instanceof ContractError ? 422 : 500;

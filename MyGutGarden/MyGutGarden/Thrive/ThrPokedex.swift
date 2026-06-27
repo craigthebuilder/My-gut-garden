@@ -1,14 +1,14 @@
 //
 //  ThrPokedex.swift
-//  MyGutGarden — Module C: the Thrive pokédex stack (SPEC §7, §8, §11a).
+//  MyGutGarden, Module C: the Thrive pokédex stack (SPEC §7, §8, §11a).
 //
 //  Tier-1 (everyone): Plant Garden + Rainbow. Tier-2 (earned, staggered):
-//  Phytochemical — gated behind `appState.progression.isTier2Unlocked`. Cross:
+//  Phytochemical, gated behind `appState.progression.isTier2Unlocked`. Cross:
 //  Fermented Finds (celebrated in Thrive). The Microbial Guild Garden is a Tier-2
 //  pokédex too, but it is MODULE D's surface and intentionally not rendered here.
 //
 //  Collected tiles show rarity outlines; not-yet-collected tiles grey out
-//  (CollectibleTile handles the greying — the same neutral treatment §9 uses).
+//  (CollectibleTile handles the greying, the same neutral treatment §9 uses).
 //
 
 import SwiftUI
@@ -87,7 +87,7 @@ struct ThrPokedexView: View {
                             ThrRainbowPokedexView(appState: appState, latestMeal: latestMeal)
                         } label: {
                             ThrNavRow(icon: "circle.hexagongrid.fill", title: "Rainbow",
-                                      subtitle: "Six color groups — what each does")
+                                      subtitle: "Six color groups, what each does")
                         }
                         Divider().overlay(theme.colors.divider)
                         NavigationLink {
@@ -135,19 +135,31 @@ struct ThrPlantGardenView: View {
     @Environment(\.theme) private var theme
     let model: ThrPokedexModel
 
+    @State private var suggestion: ThrPokedexModel.PlantEntry?
+
     private let columns = [GridItem(.adaptive(minimum: 96), spacing: 12)]
+
+    /// Only the plants the user has actually eaten (collected). Un-eaten plants
+    /// are NOT shown as locked silhouettes, they arrive via "Suggest a plant".
+    private var collected: [ThrPokedexModel.PlantEntry] { model.plants.filter(\.collected) }
+    private var uneaten: [ThrPokedexModel.PlantEntry] { model.plants.filter { !$0.collected } }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: theme.metrics.space4) {
-                if model.plants.isEmpty {
+                if !uneaten.isEmpty {
+                    SecondaryButton(title: "Suggest a plant to try", systemImage: "dice") {
+                        suggestion = uneaten.randomElement()
+                    }
+                }
+                if collected.isEmpty {
                     ThrEmptyState(icon: "leaf.fill",
                                   title: "Your garden's just getting started",
-                                  message: "Snap a meal and the plants you eat fill this field guide — kept for life.")
+                                  message: "Snap a meal and the plants you eat fill this field guide, kept for life.")
                 } else {
                     LazyVGrid(columns: columns, spacing: theme.metrics.space3) {
-                        ForEach(model.plants) { plant in
-                            CollectibleTile(name: plant.name, rarity: plant.rarity, collected: plant.collected) {
+                        ForEach(collected) { plant in
+                            CollectibleTile(name: plant.name, rarity: plant.rarity, collected: true) {
                                 IllustrationPlaceholder(systemImage: "leaf.fill",
                                                         tint: plant.rarity.accent(theme))
                             }
@@ -159,6 +171,36 @@ struct ThrPlantGardenView: View {
         }
         .background(theme.colors.background.ignoresSafeArea())
         .navigationTitle("Plant Garden")
+        .sheet(item: $suggestion) { plant in
+            ThrPlantSuggestionSheet(plant: plant)
+        }
+    }
+}
+
+/// A gentle "try this next" reveal for a plant the user has never eaten. An
+/// invitation to add variety, never a chore or a miss.
+struct ThrPlantSuggestionSheet: View {
+    @Environment(\.theme) private var theme
+    @Environment(\.dismiss) private var dismiss
+    let plant: ThrPokedexModel.PlantEntry
+
+    var body: some View {
+        VStack(spacing: theme.metrics.space4) {
+            FieldGuideCard(
+                eyebrow: "New to your garden",
+                title: plant.name,
+                subtitle: "You haven't eaten this one yet.",
+                bodyText: "Slip it into a meal this week to add it to your lifetime collection.",
+                rarity: plant.rarity
+            ) {
+                IllustrationPlaceholder(systemImage: "leaf.fill", tint: plant.rarity.accent(theme))
+            }
+            PrimaryButton(title: "Got it", action: { dismiss() })
+        }
+        .padding(theme.metrics.space5)
+        .frame(maxWidth: .infinity)
+        .background(theme.colors.background.ignoresSafeArea())
+        .presentationDetents([.medium])
     }
 }
 
@@ -236,7 +278,7 @@ struct ThrRainbowPokedexView: View {
     }
 }
 
-// MARK: - Phytochemical pokédex (Tier 2 — caller gates entry)
+// MARK: - Phytochemical pokédex (Tier 2, caller gates entry)
 
 struct ThrPhytochemicalPokedexView: View {
     @Environment(\.theme) private var theme
@@ -296,7 +338,7 @@ struct ThrFermentedFindsView: View {
                 if model.fermentedFinds.isEmpty {
                     ThrEmptyState(icon: "drop.fill",
                                   title: "No fermented finds yet",
-                                  message: "Yogurt, kimchi, miso, kefir — log one to start the collection.")
+                                  message: "Yogurt, kimchi, miso, kefir, log one to start the collection.")
                 } else {
                     ForEach(model.fermentedFinds, id: \.self) { name in
                         Card {

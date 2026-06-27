@@ -1,4 +1,4 @@
-# curiosity_facts.csv — curated variable-reward facts (SPEC §5, §11a; CLAUDE.md #9 "curated, not runtime-generated"). Natural key (idempotency): fact_text.
+# curiosity_facts.csv, curated variable-reward facts (SPEC §5, §11a; CLAUDE.md #9 "curated, not runtime-generated"). Natural key (idempotency): fact_text.
 # confidence_tag enum: solid|maturing|frontier|emerging|associational. Anything beyond 'solid' is framed as
 #   emerging/associational, never a health claim. topic_tags = semicolon-separated list.
 # Curated to be truthful and representative; no diagnosis, no cure language (SPEC §1, §2).

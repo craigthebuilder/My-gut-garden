@@ -1,9 +1,9 @@
-# food_fibers.csv — junction food -> fiber type, with coarse per-serving grams (SPEC §5). Composite PK (food_id,fiber_id).
+# food_fibers.csv, junction food -> fiber type, with coarse per-serving grams (SPEC §5). Composite PK (food_id,fiber_id).
 # relative_amount enum: minor|moderate|primary (the food's contribution of THAT fiber).
 #
 # 🔒 FENCE 4 (SPEC §14): est_grams_per_serving is COARSE, DIRECTIONAL placeholder data for a single fiber
 #    FRACTION (not total dietary fiber), RD-REVIEW-REQUIRED. The app must never surface these as precise
-#    measured grams ("never 12.3g inulin" — SPEC §1/§3). Specific fiber-fraction grams (e.g. grams of inulin
+#    measured grams ("never 12.3g inulin", SPEC §1/§3). Specific fiber-fraction grams (e.g. grams of inulin
 #    in garlic) are estimates, not measured USDA values; treat as gaps to be validated, not facts.
 # Source (directional): USDA FoodData Central total dietary fiber; framework §5 fiber->source map;
 #    published inulin/beta-glucan content ranges (van Loo et al. for inulin/FOS; Monash for FODMAP fibers).

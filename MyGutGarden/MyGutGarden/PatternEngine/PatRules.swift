@@ -1,9 +1,9 @@
 //
 //  PatRules.swift
-//  MyGutGarden — Module F (Survive pattern engine).
+//  MyGutGarden, Module F (Survive pattern engine).
 //
 //  ╔══════════════════════════════════════════════════════════════════════╗
-//  ║  🔒 FENCE 1 — RD-REVIEW-REQUIRED                                       ║
+//  ║  🔒 FENCE 1, RD-REVIEW-REQUIRED                                       ║
 //  ║                                                                        ║
 //  ║  EVERY decision rule in this file is PLACEHOLDER clinical content:     ║
 //  ║  which symptom fingerprint maps to which pattern, and the weights /    ║
@@ -11,7 +11,7 @@
 //  ║  dietitian + the owner must review and replace these rules before      ║
 //  ║  launch (SPEC §14 Fence 1, CLAUDE.md §3 / hard rule #10).              ║
 //  ║                                                                        ║
-//  ║  This file is the SINGLE review surface — all fenced logic lives here  ║
+//  ║  This file is the SINGLE review surface, all fenced logic lives here  ║
 //  ║  so the engine plumbing in `PatPatternEngine.swift` stays content-free.║
 //  ║                                                                        ║
 //  ║  The output copy stays structurally pattern → experiment → confirm and ║
@@ -60,12 +60,12 @@ enum PatRules {
     /// illustrative ONLY and must be replaced by RD-reviewed logic.
     ///
     /// Framework heuristics encoded as placeholders (SPEC §11b / framework §7):
-    ///   • methane      — bloat + constipation, low-odor gas
-    ///   • h2s          — sulfur gas + looser stools (+ worse after fatty)
-    ///   • hydrogenSibo — odorless gas + bloat, not constipated
-    ///   • fat          — worse after fatty meals + looser stools
-    ///   • histamine    — aged/fermented-food triggers (± flushing/headache)
-    ///   • proteolytic  — sour gas on a lower-fiber stretch
+    ///   • methane, bloat + constipation, low-odor gas
+    ///   • h2s, sulfur gas + looser stools (+ worse after fatty)
+    ///   • hydrogenSibo, odorless gas + bloat, not constipated
+    ///   • fat, worse after fatty meals + looser stools
+    ///   • histamine, aged/fermented-food triggers (± flushing/headache)
+    ///   • proteolytic, sour gas on a lower-fiber stretch
     static func dayScores(_ f: PatSymptomFeatures) -> [PatPattern: Double] {
         let bloat = aboveMild(f.bloating)
 
@@ -126,7 +126,7 @@ enum PatRules {
     // MARK: - Evidence copy: signal → experiment → confirm (RD-REVIEW-REQUIRED)
 
     /// Placeholder user-facing summary. Structurally pattern → experiment →
-    /// "this is also what a breath test checks — worth raising with a GI."
+    /// "this is also what a breath test checks, worth raising with a GI."
     /// Describes the SIGNAL only. NEVER a diagnosis, named condition, or bug.
     /// `experimentDays` comes from `GameConfig.patternExperimentDays` (no magic
     /// numbers). // RD-REVIEW-REQUIRED
@@ -135,25 +135,25 @@ enum PatRules {
         let experiment: String
         switch pattern {
         case .methane:
-            lead = "Your recent logs lean toward a slower-transit signal — more constipated days than loose ones, with low-odor gas."
+            lead = "Your recent logs lean toward a slower-transit signal, more constipated days than loose ones, with low-odor gas."
             experiment = "ease back on your usual fermentable load"
         case .h2s:
-            lead = "Your recent logs lean toward a sulfur-gas signal — sulfur-smelling gas showing up alongside looser stools."
+            lead = "Your recent logs lean toward a sulfur-gas signal, sulfur-smelling gas showing up alongside looser stools."
             experiment = "cut back on high-sulfur foods"
         case .hydrogenSibo:
-            lead = "Your recent logs lean toward a fermentation signal — mostly odorless gas with bloating, and few constipated days."
+            lead = "Your recent logs lean toward a fermentation signal, mostly odorless gas with bloating, and few constipated days."
             experiment = "lower the quickly-fermenting carbs"
         case .fat:
-            lead = "Your recent logs lean toward a fat-handling signal — looser stools that tend to track with richer, fattier meals."
+            lead = "Your recent logs lean toward a fat-handling signal, looser stools that tend to track with richer, fattier meals."
             experiment = "spread fat across smaller portions"
         case .histamine:
-            lead = "Your recent logs lean toward a histamine-sensitivity signal — symptoms that cluster around aged or fermented foods."
+            lead = "Your recent logs lean toward a histamine-sensitivity signal, symptoms that cluster around aged or fermented foods."
             experiment = "pause aged and fermented foods"
         case .proteolytic:
-            lead = "Your recent logs lean toward a protein-fermentation signal — sour-smelling gas during a lower-fiber stretch."
+            lead = "Your recent logs lean toward a protein-fermentation signal, sour-smelling gas during a lower-fiber stretch."
             experiment = "add gentle fiber and balance the protein"
         }
         return "\(lead) A gentle experiment: \(experiment) for \(experimentDays) days, and we'll watch the signal. "
-            + "This is also the kind of thing a breath test looks at — worth raising with a GI."
+            + "This is also the kind of thing a breath test looks at, worth raising with a GI."
     }
 }

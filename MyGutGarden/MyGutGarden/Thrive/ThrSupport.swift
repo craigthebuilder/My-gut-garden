@@ -1,6 +1,6 @@
 //
 //  ThrSupport.swift
-//  MyGutGarden — Module C (Thrive surface) shared support.
+//  MyGutGarden, Module C (Thrive surface) shared support.
 //
 //  Small, dependency-free helpers used across the Thrive surfaces: week/day
 //  date math (Sunday-reset weekly variety, §13), rarity ordering (celebration
@@ -31,7 +31,7 @@ extension RarityTier {
 
 enum ThrDates {
     /// The Monday that opens the current weekly-variety window, local time.
-    /// (`weekly_summaries.week_start` is a Monday — SPEC §5.)
+    /// (`weekly_summaries.week_start` is a Monday, SPEC §5.)
     static func currentMonday(_ now: Date = Date(), calendar: Calendar = .current) -> Date {
         var cal = calendar
         cal.firstWeekday = 2 // Monday
@@ -49,7 +49,7 @@ enum ThrDates {
         return f.string(from: date)
     }
 
-    /// Start of today, local time — the floor for "today's" meals.
+    /// Start of today, local time, the floor for "today's" meals.
     static func startOfToday(_ now: Date = Date(), calendar: Calendar = .current) -> Date {
         calendar.startOfDay(for: now)
     }
@@ -71,19 +71,55 @@ enum ThrDates {
 
 // MARK: - Module-owned decode rows (tables C reads but Repository.swift doesn't model)
 
-/// One fiber estimate from `meal_items` (coarse/directional — never precise, §3/§4).
+/// One fiber estimate from `meal_items` (coarse/directional, never precise, §3/§4).
 struct ThrMealItemFiberRow: Decodable, Sendable {
     let estFiberG: Double?
 }
 
 /// A rainbow group's education copy (`colors`; the group name IS the id, SPEC §5).
+/// `exampleFoods` is curated seed data (Batch D, rule #9), surfaced when a color
+/// ring is tapped. Optional-decoded so a partial column select never fails.
 struct ThrColorRow: Decodable, Sendable {
     let id: String
     let meaningCopy: String?
     let whatItDoesCopy: String?
+    let exampleFoods: [String]?
 }
 
-/// One curated curiosity fact (`curiosity_facts`) — variable reward (§11a).
+// MARK: - Meal-item / food rows (Recent Meals, rainbow + 3 P's day reads, Your Foods)
+
+/// One `meal_items` row for the Recent-Meals detail sheet: editable coarse tier
+/// (no grams, rule #3) + the user's confirm/deny verdict on the AI hypothesis.
+struct ThrMealItemRow: Decodable, Sendable, Identifiable {
+    let id: String
+    let foodId: String
+    let portionTier: String
+    let source: String
+    let estFiberG: Double?
+    let userConfirmed: Bool?
+    let userDenied: Bool?
+}
+
+/// Cheap `meal_items` read for today's fiber sum + per-color rainbow amount.
+struct ThrMealItemTierRow: Decodable, Sendable {
+    let foodId: String
+    let portionTier: String
+    let estFiberG: Double?
+}
+
+/// One `food_colors` junction row (food → rainbow color group).
+struct ThrFoodColorRow: Decodable, Sendable {
+    let foodId: String
+    let colorId: String
+}
+
+/// A `foods` name lookup (detail-sheet labels + the Suspects food search).
+struct ThrFoodNameRow: Decodable, Sendable, Identifiable {
+    let id: String
+    let canonicalName: String
+}
+
+/// One curated curiosity fact (`curiosity_facts`), variable reward (§11a).
 /// Curated content only; never generated at request time (CLAUDE.md rule #9).
 struct ThrCuriosityFactRow: Decodable, Sendable {
     let id: String

@@ -1,4 +1,4 @@
-# phytochemicals.csv — representative named compounds across the 9 classes (framework §5; SPEC §5). Natural key: name.
+# phytochemicals.csv, representative named compounds across the 9 classes (framework §5; SPEC §5). Natural key: name.
 # class is the phyto_class enum: carotenoid|polyphenol|organosulfur|terpene|phytosterol|saponin|alkaloid|chlorophyll|betalain
 # maps_to_color_id ties color-visible compounds to the Tier-1 Rainbow tracker (blank = camera-invisible, credited via food-ID lookup).
 # Source: USDA Database for the Flavonoid Content of Foods; USDA carotenoid data; Phenol-Explorer (polyphenols).

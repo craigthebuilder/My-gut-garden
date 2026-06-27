@@ -1,6 +1,6 @@
 //
 //  SrvReintroEngine.swift
-//  MyGutGarden — Module E. Reintro-as-leveling (SPEC §11b, §13; Fence 3).
+//  MyGutGarden, Module E. Reintro-as-leveling (SPEC §11b, §13; Fence 3).
 //
 //  Clearing a FODMAP group is the hook: it UNLOCKS that food back into the
 //  collection (a visible win) and advances the positive symptom-free streak.
@@ -8,7 +8,7 @@
 //
 //  🔒 FENCE 3 (CLAUDE.md §3 / SPEC §14): reintro phase lengths and sequencing
 //  are clinical. Every duration here comes from GameConfig placeholders marked
-//  RD-REVIEW-REQUIRED — none is invented in this file.
+//  RD-REVIEW-REQUIRED, none is invented in this file.
 //
 
 import Foundation
@@ -26,7 +26,7 @@ enum SrvReintroEngine {
 
     private static let config = GameConfig.shared
 
-    // MARK: Durations (Fence 3 — read straight from GameConfig)
+    // MARK: Durations (Fence 3, read straight from GameConfig)
 
     /// How long a single group is challenged. // RD-REVIEW-REQUIRED (Fence 3)
     static var challengeDays: Int { config.reintroChallengeDays }
@@ -58,7 +58,7 @@ enum SrvReintroEngine {
         return SrvFodmapGroup.allCases.first { !blocked.contains($0) }
     }
 
-    // MARK: Status transitions (pure — the store persists the result)
+    // MARK: Status transitions (pure, the store persists the result)
 
     /// Begin testing a group now.
     nonisolated static func started(_ challenge: SrvChallenge, at date: Date) -> SrvChallenge {
@@ -80,7 +80,7 @@ enum SrvReintroEngine {
 
     // MARK: Unlock derivation
 
-    /// Groups the user has cleared — every food whose only trigger is one of
+    /// Groups the user has cleared, every food whose only trigger is one of
     /// these is now safe to fold back into the collection (the visible win).
     nonisolated static func clearedGroups(_ challenges: [SrvChallenge]) -> Set<SrvFodmapGroup> {
         Set(challenges.filter { $0.status == .passed }.map(\.group))

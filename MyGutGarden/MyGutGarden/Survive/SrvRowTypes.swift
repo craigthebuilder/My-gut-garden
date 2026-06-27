@@ -1,6 +1,6 @@
 //
 //  SrvRowTypes.swift
-//  MyGutGarden — Module E. Survive-local row decoding + the logger draft.
+//  MyGutGarden, Module E. Survive-local row decoding + the logger draft.
 //
 //  The shared `SymptomLogRow` in Repository.swift decodes only the columns the
 //  coordinator needs; the logger needs the full row, so Module E decodes its
@@ -127,7 +127,7 @@ struct SrvTrackedFood: Identifiable, Sendable, Equatable {
 
     var id: String { name }
 
-    /// Cleared once its dominant group has passed a challenge — then it's safe
+    /// Cleared once its dominant group has passed a challenge, then it's safe
     /// to fold back into the collection (the visible win, SPEC §11b).
     nonisolated func isCleared(clearedGroups: Set<SrvFodmapGroup>) -> Bool {
         guard let group = dominantGroup else { return true }

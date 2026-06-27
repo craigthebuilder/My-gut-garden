@@ -1,4 +1,4 @@
-# food_phytochemicals.csv — junction food -> named phytochemical (SPEC §5, §8 Phytochemical pokedex). Composite PK (food_id,phytochemical_id).
+# food_phytochemicals.csv, junction food -> named phytochemical (SPEC §5, §8 Phytochemical pokedex). Composite PK (food_id,phytochemical_id).
 # Compounds are mostly camera-invisible, so credited via food-ID -> database lookup (framework §5).
 # Only well-established food->compound associations are included; uncertain ones are left out rather than guessed (CLAUDE.md #9).
 # Source: USDA Database for the Flavonoid Content of Foods; USDA carotenoid tables; Phenol-Explorer.

@@ -1,12 +1,12 @@
 //
 //  GuildGardenViewModel.swift
-//  MyGutGarden — Module D's read model for the guild garden surface.
+//  MyGutGarden, Module D's read model for the guild garden surface.
 //
 //  Loads the four districts + their guilds + per-user `guild_state`, applies the
 //  ~12%/day decay ON READ (GuildBloom) so a faded guild shows faded, and exposes
 //  the fog-of-war unlock state the map renders. Read-only: all `guild_state` and
 //  `user_districts` WRITES belong to the coordinator (Module D owns the logic,
-//  the coordinator owns the persistence — Seams.swift).
+//  the coordinator owns the persistence, Seams.swift).
 //
 
 import Foundation
@@ -40,8 +40,8 @@ struct GuildDisplay: Identifiable, Sendable {
     let bloom: GuildBloomDisplay
 
     var id: String { internalName }
-    /// Eyebrow on the field-guide card, e.g. "World 1 — The Backbone District".
-    func eyebrow(districtName: String) -> String { "World \(districtOrder) — \(districtName)" }
+    /// Eyebrow on the field-guide card, e.g. "World 1, The Backbone District".
+    func eyebrow(districtName: String) -> String { "World \(districtOrder), \(districtName)" }
 }
 
 /// One district region on the map.
@@ -60,7 +60,7 @@ struct GuildDistrictDisplay: Identifiable, Sendable {
 
 enum GuildGardenAssembler {
 
-    /// Alphabetical sort key ignoring a leading "The " — this is what makes the
+    /// Alphabetical sort key ignoring a leading "The ", this is what makes the
     /// collectible numbering match the reference cards (Anti-inflammatory
     /// Arsenal = 1, Base Layer = 3, Estrogen Regulators = 9).
     static func sortKey(_ displayName: String) -> String {
@@ -70,7 +70,7 @@ enum GuildGardenAssembler {
     }
 
     /// Number the whole roster by (district order, then alphabetical-without-"The"),
-    /// 1…N — a stable collectible index across all districts.
+    /// 1…N, a stable collectible index across all districts.
     static func numbering(districts: [DistrictRow], guilds: [GuildRow]) -> [String: Int] {
         let orderByDistrict = Dictionary(districts.map { ($0.id, $0.order) }) { a, _ in a }
         let sorted = guilds.sorted { a, b in
@@ -143,7 +143,7 @@ enum GuildGardenAssembler {
     /// Snapshots for the §13 unlock gates. NOTE: `guild_state` stores only the
     /// *current* bloom state, so `hasEverBloomed` is approximated by "blooming
     /// right now". The authoritative unlock set lives in `user_districts` /
-    /// `ProgressionState` (the coordinator tracks ever-bloomed properly) — this
+    /// `ProgressionState` (the coordinator tracks ever-bloomed properly), this
     /// fallback is only used when that read surface is empty.
     static func snapshots(from districts: [GuildDistrictDisplay]) -> [GuildBloomSnapshot] {
         districts.flatMap { district in
@@ -169,7 +169,7 @@ final class GuildGardenViewModel {
     private let ingestor = GuildIngestor()
     private let clock: () -> Date
 
-    /// Progression read surface (coordinator writes; D reads — Seams.swift).
+    /// Progression read surface (coordinator writes; D reads, Seams.swift).
     var progression: ProgressionState
 
     init(repository: Repository?,

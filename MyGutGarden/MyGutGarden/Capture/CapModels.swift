@@ -1,12 +1,13 @@
 //
 //  CapModels.swift
-//  MyGutGarden — Module B (Capture + recognition UX). Pure value types for the
+//  MyGutGarden, Module B (Capture + recognition UX). Pure value types for the
 //  snap → recognize → confirm flow (SPEC §4, §11). No SwiftUI, no networking
-//  here — these are the small, testable pieces the view-model + persistence
+//  here, these are the small, testable pieces the view-model + persistence
 //  layer compose. Public types are `Cap`-prefixed per the module contract.
 //
 
 import Foundation
+import SwiftUI
 
 // MARK: - Errors
 
@@ -37,9 +38,10 @@ enum CapItemSource: String, Sendable, Equatable {
     case vision                              // the vision model identified it
     case manual                              // the user corrected an unmatched item
     case hiddenConfirmed = "hidden_confirmed" // the user confirmed an always-ask prompt
+    case annotation                          // Batch C: from the user's snapchat-style note (re-prompt)
 }
 
-/// One row destined for `meal_items` (SPEC §5). Portion stays a coarse tier —
+/// One row destined for `meal_items` (SPEC §5). Portion stays a coarse tier, 
 /// never a precise gram value surfaced as measured (CLAUDE.md rule #3). The
 /// optional `est_fiber_g` column is deliberately left unset here: Module B does
 /// not invent nutrition numbers (rule #2).
@@ -58,11 +60,11 @@ struct CapFoodSearchResult: Identifiable, Sendable, Equatable, Decodable {
     let canonicalName: String
 }
 
-// MARK: - Manual confirm (SPEC §4 step 4 — unmatched items flagged for confirm)
+// MARK: - Manual confirm (SPEC §4 step 4, unmatched items flagged for confirm)
 
 /// An item the vision model named but the database could not resolve. The user
 /// searches and picks the real food, or leaves it unresolved (we never log a
-/// guess we aren't sure of — "when unsure, flag it", §4).
+/// guess we aren't sure of, "when unsure, flag it", §4).
 struct CapUnmatchedItem: Identifiable, Sendable, Equatable {
     let visionName: String                 // the model's best guess (what we show)
     var resolvedFood: CapFoodSearchResult? // the food the user picked (nil = skip)
@@ -72,10 +74,10 @@ struct CapUnmatchedItem: Identifiable, Sendable, Equatable {
     var isResolved: Bool { resolvedFood != nil }
 }
 
-// MARK: - Hidden-ingredient prompts (SPEC §4 step 6, §11 — always-ask yes/no)
+// MARK: - Hidden-ingredient prompts (SPEC §4 step 6, §11, always-ask yes/no)
 
 /// One always-ask hidden-ingredient question and the user's definite answer
-/// ("this dish often contains onion — was it?"). `wasPresent == nil` means the
+/// ("this dish often contains onion, was it?"). `wasPresent == nil` means the
 /// user hasn't answered yet; "always ask" means we want a real yes or no.
 struct CapHiddenIngredientAnswer: Identifiable, Sendable {
     let prompt: HiddenIngredientPrompt   // HiddenIngredientPrompt isn't Equatable upstream
@@ -84,7 +86,7 @@ struct CapHiddenIngredientAnswer: Identifiable, Sendable {
     var id: String { prompt.id }
 }
 
-/// A hidden ingredient the user confirmed AND that resolved to a real food —
+/// A hidden ingredient the user confirmed AND that resolved to a real food, 
 /// becomes a `hidden_confirmed` meal_item. A coarse default portion is used
 /// because hidden aromatics aren't visible to size (rule #3).
 struct CapResolvedHidden: Sendable, Equatable {
@@ -104,4 +106,29 @@ struct CapMealDraft: Sendable {
     let items: [CapMealItem]
     let hiddenAnswers: [CapHiddenIngredientAnswer]
     let capturedAt: Date
+    let userAnnotation: String?              // Batch C: persisted to meals.user_annotation
+}
+
+// MARK: - Reintro "How did it feel?" answer seam (Capture-local, Batch C)
+
+/// Records the user's answer to the auto-attached "How did the [food] feel?" card
+/// (SPEC §11b / "camera Flagging Hooks"). The spine `ReintroFeelingAttacher`
+/// (`Seams.swift`) only ATTACHES the pending `reintro_meal_checks` row
+/// (felt_fine = nil); it carries no answer channel. This Capture-local seam lets
+/// Module B surface the [Felt fine] / [A bit rough] buttons and report the answer
+/// without importing Module E. The real write (reintro_meal_checks.felt_fine +
+/// CheckInWriter.appendMood) lives in Module E / the coordinator, which the lead
+/// injects here; the default is a no-op so the module compiles standalone.
+typealias CapReintroFeelingRecorder =
+    @Sendable (_ reintroFoodId: String, _ mealId: String, _ feltFine: Bool) async -> Void
+
+private struct CapReintroFeelingRecorderKey: EnvironmentKey {
+    static let defaultValue: CapReintroFeelingRecorder = { _, _, _ in }
+}
+
+extension EnvironmentValues {
+    var capReintroFeelingRecorder: CapReintroFeelingRecorder {
+        get { self[CapReintroFeelingRecorderKey.self] }
+        set { self[CapReintroFeelingRecorderKey.self] = newValue }
+    }
 }

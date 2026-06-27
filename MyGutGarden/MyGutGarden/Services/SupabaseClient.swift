@@ -1,6 +1,6 @@
 //
 //  SupabaseClient.swift
-//  MyGutGarden — minimal Supabase REST client (GoTrue auth + Edge Functions).
+//  MyGutGarden, minimal Supabase REST client (GoTrue auth + Edge Functions).
 //
 //  Phase-0 deliberately avoids an SPM dependency so the project builds from the
 //  file-system-synchronized group with zero package setup. Phase 1 can swap in
@@ -27,6 +27,7 @@ enum SupabaseError: LocalizedError {
     case notConfigured
     case server(status: Int, message: String)
     case emailConfirmationRequired
+    case invalidCredentials
 
     var errorDescription: String? {
         switch self {
@@ -36,6 +37,8 @@ enum SupabaseError: LocalizedError {
             return "Request failed (\(status)): \(message)"
         case .emailConfirmationRequired:
             return "Check your email to confirm your account, then sign in."
+        case .invalidCredentials:
+            return "Incorrect email or password."
         }
     }
 }
@@ -103,6 +106,25 @@ struct SupabaseClient {
         let (data, http) = try await request(
             path: "auth/v1/token?grant_type=password",
             body: ["email": email, "password": password],
+            bearer: anonKey
+        )
+        guard (200..<300).contains(http.statusCode) else {
+            // GoTrue returns 400 (invalid_grant) for a wrong email/password. Surface
+            // a clean, standard message instead of a raw "Request failed (400)".
+            if http.statusCode == 400 || http.statusCode == 401 {
+                throw SupabaseError.invalidCredentials
+            }
+            throw SupabaseError.server(status: http.statusCode, message: extractMessage(data))
+        }
+        return try decoder.decode(SupabaseSession.self, from: data)
+    }
+
+    /// Exchange a refresh token for a fresh session (grant_type=refresh_token).
+    /// Used to recover transparently from an expired access token (JWT expired).
+    func refreshSession(refreshToken: String) async throws -> SupabaseSession {
+        let (data, http) = try await request(
+            path: "auth/v1/token?grant_type=refresh_token",
+            body: ["refresh_token": refreshToken],
             bearer: anonKey
         )
         guard (200..<300).contains(http.statusCode) else {

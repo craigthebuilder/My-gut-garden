@@ -1,6 +1,6 @@
 //
 //  SrvReintroAndPatternTests.swift
-//  MyGutGardenTests — Module E. Reintro leveling transitions (Fence 3 durations
+//  MyGutGardenTests, Module E. Reintro leveling transitions (Fence 3 durations
 //  come from GameConfig) + the READ-ONLY pattern rendering guards (Fence 1,
 //  rule #4: never a diagnosis / named bug; experiment only when steady).
 //
@@ -99,7 +99,7 @@ struct SrvPatternPresenterTests {
 
     @Test func neverSurfacesADiagnosisOrNamedBug() {
         // 🔒 rule #4 / Fence 1: no condition or bug names in user-facing copy.
-        // "hydrogen_sibo" must render as a hydrogen-type-gas lean — never "SIBO".
+        // "hydrogen_sibo" must render as a hydrogen-type-gas lean, never "SIBO".
         let banned = ["sibo", "ibs", "imo", "overgrowth", "diagnos", "disease", "infection"]
         for pattern in [SrvPattern.methane, .h2s, .hydrogenSibo, .fat, .histamine, .proteolytic] {
             for confidence in [SrvPatternConfidence.tentative, .emerging, .consistent] {

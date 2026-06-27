@@ -1,6 +1,6 @@
 //
 //  AppShell.swift
-//  MyGutGarden — the root shell (orchestrator-owned consolidation). Routes
+//  MyGutGarden, the root shell (orchestrator-owned consolidation). Routes
 //  auth → onboarding → the mode-themed surfaces, injects the per-mode insight
 //  presenter (which also fires the MealIngestion coordinator so Module B stays
 //  untouched), and hosts the cross-cutting flows: mode switch (disclaimer +
@@ -38,59 +38,132 @@ struct AppShell: View {
 
 // MARK: - Mode home (tabs themed by current mode)
 
+private enum ThriveTab: Hashable { case today, snap, checkin, garden, you }
+
 private struct ShellHome: View {
     @Environment(\.theme) private var theme
     let appState: AppState
+    @State private var thriveTab: ThriveTab = .today
 
     var body: some View {
         ZStack {
             if appState.mode == .thrive {
-                ThriveTabs(appState: appState)
+                ThriveTabs(appState: appState, selection: $thriveTab)
             } else {
                 SurviveTabs(appState: appState)
             }
             if let event = appState.pendingCelebration {
                 celebration(for: event)
             }
+            // Care prompt (Avoid→Survive offer, graduate offer). Calm + dismissible,
+            // never a celebration, and it fires in either mode (Batch E).
+            if let prompt = appState.pendingSurvivePrompt {
+                survivePrompt(prompt)
+            }
         }
         .tint(theme.colors.primary)
     }
 
+    private func dismissCelebration() { appState.pendingCelebration = nil }
+    private func dismissSurvivePrompt() { appState.pendingSurvivePrompt = nil }
+
+    @ViewBuilder
+    private func survivePrompt(_ event: SurvivePromptEvent) -> some View {
+        ModalScrim(onTapOutside: dismissSurvivePrompt) {
+            switch event {
+            case let .switchToSurvivePrompt(count):
+                ConfirmationModal(
+                    title: "A calmer way to sort this out?",
+                    message: "You're keeping an eye on \(count) foods right now. Survive mode gives you a gentler, more structured way to find what your gut is reacting to. Want to try it?",
+                    confirmTitle: "Try Survive",
+                    cancelTitle: "Not now",
+                    severity: .info,
+                    onConfirm: { dismissSurvivePrompt(); Task { await appState.setMode(.survive) } },
+                    onCancel: dismissSurvivePrompt
+                )
+            case .graduateToThrive:
+                ConfirmationModal(
+                    title: "Ready for Thrive?",
+                    message: "You've been feeling good. The foods you're still checking come with you. Want to move to Thrive and start growing?",
+                    confirmTitle: "Move to Thrive",
+                    cancelTitle: "Not yet",
+                    severity: .info,
+                    onConfirm: { dismissSurvivePrompt(); Task { await appState.setMode(.thrive); appState.celebrate(.graduation) } },
+                    onCancel: dismissSurvivePrompt
+                )
+            }
+        }
+        .themed(for: appState.mode)
+    }
+
     @ViewBuilder
     private func celebration(for event: CelebrationEvent) -> some View {
-        let (title, message, symbol): (String, String, String) = {
-            switch event {
-            case let .rareFind(plant, rarity): ("A \(rarity.label.lowercased()) find!", "You discovered \(plant).", "sparkles")
-            case let .guildBloom(name): ("\(name) is blooming!", "Your sustained feeding paid off.", "leaf.fill")
-            case let .guildUnlock(name): ("\(name) joined your garden", "A new crew to feed.", "leaf.fill")
-            case let .districtUnlock(name): ("\(name) unlocked", "A new district to explore.", "map.fill")
-            case .graduation: ("Welcome to Thrive", "Your garden is blooming — safe foods are flowing in.", "sun.max.fill")
-            }
-        }()
-        CelebrationOverlay(title: title, message: message, systemImage: symbol) {
-            appState.pendingCelebration = nil
+        switch event {
+        case let .districtUnlock(name):
+            // Tapping "Explore" routes straight to the garden map (the new district).
+            CelebrationOverlay(
+                title: "New district unlock!",
+                message: "Tap to explore \(name).",
+                systemImage: "map.fill",
+                primaryTitle: "Explore",
+                onPrimary: { dismissCelebration(); thriveTab = .garden },
+                onDismiss: dismissCelebration
+            )
+        case .graduation:
+            CelebrationOverlay(
+                title: "Congratulations!",
+                message: "Welcome to Thrive. Your garden is blooming, and your safe foods are flowing in.",
+                systemImage: "party.popper.fill",
+                onDismiss: dismissCelebration
+            )
+        case let .rareFind(plant, rarity):
+            CelebrationOverlay(
+                title: "A \(rarity.label.lowercased()) find!",
+                message: "You discovered \(plant).",
+                onDismiss: dismissCelebration
+            )
+        case let .guildBloom(name):
+            CelebrationOverlay(
+                title: "\(name) is blooming!",
+                message: "Your sustained feeding paid off.",
+                systemImage: "leaf.fill",
+                onDismiss: dismissCelebration
+            )
+        case let .guildUnlock(name):
+            CelebrationOverlay(
+                title: "\(name) joined your garden",
+                message: "A new crew to feed.",
+                systemImage: "leaf.fill",
+                onDismiss: dismissCelebration
+            )
         }
     }
 }
 
 private struct ThriveTabs: View {
     let appState: AppState
+    @Binding var selection: ThriveTab
     @State private var recognizer = RecognitionService()
 
     var body: some View {
-        TabView {
-            Tab("Today", systemImage: "leaf") { ThrRootView(appState: appState) }
-            Tab("Snap", systemImage: "camera") {
+        TabView(selection: $selection) {
+            Tab("Today", systemImage: "leaf", value: ThriveTab.today) { ThrRootView(appState: appState) }
+            Tab("Snap", systemImage: "camera", value: ThriveTab.snap) {
                 CapRootView(appState: appState, recognizer: recognizer)
                     .environment(\.mealInsightPresenter,
                                  ShellInsightPresenter(inner: ThrInsightPresenter(appState: appState), appState: appState))
+                    .captureSeams(appState: appState)
+            }
+            // The Thrive "test" check-in: reintroduce 1-2 foods while thriving (Batch E).
+            Tab("Check-in", systemImage: "checklist", value: ThriveTab.checkin) {
+                ThrTestTabView(appState: appState)
             }
             if appState.progression.isTier2Unlocked {
-                Tab("Garden", systemImage: "map") {
+                Tab("Garden", systemImage: "map", value: ThriveTab.garden) {
                     GuildRootView(repository: appState.repository, progression: appState.progression)
                 }
             }
-            Tab("You", systemImage: "person") { ShellSettings(appState: appState) }
+            Tab("You", systemImage: "person", value: ThriveTab.you) { ShellSettings(appState: appState) }
         }
     }
 }
@@ -112,6 +185,7 @@ private struct SurviveTabs: View {
                 CapRootView(appState: appState, recognizer: recognizer)
                     .environment(\.mealInsightPresenter,
                                  ShellInsightPresenter(inner: store.makeInsightPresenter(), appState: appState))
+                    .captureSeams(appState: appState)
             }
             Tab("You", systemImage: "person") { ShellSettings(appState: appState) }
         }
@@ -125,7 +199,7 @@ private struct SurviveTabs: View {
 }
 
 /// Wraps the mode's insight presenter so confirming a meal also runs the
-/// ingestion coordinator (plants, guild feeding, progression) — Module B never
+/// ingestion coordinator (plants, guild feeding, progression), Module B never
 /// learns about the coordinator. Side effect runs once, when the insight appears.
 private struct ShellInsightPresenter: MealInsightPresenting {
     let inner: any MealInsightPresenting
@@ -140,6 +214,50 @@ private struct ShellInsightPresenter: MealInsightPresenting {
             }
         })
     }
+}
+
+// MARK: - Capture seam injection (Module E food-status services → Module B)
+
+private struct CaptureSeams: ViewModifier {
+    let appState: AppState
+    func body(content: Content) -> some View {
+        content
+            .environment(\.suspectCheckService, Self.suspectService(appState))
+            .environment(\.capReintroFeelingRecorder, { reintroFoodId, mealId, feltFine in
+                await recordReintroAnswer(appState, foodId: reintroFoodId, mealId: mealId, feltFine: feltFine)
+            })
+    }
+    private static func suspectService(_ appState: AppState) -> any SuspectCheckService {
+        if let repo = appState.repository { return RepositorySuspectCheckService(repository: repo) }
+        return NoopSuspectCheckService()
+    }
+}
+
+private extension View {
+    func captureSeams(appState: AppState) -> some View { modifier(CaptureSeams(appState: appState)) }
+}
+
+/// Writes a reintro "How did [food] feel?" answer: derives the meal's coarse
+/// portion from meal_items, then records it through Module E's store, which
+/// advances the event-driven challenge and upserts the check-in entry.
+@MainActor
+private func recordReintroAnswer(_ appState: AppState, foodId: String, mealId: String, feltFine: Bool) async {
+    guard let repo = appState.repository, let uid = appState.profile?.id else { return }
+    let portion = (await mealItemPortion(repo, mealId: mealId, foodId: foodId)) ?? .serving
+    let store = FoodStatusStore(repository: repo, userId: uid, appState: appState)
+    await store.load()
+    await store.recordReintroMeal(foodId: foodId, mealId: mealId, portion: portion, feltFine: feltFine)
+}
+
+private struct MealItemPortionRow: Decodable, Sendable { let portionTier: String }
+
+@MainActor
+private func mealItemPortion(_ repo: Repository, mealId: String, foodId: String) async -> PortionTier? {
+    let rows: [MealItemPortionRow]? = try? await repo.select(
+        "meal_items", columns: "portion_tier",
+        filters: ["meal_id": "eq.\(mealId)", "food_id": "eq.\(foodId)"], limit: 1)
+    guard let raw = rows?.first?.portionTier else { return nil }
+    return PortionTier(rawValue: raw)
 }
 
 // MARK: - Settings / mode switch / graduation (cross-cutting, §2)
@@ -160,7 +278,9 @@ private struct ShellSettings: View {
                         Text(appState.mode == .thrive ? "You're in Thrive" : "You're in Survive")
                             .font(theme.typography.title())
                             .foregroundStyle(theme.colors.textPrimary)
-                        if let goal = appState.profile?.fiberGoalG {
+                        // Thrive-only: Survive has no fiber goal (it uses the fiber
+                        // calc as a residue ceiling, never a target to hit).
+                        if appState.mode == .thrive, let goal = appState.profile?.fiberGoalG {
                             Text("Daily fiber goal: \(goal) g")     // the only surfaced derived number (§10)
                                 .font(theme.typography.body())
                                 .foregroundStyle(theme.colors.textSecondary)
@@ -183,33 +303,39 @@ private struct ShellSettings: View {
             .padding(theme.metrics.space5)
         }
         .background(theme.colors.background.ignoresSafeArea())
-        .sheet(item: $pending) { which in
-            switch which {
-            case .toSurvive:
-                ConfirmationModal(
-                    title: "Switch to Survive?",
-                    message: "Survive is for finding triggers and easing symptoms. Nothing you've grown is lost — switch back any time.",
-                    confirmTitle: "Switch to Survive",
-                    severity: .caution,
-                    onConfirm: { pending = nil; Task { await appState.setMode(.survive) } },
-                    onCancel: { pending = nil }
-                )
-            case .graduate:
-                ConfirmationModal(
-                    title: "Graduate to Thrive?",
-                    message: "You've done the hard part. Your garden blooms and your confirmed-safe foods flow into your collection.",
-                    confirmTitle: "Begin the ceremony",
-                    severity: .info,
-                    onConfirm: {
-                        pending = nil
-                        Task {
-                            await appState.setMode(.thrive)
-                            appState.celebrate(.graduation)
-                        }
-                    },
-                    onCancel: { pending = nil }
-                )
+        // A clear-backed full-screen cover + scrim, so the dialog floats over the
+        // dimmed app instead of on an opaque white sheet.
+        .fullScreenCover(item: $pending) { which in
+            ModalScrim(onTapOutside: { pending = nil }) {
+                switch which {
+                case .toSurvive:
+                    ConfirmationModal(
+                        title: "Switch to Survive?",
+                        message: "Survive is for finding triggers and easing symptoms. Nothing you've grown is lost, and you can switch back any time.",
+                        confirmTitle: "Switch to Survive",
+                        severity: .caution,
+                        onConfirm: { pending = nil; Task { await appState.setMode(.survive) } },
+                        onCancel: { pending = nil }
+                    )
+                case .graduate:
+                    ConfirmationModal(
+                        title: "Graduate to Thrive?",
+                        message: "You've done the hard part. Your garden blooms and your confirmed-safe foods flow into your collection.",
+                        confirmTitle: "Begin the ceremony",
+                        severity: .info,
+                        onConfirm: {
+                            pending = nil
+                            Task {
+                                await appState.setMode(.thrive)
+                                appState.celebrate(.graduation)
+                            }
+                        },
+                        onCancel: { pending = nil }
+                    )
+                }
             }
+            .themed(for: appState.mode)
+            .presentationBackground(.clear)
         }
     }
 }

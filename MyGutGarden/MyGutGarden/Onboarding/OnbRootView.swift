@@ -1,16 +1,22 @@
 //
 //  OnbRootView.swift
-//  MyGutGarden — Module A: the onboarding & intake flow (SPEC §6, §10).
+//  MyGutGarden, Module A: the onboarding & intake flow (SPEC §6, §10).
 //
 //  THE module entry point. A warm, multi-step intake that:
-//   • leads with Thrive's fun (never opens "how's your gut?"),
-//   • captures goals, body basics, baseline, and the two-faced exclusions (§9),
-//   • derives the fiber goal via the PURE OnbFiberGoal (est_daily_kcal stays
-//     internal — only grams are ever shown, SPEC §10 / Fence 5),
-//   • surfaces disclaimers as click-to-confirm (celiac/IBD ack, red-flag care
-//     prompt) — informs, never blocks,
-//   • soft-routes to a suggested mode (suggestion, never a gate),
-//   • shows truthful success stories.
+//   - leads with Thrive's fun (never opens "how's your gut?"),
+//   - captures goals, body basics, baseline, and the two-faced exclusions (§9),
+//   - derives the fiber goal via the PURE OnbFiberGoal (est_daily_kcal stays
+//     internal, only grams are ever shown on the Thrive summary, SPEC §10 / Fence 5),
+//   - surfaces disclaimers as click-to-confirm (celiac/IBD ack, red-flag care
+//     prompt), informs, never blocks,
+//   - soft-routes to a suggested mode (suggestion, never a gate),
+//   - shows truthful success stories.
+//
+//  Phase-2 (Batch B): summary branches on chosenMode.
+//    Thrive: shows fiber_goal_g in grams.
+//    Survive: shows calm low-residue framing, NO numeric ceiling.
+//    residue_ceiling_g is NEVER surfaced here or anywhere in the UI.
+//    // RD-REVIEW-REQUIRED on Survive summary copy.
 //
 //  Reads/writes only through AppState; composes DesignSystem components; reads
 //  only Theme tokens. The shell injects `appState` and an `onFinished` hook.
@@ -49,7 +55,7 @@ struct OnbRootView: View {
             .overlay { modalOverlay }
     }
 
-    // MARK: - Disclaimer sequencing (informs, never blocks — SPEC §6)
+    // MARK: - Disclaimer sequencing (informs, never blocks, SPEC §6)
 
     private func handleChecksContinue() {
         if !vm.seriousConditions.isEmpty {
@@ -69,7 +75,7 @@ struct OnbRootView: View {
                     ConfirmationModal(
                         title: "Thanks for telling us",
                         message: seriousConditionsMessage,
-                        confirmTitle: "I understand — continue",
+                        confirmTitle: "I understand, continue",
                         cancelTitle: "Go back",
                         severity: .caution,
                         onConfirm: {
@@ -86,8 +92,8 @@ struct OnbRootView: View {
                 case .redFlag:
                     ConfirmationModal(
                         title: "Worth a doctor's eyes",
-                        message: "A few things you noted — like blood or unexplained weight loss — are worth getting checked in person. Keep using the app; this is a recommendation, not a stop sign.",
-                        confirmTitle: "Got it — continue",
+                        message: "A few things you noted, like blood or unexplained weight loss, are worth getting checked in person. Keep using the app; this is a recommendation, not a stop sign.",
+                        confirmTitle: "Got it, continue",
                         cancelTitle: "Go back",
                         severity: .carePrompt,
                         onConfirm: { activeModal = nil; vm.advance() },
@@ -100,10 +106,22 @@ struct OnbRootView: View {
 
     private var seriousConditionsMessage: String {
         let celiac = vm.seriousConditions.contains(OnbSeriousCondition.celiac.key)
-        let base = "Conditions like celiac and IBD are serious and belong with your medical team — this app supports them, it doesn't replace them."
-        return celiac
-            ? base + " We'll add gluten as a loud allergy flag so it's caught even when hidden — you can change that any time."
-            : base
+        let hasAutoimmune = vm.seriousConditions.contains(OnbSeriousCondition.otherAutoimmune.key)
+        let hasIbd = vm.seriousConditions.contains(OnbSeriousCondition.ibd.key)
+
+        var parts: [String] = [
+            "Conditions like these are serious and belong with your medical team. This app supports you; it does not replace your doctors."
+        ]
+
+        if hasAutoimmune || hasIbd {
+            parts.append("If you have an autoimmune condition, your doctor is the right guide for dietary changes. We will keep your data private.")
+        }
+
+        if celiac {
+            parts.append("We will add gluten as a loud allergy flag so it is caught even when hidden. You can change that any time.")
+        }
+
+        return parts.joined(separator: " ")
     }
 }
 
@@ -160,7 +178,7 @@ private struct ThemedShell: View {
         }
     }
 
-    // MARK: Welcome (lead with Thrive's fun — SPEC §6)
+    // MARK: Welcome (lead with Thrive's fun, SPEC §6)
 
     private var welcomeStep: some View {
         VStack(alignment: .leading, spacing: theme.metrics.space5) {
@@ -190,7 +208,7 @@ private struct ThemedShell: View {
                                 .foregroundStyle(theme.colors.textPrimary)
                             if let who = story.attribution {
                                 HStack(spacing: theme.metrics.space2) {
-                                    Text("— \(who)")
+                                    Text(", \(who)")
                                         .font(theme.typography.caption(weight: .medium))
                                         .foregroundStyle(theme.colors.textSecondary)
                                     if story.verified { Badge(text: "verified") }
@@ -203,36 +221,96 @@ private struct ThemedShell: View {
         }
     }
 
-    // MARK: Summary (reveal the fiber goal as a gain; suggest a mode)
+    // MARK: Summary (Phase-2 Batch B: branch on chosenMode)
+    //
+    // Thrive: show fiber_goal_g in grams + auto-increase caption.
+    // Survive: show calm framing, no numeric residue ceiling.
+    //   residue_ceiling_g is INTERNAL ONLY; it is NEVER surfaced here.
+    //   // RD-REVIEW-REQUIRED: Survive summary copy below.
 
     private var summaryStep: some View {
         OnbStepScaffold(title: "You're all set",
-                        subtitle: "Here's where you're starting from.") {
-            // ⚠️ The ONLY anthropometric-derived number ever shown is the fiber
-            // goal in grams. est_daily_kcal is never surfaced (SPEC §10 / Fence 5).
-            Card {
-                VStack(alignment: .leading, spacing: theme.metrics.space2) {
-                    Text("Your daily fiber goal")
-                        .font(theme.typography.caption(weight: .semibold))
-                        .foregroundStyle(theme.colors.textSecondary)
-                    Text("\(vm.fiberGoalG) g")
-                        .font(theme.typography.display(40))
-                        .foregroundStyle(theme.colors.primary)
-                    Text("Reach it by eating a wide, colorful range of plants. We'll help you get there, one snap at a time.")
-                        .font(theme.typography.body())
-                        .foregroundStyle(theme.colors.textSecondary)
-                }
-                .accessibilityElement(children: .combine)
+                        subtitle: "Here is where you are starting from.") {
+            switch vm.chosenMode {
+            case .thrive:
+                thriveGoalCard
+            case .survive:
+                surviveStartCard
             }
 
             modeSuggestion
         }
     }
 
+    // MARK: Thrive goal card
+    // The ONLY anthropometric-derived number ever shown is the fiber goal in grams.
+    // est_daily_kcal and residue_ceiling_g are never surfaced (SPEC §10 / Fence 5).
+
+    private var thriveGoalCard: some View {
+        Card {
+            VStack(alignment: .leading, spacing: theme.metrics.space2) {
+                Text("Your daily fiber goal")
+                    .font(theme.typography.caption(weight: .semibold))
+                    .foregroundStyle(theme.colors.textSecondary)
+                Text("\(vm.fiberGoalG) g")
+                    .font(theme.typography.display(40))
+                    .foregroundStyle(theme.colors.primary)
+                Text("Reach it by eating a wide, colorful range of plants. We will help you get there, one snap at a time.")
+                    .font(theme.typography.body())
+                    .foregroundStyle(theme.colors.textSecondary)
+                Text("We will raise this automatically as you consistently hit it.")
+                    .font(theme.typography.caption())
+                    .foregroundStyle(theme.colors.textSecondary)
+            }
+            .accessibilityElement(children: .combine)
+        }
+    }
+
+    // MARK: Survive start card
+    // No numeric ceiling is ever shown (residue_ceiling_g is internal-only).
+    // Framing: rest, identify triggers, rebuild slowly.
+    // // RD-REVIEW-REQUIRED: copy below is clinical-adjacent; confirm before launch.
+
+    private var surviveStartCard: some View {
+        Card {
+            VStack(alignment: .leading, spacing: theme.metrics.space3) {
+                Text("Let's get your gut back into shape")
+                    .font(theme.typography.body(weight: .semibold))
+                    .foregroundStyle(theme.colors.textPrimary)
+                VStack(alignment: .leading, spacing: theme.metrics.space2) {
+                    survivePoint(icon: "pause.circle",
+                                 text: "For now, we will keep things low-residue to give your gut a rest.")
+                    survivePoint(icon: "magnifyingglass",
+                                 text: "We will help you find exactly which foods your gut can handle.")
+                    survivePoint(icon: "arrow.up.right",
+                                 text: "Then we will rebuild fiber slowly, at a pace that works for you.")
+                }
+                Text("You can switch to Thrive at any time.")
+                    .font(theme.typography.caption())
+                    .foregroundStyle(theme.colors.textSecondary)
+            }
+            .accessibilityElement(children: .combine)
+        }
+    }
+
+    private func survivePoint(icon: String, text: String) -> some View {
+        HStack(alignment: .top, spacing: theme.metrics.space3) {
+            Image(systemName: icon)
+                .foregroundStyle(theme.colors.primary)
+                .frame(width: 20)
+            Text(text)
+                .font(theme.typography.body())
+                .foregroundStyle(theme.colors.textPrimary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    // MARK: Mode suggestion
+
     private var modeSuggestion: some View {
         Card {
             VStack(alignment: .leading, spacing: theme.metrics.space3) {
-                Text("Where you'll start")
+                Text("Where you will start")
                     .font(theme.typography.caption(weight: .semibold))
                     .foregroundStyle(theme.colors.textSecondary)
                 Picker("Mode", selection: modeBinding) {
@@ -243,7 +321,7 @@ private struct ThemedShell: View {
                 Text(OnbRouting.rationale(for: vm.chosenMode))
                     .font(theme.typography.body())
                     .foregroundStyle(theme.colors.textSecondary)
-                Text("You can switch any time — it's always one tap away.")
+                Text("You can switch any time, it is always one tap away.")
                     .font(theme.typography.caption())
                     .foregroundStyle(theme.colors.textSecondary)
             }
@@ -283,7 +361,9 @@ private struct ThemedShell: View {
             if vm.isSaving {
                 ProgressView().frame(maxWidth: .infinity)
             } else {
-                PrimaryButton(title: "Start growing", systemImage: "leaf.fill") { onStart() }
+                let label = vm.chosenMode == .thrive ? "Start growing" : "Start"
+                let icon  = vm.chosenMode == .thrive ? "leaf.fill" : "arrow.right"
+                PrimaryButton(title: label, systemImage: icon) { onStart() }
             }
         default:
             PrimaryButton(title: "Continue") { vm.advance() }
@@ -309,7 +389,7 @@ private struct OnbModalScrim<Content: View>: View {
 
 // MARK: - Progress dots
 
-/// Small step indicator (a real sequence, so ordered markers are legitimate —
+/// Small step indicator (a real sequence, so ordered markers are legitimate,
 /// DESIGN.md §2). Built from theme tokens; not a DesignSystem restyle.
 private struct OnbProgressDots: View {
     @Environment(\.theme) private var theme

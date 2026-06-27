@@ -1,6 +1,6 @@
 //
 //  AuthService.swift
-//  MyGutGarden — auth state (SPEC §3: accounts required, email + Sign in with Apple).
+//  MyGutGarden, auth state (SPEC §3: accounts required, email + Sign in with Apple).
 //
 //  Cloud-synced accounts so progress survives device changes. Holds the live
 //  Supabase session; the access token is passed to the recognize Edge Function.
@@ -48,6 +48,22 @@ final class AuthService {
     func signOut() {
         session = nil
         errorMessage = nil
+    }
+
+    /// Exchange the stored refresh token for a fresh access token. Returns the
+    /// new access token on success, or nil if refresh is unavailable/failed (the
+    /// caller then lets the original 401 propagate). Updates the live session so
+    /// every subsequently-built Repository carries the fresh token.
+    @discardableResult
+    func refreshSession() async -> String? {
+        guard let client, let refresh = session?.refreshToken, !refresh.isEmpty else { return nil }
+        do {
+            let renewed = try await client.refreshSession(refreshToken: refresh)
+            self.session = renewed
+            return renewed.accessToken
+        } catch {
+            return nil
+        }
     }
 
     // MARK: - Sign in with Apple

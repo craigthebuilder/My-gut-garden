@@ -1,10 +1,10 @@
 //
 //  OnbExclusionTests.swift
-//  MyGutGardenTests — Module A: the two-faced exclusion model (SPEC §9).
+//  MyGutGardenTests, Module A: the two-faced exclusion model (SPEC §9).
 //
 //  ⚠️ THE load-bearing invariant (CLAUDE.md hard rule #1). These tests pin that
 //  the type drives OPPOSITE behavior and is NEVER collapsed with the scope into
-//  one flat list — the single most important thing to keep from regressing.
+//  one flat list, the single most important thing to keep from regressing.
 //
 
 import Testing
@@ -76,14 +76,14 @@ struct OnbExclusionTests {
         #expect(allium?.suggestedType == .preferenceIntolerance)
     }
 
-    // MARK: - Soft routing (SPEC §6) — suggestion, never a gate
+    // MARK: - Soft routing (SPEC §6), suggestion, never a gate
 
     @Test func reliefSignalRoutesToSurvive() {
-        #expect(OnbRouting.suggestedMode(goals: [.eatTheRainbow], hasReliefSignal: true) == .survive)
+        #expect(OnbRouting.suggestedMode(goals: [.increaseEnergy], hasReliefSignal: true) == .survive)
     }
 
     @Test func optimizationGoalsRouteToThrive() {
-        #expect(OnbRouting.suggestedMode(goals: [.eatMoreDiversity, .moreEnergy],
+        #expect(OnbRouting.suggestedMode(goals: [.increaseEnergy, .decreaseBrainFog],
                                          hasReliefSignal: false) == .thrive)
     }
 

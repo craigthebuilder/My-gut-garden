@@ -1,6 +1,6 @@
 //
 //  GuildBloomTests.swift
-//  MyGutGardenTests — Module D bloom/decay math (SPEC §13). The most
+//  MyGutGardenTests, Module D bloom/decay math (SPEC §13). The most
 //  regression-prone code in the module (CLAUDE.md §5): on-read decay, the
 //  threshold state machine, decay-then-add feeding, the consistent-feeding
 //  bonus, and the bloom-crossing signal.
@@ -165,8 +165,8 @@ struct GuildBloomTests {
     }
 
     @Test func weekBoundaryResetsDistinctDayCount() {
-        let sun = date(2024, 1, 7)        // Sunday — end of week 1
-        let nextMon = date(2024, 1, 8)    // Monday — new week
+        let sun = date(2024, 1, 7)        // Sunday, end of week 1
+        let nextMon = date(2024, 1, 8)    // Monday, new week
         let out = GuildBloom.applyFeeding(storedScore: 50, lastFedAt: sun, daysFedThisWeek: 3,
                                           points: 10, at: nextMon, calendar: cal)
         #expect(out.daysFedThisWeek == 1)        // reset

@@ -1,10 +1,10 @@
 //
 //  GuildIngestor.swift
-//  MyGutGarden — Module D's implementation of the `GuildIngesting` seam.
+//  MyGutGarden, Module D's implementation of the `GuildIngesting` seam.
 //
 //  PURE functions only (no I/O, no state). The MealIngestion coordinator calls
 //  these, then owns the `guild_state` decay-then-add write (via GuildBloom) and
-//  the `user_districts` write — Module D never writes from here. Keeping this
+//  the `user_districts` write, Module D never writes from here. Keeping this
 //  pure is what lets the coordinator wire it at consolidation without edits.
 //
 

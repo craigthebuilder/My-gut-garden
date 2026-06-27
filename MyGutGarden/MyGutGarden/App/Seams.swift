@@ -1,6 +1,6 @@
 //
 //  Seams.swift
-//  MyGutGarden — the inter-module contracts, fixed BEFORE fan-out so the
+//  MyGutGarden, the inter-module contracts, fixed BEFORE fan-out so the
 //  orchestrator can wire modules at consolidation without editing any of them.
 //  Modules conform to these; the MealIngestion coordinator + AppShell consume
 //  them. (Red-team mitigation: removes the shared-write-path collisions.)
@@ -69,11 +69,17 @@ protocol ThriveIngesting: Sendable {
 
 // MARK: - Per-photo insight injection (Module B hands off → C/E render)
 
-/// What B persists + passes to the mode-specific insight view.
+/// What B persists + passes to the mode-specific insight view. The food-status
+/// fields are filled by the injected SuspectCheckService BEFORE auto-log (Module B
+/// reads them; Module E supplies the real impl). Defaulted so B's construction
+/// sites and previews stay source-compatible.
 struct ConfirmedMeal: Sendable, Identifiable {
     let id: UUID
     let response: RecognitionResponse
     let capturedAt: Date
+    var suspectFoodIds: [String] = []   // status='suspect', avoid=false, not reintroducing
+    var avoidFoodIds: [String] = []     // avoid=true
+    var reintroFoodId: String? = nil    // a food in the user's active food_suspect challenge present here
 }
 
 /// C and E each supply a presenter; the AppShell injects the one matching the
@@ -93,7 +99,7 @@ extension EnvironmentValues {
     }
 }
 
-// MARK: - Celebration channel (anyone emits; AppShell presents — Thrive only)
+// MARK: - Celebration channel (anyone emits; AppShell presents, Thrive only)
 
 enum CelebrationEvent: Sendable, Identifiable {
     case rareFind(plant: String, rarity: RarityTier)
@@ -119,4 +125,64 @@ struct ProgressionState: Sendable, Equatable {
     var isTier2Unlocked: Bool = false
     var unlockedDistrictOrders: Set<Int> = []
     var cumulativeTier2Days: Int = 0
+}
+
+// MARK: - Survive care-prompt channel (Batch E)
+//
+// Deliberately SEPARATE from CelebrationEvent: restriction is never juice (rule #7).
+// Unlike `AppState.celebrate(_:)` this fires in EITHER mode, it is a care prompt,
+// not a reward, and is presented as a calm, dismissible question, never confetti.
+
+enum SurvivePromptEvent: Sendable, Identifiable {
+    case switchToSurvivePrompt(avoidCount: Int)   // offered when ≥ N foods are set aside
+    case graduateToThrive                          // offered when the reset is complete
+
+    var id: String {
+        switch self {
+        case let .switchToSurvivePrompt(n): "switch-survive-\(n)"
+        case .graduateToThrive: "graduate-thrive"
+        }
+    }
+}
+
+// MARK: - Food-status read seam (Module E owns the store; B/C read through this)
+//
+// Keeps Capture (Module B) and Thrive Today (Module C) ignorant of Module E types.
+// The default is a no-op so the spine + any module compiles without E wired in.
+
+protocol SuspectCheckService: Sendable {
+    func suspectFoodIds(for userId: String) async -> Set<String>   // suspect, NOT reintroducing
+    func avoidFoodIds(for userId: String) async -> Set<String>     // avoid = true
+    func reintroFoodIds(for userId: String) async -> Set<String>   // active food_suspect challenge
+}
+
+struct NoopSuspectCheckService: SuspectCheckService {
+    func suspectFoodIds(for userId: String) async -> Set<String> { [] }
+    func avoidFoodIds(for userId: String) async -> Set<String> { [] }
+    func reintroFoodIds(for userId: String) async -> Set<String> { [] }
+}
+
+private struct SuspectCheckServiceKey: EnvironmentKey {
+    static let defaultValue: any SuspectCheckService = NoopSuspectCheckService()
+}
+extension EnvironmentValues {
+    var suspectCheckService: any SuspectCheckService {
+        get { self[SuspectCheckServiceKey.self] }
+        set { self[SuspectCheckServiceKey.self] = newValue }
+    }
+}
+
+/// Module E injects the real write; default is a no-op. Called by Module B after a
+/// meal containing the active reintro food is auto-logged, to attach the
+/// "How did the [food] feel?" card whose answer writes back via CheckInWriter.
+typealias ReintroFeelingAttacher = @Sendable (_ reintroFoodId: String, _ mealId: String) async -> Void
+
+private struct ReintroFeelingAttacherKey: EnvironmentKey {
+    static let defaultValue: ReintroFeelingAttacher = { _, _ in }
+}
+extension EnvironmentValues {
+    var reintroFeelingAttacher: ReintroFeelingAttacher {
+        get { self[ReintroFeelingAttacherKey.self] }
+        set { self[ReintroFeelingAttacherKey.self] = newValue }
+    }
 }

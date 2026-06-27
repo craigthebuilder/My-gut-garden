@@ -1,13 +1,13 @@
 //
 //  SrvDomain.swift
-//  MyGutGarden — Module E (Survive surface) domain vocabulary.
+//  MyGutGarden, Module E (Survive surface) domain vocabulary.
 //
 //  Survive-local value types: the symptom severities, the Bristol scale, the
 //  gas-odor descriptor (the single most discriminating cheap signal, SPEC §12),
 //  confounders, FODMAP reintro groups, reintro statuses, and the pattern leans.
 //  These mirror the Postgres enums in 20260625000001_schema.sql so the surface
-//  and the data model speak the same words. Pure, deterministic, Sendable —
-//  no UI, no I/O — so the streak/reintro engines (and their tests) build on them.
+//  and the data model speak the same words. Pure, deterministic, Sendable, 
+//  no UI, no I/O, so the streak/reintro engines (and their tests) build on them.
 //
 //  Copy here is calm and non-clinical (DESIGN.md "Writing", SPEC §11b). Nothing
 //  here names a condition or a bug; the pattern leans are gas-chemistry
@@ -43,7 +43,7 @@ enum SrvSeverity: Int, CaseIterable, Codable, Sendable, Identifiable {
 
 // MARK: - Bristol Stool Scale (tap a picture, 1–7)
 
-/// `symptom_logs.bss` (1–7). Neutral, body-literate copy — never alarming.
+/// `symptom_logs.bss` (1–7). Neutral, body-literate copy, never alarming.
 enum SrvBristolType: Int, CaseIterable, Codable, Sendable, Identifiable {
     case type1 = 1, type2, type3, type4, type5, type6, type7
 
@@ -85,7 +85,7 @@ enum SrvBristolType: Int, CaseIterable, Codable, Sendable, Identifiable {
     }
 }
 
-// MARK: - Gas-odor descriptor (SPEC §12 — the cheap discriminator)
+// MARK: - Gas-odor descriptor (SPEC §12, the cheap discriminator)
 
 /// `symptom_logs.gas_odor` enum ('sulfur','sour','odorless').
 enum SrvGasOdor: String, CaseIterable, Codable, Sendable, Identifiable {
@@ -110,7 +110,7 @@ enum SrvGasOdor: String, CaseIterable, Codable, Sendable, Identifiable {
     }
 }
 
-// MARK: - Confounders (SPEC §12 — one-tap context; freezes the streak)
+// MARK: - Confounders (SPEC §12, one-tap context; freezes the streak)
 
 /// `symptom_logs.confounders text[]`. A confounder-tagged day freezes (never
 /// breaks) the symptom-free streak, and the pattern engine down-weights it.
@@ -146,7 +146,7 @@ enum SrvConfounder: String, CaseIterable, Codable, Sendable, Identifiable {
     }
 }
 
-// MARK: - When symptoms showed up (SPEC §11b — timing)
+// MARK: - When symptoms showed up (SPEC §11b, timing)
 
 enum SrvMealTiming: String, CaseIterable, Codable, Sendable, Identifiable {
     case onWaking = "on_waking"
@@ -172,7 +172,7 @@ enum SrvMealTiming: String, CaseIterable, Codable, Sendable, Identifiable {
 
 /// The groups a reintro challenge clears. Stored in
 /// `reintro_challenges.fodmap_group` as the rawValue. `level(in:)` reads the
-/// per-food levels the DB join produced (CLAUDE.md rule #2 — never invented).
+/// per-food levels the DB join produced (CLAUDE.md rule #2, never invented).
 enum SrvFodmapGroup: String, CaseIterable, Codable, Sendable, Identifiable {
     case fructan, gos, lactose, fructose, polyol
 
@@ -220,7 +220,7 @@ enum SrvFodmapGroup: String, CaseIterable, Codable, Sendable, Identifiable {
         }
     }
 
-    /// True when this group is present at any level above "none" — i.e. eating
+    /// True when this group is present at any level above "none", i.e. eating
     /// this food contributes to the group you're testing.
     nonisolated func isPresent(in fodmap: FodmapAttr) -> Bool {
         level(in: fodmap).lowercased() != "none"
@@ -258,7 +258,7 @@ enum SrvReintroStatus: String, CaseIterable, Codable, Sendable, Identifiable {
 
 /// `pattern_assessments.pattern` enum. ⚠️ These are GAS-CHEMISTRY LEANS, not
 /// diagnoses (CLAUDE.md rule #4 / SPEC §11b). `hydrogen_sibo` is rendered as a
-/// hydrogen-type-gas lean — the word "SIBO" is NEVER surfaced to the user.
+/// hydrogen-type-gas lean, the word "SIBO" is NEVER surfaced to the user.
 enum SrvPattern: String, Codable, Sendable, Identifiable {
     case methane, h2s
     case hydrogenSibo = "hydrogen_sibo"
@@ -269,12 +269,12 @@ enum SrvPattern: String, Codable, Sendable, Identifiable {
     /// Non-diagnostic, user-facing lean. // RD-REVIEW-REQUIRED (Fence 1 copy)
     var leanPhrase: String {
         switch self {
-        case .methane: "leans methane — gas that tends to slow things down"
-        case .h2s: "leans hydrogen-sulfide — the sulfur, eggy gas"
-        case .hydrogenSibo: "leans hydrogen-type gas — odorless gas with bloating"
-        case .fat: "leans fat-triggered — richer, oilier meals hit harder"
-        case .histamine: "leans histamine-sensitive — aged and fermented foods provoke it"
-        case .proteolytic: "leans low-fiber — a stretch heavy on protein, light on plants"
+        case .methane: "leans methane, gas that tends to slow things down"
+        case .h2s: "leans hydrogen-sulfide, the sulfur, eggy gas"
+        case .hydrogenSibo: "leans hydrogen-type gas, odorless gas with bloating"
+        case .fat: "leans fat-triggered, richer, oilier meals hit harder"
+        case .histamine: "leans histamine-sensitive, aged and fermented foods provoke it"
+        case .proteolytic: "leans low-fiber, a stretch heavy on protein, light on plants"
         }
     }
 }

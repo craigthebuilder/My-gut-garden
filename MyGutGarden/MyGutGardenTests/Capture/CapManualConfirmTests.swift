@@ -1,11 +1,11 @@
 //
 //  CapManualConfirmTests.swift
-//  MyGutGardenTests — Module B: unmatched → manual-confirm selection (§4 step 4).
+//  MyGutGardenTests, Module B: unmatched → manual-confirm selection (§4 step 4).
 //
 //  The canonical fixture resolves every item, so it has no unmatched entries
 //  (asserted below). The selection logic itself is exercised on constructed
 //  unmatched items: a resolved correction becomes a `manual` meal_item, an
-//  unresolved guess is left out — we never log a food we aren't sure of.
+//  unresolved guess is left out, we never log a food we aren't sure of.
 //
 
 import Testing
