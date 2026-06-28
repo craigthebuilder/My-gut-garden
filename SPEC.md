@@ -451,6 +451,20 @@ Thrive fiber goal in grams.
   written); when signals lean relief, a **Survive offer pop-up** (program disclaimer)
   appears right after onboarding, decline-able, never forced.
 
+### 16.4 Round-6 (snap fixes)
+
+- **Snap annotations now work everywhere.** Root cause: the simulator/sample-meal path
+  uses the **fixture** recognizer, whose annotation handler returned empty by design (its
+  canned vision is Garlic/Oats/Spinach/Blueberry, the "spinach/oats" seen earlier). The
+  fixture now **deterministically** parses the note against the foods table (words +
+  adjacent pairs, quantity word → coarse tier), so "lots of onion" adds Onion (lots) on
+  the sample path too. The real-photo (Anthropic) path was already fixed by the R4
+  redeploy (verified: Onion/Pomegranate flow through as `source=annotation`). Still
+  ID + coarse tier only; the DB derives every number (rule #2).
+- **The generic "Worth a (quick) check" hidden-ingredient prompts were removed** from the
+  Thrive AND Survive snap results (curated guesses the user didn't want). Corrections go
+  through the photo annotation or the meal editor's search-and-add instead.
+
 ---
 
 *End of SPEC.md. Build order and agent rules: `CLAUDE.md`. Visual system: `DESIGN.md`.*

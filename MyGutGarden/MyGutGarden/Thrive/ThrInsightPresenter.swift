@@ -173,21 +173,10 @@ struct ThrInsightView: View {
         .accessibilityLabel("About \(fiberApproxG) grams of fiber, directional estimate from visible portion.")
     }
 
-    @ViewBuilder private var hiddenPrompts: some View {
-        // "When unsure, flag it", surfaced for confirm, never guessed (§4, rule #8).
-        if !meal.response.hiddenIngredientPrompts.isEmpty {
-            Card {
-                VStack(alignment: .leading, spacing: theme.metrics.space2) {
-                    SectionHeader(title: "Worth a check")
-                    ForEach(meal.response.hiddenIngredientPrompts) { prompt in
-                        Text(prompt.prompt)
-                            .font(theme.typography.body())
-                            .foregroundStyle(theme.colors.textPrimary)
-                    }
-                }
-            }
-        }
-    }
+    // R6: the generic "Worth a check" hidden-ingredient prompts were removed from the
+    // snap result (the user doesn't want curated guesses there). Add a missed
+    // ingredient via the photo annotation or the meal editor instead.
+    @ViewBuilder private var hiddenPrompts: some View { EmptyView() }
 
     // MARK: Helpers
 

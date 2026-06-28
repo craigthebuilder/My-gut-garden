@@ -86,7 +86,7 @@ struct SrvPhotoInsightView: View {
                 if resetActive && !highResidueFoods.isEmpty { resetCard }
                 safetyCard
                 if !survive.fermentedCaution.isEmpty { fermentCautionCard }
-                if !survive.hiddenIngredientPrompts.isEmpty { hiddenIngredientCard }
+                // R6: removed the generic "Worth a quick check" hidden-ingredient prompts.
 
                 Text("Safety here is a per-serving guide, not a verdict, your own logs are the real signal.")
                     .font(theme.typography.caption())
