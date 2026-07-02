@@ -43,44 +43,27 @@ final class CapCaptureModel {
 
     // Outputs
     private(set) var confirmedMeal: ConfirmedMeal?
-    private(set) var persistedMealId: String?     // the DB meals.id (nil offline) - drives edit + reintro attach
+    private(set) var persistedMealId: String?     // the DB meals.id (nil offline) - drives the edit flow
     private(set) var isSaving = false
-
-    // Reintro "How did the [food] feel?" answer state (Batch C)
-    private(set) var reintroAnswer: Bool?         // nil = unanswered; set after the user taps
 
     private let appState: AppState
     private let recognizer: RecognitionService
     private var photoURL: String?
     private var capturedAt = Date()
 
-    // Injected food-status seams (set by CapRootView from the environment, BEFORE
-    // any capture). Module B stays ignorant of Module E types - these are the
-    // spine seams (+ the Capture-local answer recorder). Defaults are no-ops.
-    private var suspectCheck: any SuspectCheckService = NoopSuspectCheckService()
-    private var reintroAttacher: ReintroFeelingAttacher = { _, _ in }
-    private var reintroRecorder: CapReintroFeelingRecorder = { _, _, _ in }
-
     init(appState: AppState, recognizer: RecognitionService) {
         self.appState = appState
         self.recognizer = recognizer
     }
 
-    /// CapRootView wires the environment seams into the model once on appear.
-    func configure(suspectCheck: any SuspectCheckService,
-                   reintroAttacher: @escaping ReintroFeelingAttacher,
-                   reintroRecorder: @escaping CapReintroFeelingRecorder) {
-        self.suspectCheck = suspectCheck
-        self.reintroAttacher = reintroAttacher
-        self.reintroRecorder = reintroRecorder
-    }
-
-    var mode: AppMode { appState.mode }
-
-    /// Allergy alerts are LOUD across both modes (§9), surfaced wherever review
-    /// renders, never suppressed mid-flow. LAYER 1 - independent of the soft
-    /// suspect/avoid pass (rule #1).
+    /// Allergy alerts are LOUD (§9): rendered BEFORE any insight content and never
+    /// suppressed. Server-computed from the user's `food_flags` (flag_tier=allergy).
     var allergyAlerts: [AllergyAlert] { response?.allergyAlerts ?? [] }
+
+    /// Soft, in-overview sensitivity heads-up (§9). The food is still eaten +
+    /// logged; this only reminds the user it's on their watch list. Server-computed
+    /// from `food_flags` (flag_tier=sensitivity).
+    var sensitivityFlags: [SensitivityFlag] { response?.sensitivityFlags ?? [] }
 
     var canConfirm: Bool {
         // Retained for the (non-blocking) edit flow's hidden-ingredient gate; the
@@ -125,7 +108,6 @@ final class CapCaptureModel {
         photoURL = nil
         capturedAt = Date()
         persistedMealId = nil
-        reintroAnswer = nil
 
         // Best-effort upload; a flaky photo upload never blocks logging a meal.
         if let imageData,
@@ -145,7 +127,7 @@ final class CapCaptureModel {
         let trimmedNote = userAnnotation.trimmingCharacters(in: .whitespacesAndNewlines)
         do {
             if trimmedNote.isEmpty {
-                await recognizer.recognize(mode: mode, auth: appState.auth,
+                await recognizer.recognize(auth: appState.auth,
                                            imageBase64: imageData?.base64EncodedString())
                 guard let recognized = recognizer.lastResponse else {
                     throw CapError.captureFailed
@@ -154,7 +136,7 @@ final class CapCaptureModel {
                 annotationFoodIds = []
             } else {
                 let result = try await CapRecognizer().recognize(
-                    mode: mode, accessToken: appState.auth.session?.accessToken,
+                    accessToken: appState.auth.session?.accessToken,
                     imageBase64: imageData?.base64EncodedString(),
                     userAnnotation: trimmedNote
                 )
@@ -180,19 +162,14 @@ final class CapCaptureModel {
 
     // MARK: - Auto-log (persist meals + meal_items, no question/serving gate)
 
-    /// Assembles the draft from the recognized (vision + annotation) items, runs
-    /// the LAYER-2 soft food-status check, persists the meal, fires the reintro
-    /// attach when relevant, and advances to the insight hand-off.
+    /// Assembles the draft from the recognized (vision + annotation) items,
+    /// persists the meal, and advances to the insight hand-off. Food restrictions
+    /// (allergy/sensitivity) are server-computed and carried on `response`; there
+    /// is no client-side food-status pass.
     func confirm() async {
         guard let response else { return }
         isSaving = true
         defer { isSaving = false }
-
-        // Matched, surfaced foods in this meal (drives the food-status seam).
-        let matchedFoodIds = Set(
-            response.items.compactMap { $0.silentlyOmitted == true ? nil : $0.attributes?.foodId }
-        )
-        let status = await foodStatus(matchedFoodIds: matchedFoodIds)
 
         // Auto-log items: the recognized (vision + annotation) set. Manual + hidden
         // corrections are deferred to the edit sheet, so they're empty here.
@@ -204,7 +181,6 @@ final class CapCaptureModel {
         )
 
         let draft = CapMealDraft(
-            mode: mode,
             photoURL: photoURL,
             response: response,
             items: items,
@@ -225,61 +201,10 @@ final class CapCaptureModel {
         confirmedMeal = ConfirmedMeal(
             id: UUID(),
             response: response,
-            capturedAt: capturedAt,
-            suspectFoodIds: status.suspect,
-            avoidFoodIds: status.avoid,
-            reintroFoodId: status.reintro
+            capturedAt: capturedAt
         )
 
-        // Reintro attach: register the pending feeling-check for the active
-        // challenge food present in this meal (real write lives in Module E).
-        if let reintroFoodId = status.reintro, let mealId = persistedMealId {
-            await reintroAttacher(reintroFoodId, mealId)
-        }
-
         phase = .confirmed
-    }
-
-    /// LAYER 2 (soft, informational): intersect the user's suspect / avoid /
-    /// reintro lists with this meal's foods. Independent of the LOUD allergy pass
-    /// (rule #1). No-ops when signed out or with the default no-op service.
-    private func foodStatus(matchedFoodIds: Set<String>) async
-        -> (suspect: [String], avoid: [String], reintro: String?) {
-        guard let userId = appState.auth.session?.user?.id, !matchedFoodIds.isEmpty else {
-            return ([], [], nil)
-        }
-        // Hoist to a local Sendable so the concurrent child tasks don't capture
-        // the actor-isolated property.
-        let service = suspectCheck
-        async let suspectAll = service.suspectFoodIds(for: userId)
-        async let avoidAll = service.avoidFoodIds(for: userId)
-        async let reintroAll = service.reintroFoodIds(for: userId)
-        let suspect = Array(await suspectAll.intersection(matchedFoodIds))
-        let avoid = Array(await avoidAll.intersection(matchedFoodIds))
-        let reintro = (await reintroAll).intersection(matchedFoodIds).first
-        return (suspect, avoid, reintro)
-    }
-
-    // MARK: - Confirmed-screen helpers (LAYER 2 banners + reintro card)
-
-    /// Maps a food_id to its surfaced canonical name (for calm, user-framed copy).
-    func foodName(for foodId: String) -> String {
-        response?.items.first { $0.attributes?.foodId == foodId }?.attributes?.canonicalName ?? "this food"
-    }
-
-    /// The reintro food's coarse portion in this meal (for the over-eating nudge).
-    var reintroPortion: PortionTier? {
-        guard let id = confirmedMeal?.reintroFoodId else { return nil }
-        return response?.items.first { $0.attributes?.foodId == id }?.vision.portionTier
-    }
-
-    /// Record the user's "How did the [food] feel?" answer (Batch C). The pending
-    /// check was attached in `confirm()`; this reports the verdict via the
-    /// Capture-local recorder seam (Module E does the real write).
-    func recordReintroFeeling(_ feltFine: Bool) async {
-        guard let reintroFoodId = confirmedMeal?.reintroFoodId, let mealId = persistedMealId else { return }
-        reintroAnswer = feltFine
-        await reintroRecorder(reintroFoodId, mealId, feltFine)
     }
 
     // MARK: - Edit (non-blocking, opened from the confirmed screen)
@@ -356,7 +281,6 @@ final class CapCaptureModel {
         unmatchedItems = []
         confirmedMeal = nil
         persistedMealId = nil
-        reintroAnswer = nil
         stagedImage = nil
         userAnnotation = ""
         photoURL = nil

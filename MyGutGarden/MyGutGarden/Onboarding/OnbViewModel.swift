@@ -2,21 +2,16 @@
 //  OnbViewModel.swift
 //  MyGutGarden, Module A: the intake flow state + persistence (SPEC §6, §10).
 //
-//  Holds every captured field, derives the fiber goal via the PURE OnbFiberGoal,
-//  and writes through AppState.repository. Reads/writes the shared data model
-//  only, never re-styles UI, never displays `est_daily_kcal`.
+//  Holds every captured field, derives the INTERNAL fiber numbers via the PURE
+//  OnbFiberGoal, and writes through AppState.repository. Reads/writes the shared
+//  data model only; never re-styles UI; never displays est_daily_kcal or the
+//  fiber target.
 //
-//  Phase-2 (Batch B):
-//    - unitSystem toggle (metric/US display only; canonical storage cm/kg)
-//    - age always captured via ageValue (no shareAge toggle)
-//    - plantConsumptionLevel added; fiber goal multiplied accordingly
-//    - bowelConsistency baseline added
-//    - mood stored CANONICAL high=better via 6 - uiValue (see usersWriteBody)
-//    - otherAutoimmune serious condition writes users.other_autoimmune
-//    - Survive path writes residue_ceiling_g (INTERNAL), no fiber_goal_g
-//    - Thrive path writes fiber_goal_g; plant_consumption_level always written
-//    - toggleCategoryExclusion supports deselecting a chip
-//    - food search filter fixed to ilike.%q% (PostgREST standard wildcard)
+//  Single-mode: no routing, no modes, no Survive. Food restrictions are written
+//  to `food_flags` (three-tier model, SPEC §9). The surfaced fiber goal stays
+//  unset until the week-1 baseline quest unlocks it, so onboarding writes only
+//  the INTERNAL est_daily_kcal + fiber_target_g and leaves fiber_goal_state at
+//  its DB default ('baseline_pending').
 //
 
 import Foundation
@@ -35,8 +30,9 @@ final class OnbViewModel {
     // MARK: Captured intake (SPEC §6)
     var goals: Set<OnbGoal> = []
 
-    // MARK: Body basics. Pre-filled with neutral medians so the goal is always
-    // derivable; the user adjusts. Never framed as a weight-loss target (§10).
+    // MARK: Body basics. Pre-filled with neutral medians so the internal fiber
+    // target is always derivable; the user adjusts. Never framed as a weight-loss
+    // target (§10).
 
     /// Unit system for display only. Storage is always cm/kg.
     var unitSystem: UnitSystem = .metric
@@ -44,21 +40,21 @@ final class OnbViewModel {
     var heightCm: Double = 170
     var weightKg: Double = 70
 
-    // Phase-2 (Batch B): age is always captured via the wheel picker (no toggle).
-    // The "Optional" callout in the UI is informational, not a gate.
+    // Age is always captured via the wheel picker (no toggle). The "Optional"
+    // callout in the UI is informational, not a gate.
     var ageValue: Int = 30
 
     var sex: OnbSex = .unspecified
     var activity: OnbActivityLevel = .moderate
 
-    /// Phase-2 (Batch B): plant-food consumption level, drives the fiber-goal multiplier.
-    /// Always written (universal isOnboarded marker).
+    /// Plant-food consumption level; drives the fiber-target multiplier. Always written.
     var plantConsumptionLevel: PlantConsumptionTier = .moderate
 
     var baseline = OnbBaseline()
 
-    // The two-faced exclusion model (§9), scope + type kept distinct, never flattened.
-    var exclusions: [OnbDraftExclusion] = []
+    // Food flags (§9 three-tier model). Each draft keeps scope + tier distinct,
+    // never flattened; written to `food_flags` on save.
+    var foodFlags: [OnbDraftFlag] = []
     var foodQuery: String = ""
     var foodHits: [OnbFoodHit] = []
 
@@ -68,9 +64,6 @@ final class OnbViewModel {
 
     // Social proof.
     var successStories: [OnbSuccessStory] = []
-
-    // Mode choice: starts from the soft suggestion, user can override on summary.
-    var chosenModeOverride: AppMode?
 
     // Status.
     var isSaving = false
@@ -93,26 +86,17 @@ final class OnbViewModel {
         weightKg = Double(lbs) / 2.20462
     }
 
-    // MARK: - Derived (SPEC §10, Phase-2 Batch B)
+    // MARK: - Derived (SPEC §10)
 
-    /// Holds `estDailyKcal` (INTERNAL ONLY), `baseFiberGoalG` (INTERNAL ONLY),
-    /// and `fiberGoalG` (the ONE surfaced number, Thrive only). Views read ONLY
-    /// `.fiberGoalG`, and only on the Thrive summary screen.
-    var derivation: OnbFiberGoal.Derivation {
+    /// INTERNAL ONLY. Holds `estDailyKcal` and the plant-adjusted grams that we
+    /// persist to `fiber_target_g`. NEVER surfaced to a view at onboarding — the
+    /// user-facing fiber goal is unlocked later by the week-1 baseline quest.
+    /// Kept private so no view can reach it (Fence 5).
+    private var derivation: OnbFiberGoal.Derivation {
         OnbFiberGoal.derive(heightCm: heightCm, weightKg: weightKg,
-                            age: ageValue,
-                            sex: sex, activity: activity,
+                            age: ageValue, sex: sex, activity: activity,
                             plantConsumptionLevel: plantConsumptionLevel)
     }
-
-    /// The single surfaced number from the body step (grams, Thrive only).
-    var fiberGoalG: Int { derivation.fiberGoalG }
-
-    // MARK: - Soft routing (SPEC §6)
-
-    var hasReliefSignal: Bool { !redFlags.isEmpty || !seriousConditions.isEmpty }
-    var suggestedMode: AppMode { OnbRouting.suggestedMode(goals: goals, hasReliefSignal: hasReliefSignal) }
-    var chosenMode: AppMode { chosenModeOverride ?? suggestedMode }
 
     // MARK: - Mutations
 
@@ -120,38 +104,38 @@ final class OnbViewModel {
         if goals.contains(goal) { goals.remove(goal) } else { goals.insert(goal) }
     }
 
-    /// Phase-2 (Batch B): toggle-style add/remove so tapping a selected chip deselects it.
-    func toggleCategoryExclusion(_ category: OnbExclusionCategory) {
-        let scope = OnbExclusionScope.category(key: category.key, label: category.label)
-        if exclusions.contains(where: { $0.scope == scope }) {
-            exclusions.removeAll { $0.scope == scope }
+    // MARK: Food flags (§9)
+
+    /// Toggle-style add/remove so tapping a selected category chip deselects it.
+    func toggleCategoryFlag(_ category: OnbFlagCategory) {
+        let scope = OnbFlagScope.category(key: category.key, label: category.label)
+        if foodFlags.contains(where: { $0.scope == scope }) {
+            foodFlags.removeAll { $0.scope == scope }
         } else {
-            addCategoryExclusion(key: category.key, label: category.label, type: category.suggestedType)
+            addCategoryFlag(key: category.key, label: category.label, tier: category.suggestedTier)
         }
     }
 
-    func addCategoryExclusion(_ category: OnbExclusionCategory) {
-        addCategoryExclusion(key: category.key, label: category.label, type: category.suggestedType)
+    func addCategoryFlag(key: String, label: String, tier: FlagTier) {
+        let scope = OnbFlagScope.category(key: key, label: label)
+        guard !foodFlags.contains(where: { $0.scope == scope }) else { return }
+        foodFlags.append(OnbDraftFlag(scope: scope, flagTier: tier))
     }
 
-    func addCategoryExclusion(key: String, label: String, type: ExclusionType) {
-        let scope = OnbExclusionScope.category(key: key, label: label)
-        guard !exclusions.contains(where: { $0.scope == scope }) else { return }
-        exclusions.append(OnbDraftExclusion(scope: scope, exclusionType: type))
-    }
-
-    func addFoodExclusion(_ hit: OnbFoodHit) {
-        let scope = OnbExclusionScope.food(id: hit.id, name: hit.canonicalName)
-        guard !exclusions.contains(where: { $0.scope == scope }) else { return }
-        // Default a specific food to the quiet type; the user escalates to allergy.
-        exclusions.append(OnbDraftExclusion(scope: scope, exclusionType: .preferenceIntolerance))
+    func addFoodFlag(_ hit: OnbFoodHit) {
+        let scope = OnbFlagScope.food(id: hit.id, name: hit.canonicalName)
+        guard !foodFlags.contains(where: { $0.scope == scope }) else { return }
+        // Default a specific food to the softer health tier; the user escalates to allergy.
+        foodFlags.append(OnbDraftFlag(scope: scope, flagTier: .sensitivity))
         foodQuery = ""
         foodHits = []
     }
 
-    func removeExclusion(_ id: OnbDraftExclusion.ID) {
-        exclusions.removeAll { $0.id == id }
+    func removeFoodFlag(_ id: OnbDraftFlag.ID) {
+        foodFlags.removeAll { $0.id == id }
     }
+
+    // MARK: Disclaimers
 
     func toggleSeriousCondition(_ condition: OnbSeriousCondition) {
         if seriousConditions.contains(condition.key) { seriousConditions.remove(condition.key) }
@@ -162,14 +146,13 @@ final class OnbViewModel {
         if redFlags.contains(flag.key) { redFlags.remove(flag.key) } else { redFlags.insert(flag.key) }
     }
 
-    /// Celiac -> propose a LOUD gluten exclusion (medical_allergy, §9). Called on
-    /// acknowledgment; removable, never silently collapsed.
-    /// otherAutoimmune: NO universal exclusion proposed (Phase-2 Batch B).
+    /// Celiac -> propose a LOUD gluten flag (`flag_tier = allergy`, §9). Called on
+    /// acknowledgment; removable, never silently collapsed. otherAutoimmune + ibd
+    /// note the disclaimer only (no food flag, no persisted column).
     func acknowledgeSeriousConditions() {
         if seriousConditions.contains(OnbSeriousCondition.celiac.key) {
-            addCategoryExclusion(key: "gluten", label: "Gluten / wheat", type: .medicalAllergy)
+            addCategoryFlag(key: "gluten", label: "Gluten / wheat", tier: .allergy)
         }
-        // other_autoimmune and ibd: noted via users.other_autoimmune / goals, no food exclusion.
     }
 
     // MARK: - Navigation
@@ -192,8 +175,7 @@ final class OnbViewModel {
         if let rows { successStories = rows }
     }
 
-    /// Phase-2 (Batch B): food search uses ilike.%q% (PostgREST standard SQL wildcard).
-    /// The old ilike.*q* did not work with PostgREST's filter encoding.
+    /// Food search uses ilike.%q% (PostgREST standard SQL wildcard).
     func searchFoods() async {
         let q = foodQuery.trimmingCharacters(in: .whitespacesAndNewlines)
         guard q.count >= 2, let repo = appState.repository else { foodHits = []; return }
@@ -203,9 +185,9 @@ final class OnbViewModel {
         foodHits = hits ?? []
     }
 
-    /// Persist intake, derive + store the fiber goal (and internal kcal), write
-    /// the two-faced exclusions, set the chosen mode. Completes locally when
-    /// offline/demo so the flow never dead-ends.
+    /// Persist intake: PATCH the internal profile fields + stamp onboarded_at, then
+    /// INSERT each food flag with its own tier. Completes locally when offline/demo
+    /// so the flow never dead-ends.
     func save() async {
         isSaving = true
         errorMessage = nil
@@ -214,10 +196,10 @@ final class OnbViewModel {
         if let repo = appState.repository, let uid = appState.auth.user?.id {
             do {
                 try await repo.update("users", set: usersWriteBody(), filters: ["id": "eq.\(uid)"])
-                // Each exclusion written with its OWN type, never merged (§9).
-                for draft in exclusions {
-                    try await repo.insertVoid("exclusions",
-                                              OnbExclusionWriter.insertBody(userId: uid, draft: draft))
+                // Each flag written with its OWN tier, never merged (§9).
+                for draft in foodFlags {
+                    try await repo.insertVoid("food_flags",
+                                              OnbFlagWriter.insertBody(userId: uid, draft: draft))
                 }
                 await appState.refreshProfile()
             } catch {
@@ -228,80 +210,54 @@ final class OnbViewModel {
         didFinish = true
     }
 
-    /// The `users` PATCH body.
-    ///
-    /// DUTY-OF-CARE notes:
-    ///   - `est_daily_kcal`: INTERNAL column; written but never displayed (Fence 5).
-    ///   - `baseline_mood`: CANONICAL high=better. The UI now shows Regulated(1)..Erratic(5),
-    ///     which is INVERTED from high=better. We store `6 - baseline.mood` so the pattern
-    ///     engine (which expects high=better, 5=regulated) is never aware of the UI polarity.
-    ///     This is the SINGLE inversion point for onboarding baseline mood.
-    ///   - Thrive: writes `fiber_goal_g` (the only surfaced number, SPEC §10).
-    ///     TODO: Fiber auto-increase is a coordinator job (MealIngestion), not onboarding.
-    ///   - Survive: writes `residue_ceiling_g` (INTERNAL ONLY, never surfaced or decoded
-    ///     into UserProfile, like est_daily_kcal). Does NOT write fiber_goal_g.
-    ///   - `plant_consumption_level`: ALWAYS written (universal isOnboarded marker checked
-    ///     by AppState.isOnboarded for the Survive branch).
+    /// The `users` PATCH body. Single-mode + duty-of-care notes:
+    ///   - `est_daily_kcal` + `fiber_target_g`: INTERNAL columns; written but NEVER
+    ///     decoded into UserProfile or displayed (SPEC §10 / Fence 5).
+    ///   - The SURFACED `fiber_goal_g` is deliberately NOT written, and
+    ///     `fiber_goal_state` is left at its DB default ('baseline_pending') so the
+    ///     week-1 baseline quest unlocks the goal (no fiber number at onboarding).
+    ///   - `baseline_mood`: CANONICAL high=better. The UI shows Regulated(1)..Erratic(5),
+    ///     which is INVERTED from high=better. We store `6 - baseline.mood` so the
+    ///     pattern engine (high=better, 5=regulated) never sees the UI polarity. This
+    ///     is the SINGLE inversion point for onboarding baseline mood.
+    ///   - `plant_consumption_level`: ALWAYS written.
+    ///   - `onboarded_at`: the clean isOnboarded marker (AppState.isOnboarded).
     private func usersWriteBody() -> [String: PGValue] {
         let d = derivation
-        var body: [String: PGValue] = [
+        return [
             "height_cm":      .double(heightCm),
             "weight_kg":      .double(weightKg),
             "age":            .int(ageValue),
             "sex":            sex.dbValue.map(PGValue.string) ?? .null,
             "activity_level": .string(activity.rawValue),
-            "est_daily_kcal": .double(d.estDailyKcal),   // INTERNAL ONLY, never displayed (Fence 5)
 
-            // MOOD CANONICAL INVERSION (Phase-2 Batch B, single point):
+            // INTERNAL ONLY (Fence 5): never displayed, never framed as calories/target.
+            "est_daily_kcal": .double(d.estDailyKcal),
+            "fiber_target_g": .int(d.fiberGoalG),
+
+            // MOOD CANONICAL INVERSION (single point):
             // UI shows Regulated(1=best)..Erratic(5=worst); canonical is high=better.
             // Stored as 6 - uiValue so 1 (Regulated/best) -> 5 (stored best).
-            "baseline_mood":             .int(6 - baseline.mood),
-            "baseline_energy":           .int(baseline.energy),
-            "baseline_clarity":          .int(baseline.clarity),
-            "baseline_bowel_consistency": .int(baseline.bowelConsistency),
+            "baseline_mood":    .int(6 - baseline.mood),
+            "baseline_energy":  .int(baseline.energy),
+            "baseline_clarity": .int(baseline.clarity),
 
-            "goals":         .stringArray(goals.map(\.rawValue).sorted()),
-            // R5 #4: everyone lands in Thrive; Survive is OFFERED (a disclaimer
-            // pop-up) when signals lean relief, never auto-entered into restriction.
-            "current_mode":  .string(AppMode.thrive.rawValue),
-
-            // plant_consumption_level is always written: it is the universal
-            // isOnboarded marker (AppState checks fiberGoalG != nil OR plantConsumptionLevel != nil).
             "plant_consumption_level": .string(plantConsumptionLevel.rawValue),
+            "goals":                   .stringArray(goals.map(\.rawValue).sorted()),
 
-            // other_autoimmune: true if the user flagged it in Q5.
-            "other_autoimmune": .bool(seriousConditions.contains(OnbSeriousCondition.otherAutoimmune.key)),
+            // Clean isOnboarded marker: onboarded_at != nil (SPEC §6).
+            "onboarded_at": .date(Date()),
         ]
-
-        // Everyone lands in Thrive, so the plant-adjusted fiber goal is always written
-        // (the ONLY surfaced derived number).
-        body["fiber_goal_g"] = .int(d.fiberGoalG)
-        // If signals lean relief, also stash the internal residue ceiling so an eventual
-        // Survive episode has it (INTERNAL ONLY, never surfaced/decoded, like est_daily_kcal).
-        if suggestedMode == .survive {
-            body["residue_ceiling_g"] = .int(GameConfig.shared.surviveResidueCeilingStartG)
-        }
-
-        return body
-    }
-
-    /// Whether to OFFER Survive after onboarding (signals lean relief). We never
-    /// auto-enter it; the offer is a disclaimer pop-up the user can decline (R5 #4).
-    var shouldOfferSurvive: Bool { suggestedMode == .survive }
-
-    /// Fire the Survive offer pop-up at the shell once onboarding is done.
-    func offerSurviveIfWarranted() {
-        if shouldOfferSurvive { appState.survivePrompt(.offerSurvive) }
     }
 }
 
 // MARK: - Steps
 
-/// The intake sequence (SPEC §6). Welcome leads with Thrive's fun (never opens
-/// "how's your gut?"); body basics stay away from any number-framing; the fiber
-/// goal is revealed as a gain on the summary (Thrive only).
+/// The intake sequence (SPEC §6). Welcome leads with the fun (never opens
+/// "how's your gut?"); body basics stay away from number-framing; the summary is
+/// a week-1 baseline quest (no fiber number is ever shown at onboarding).
 enum OnbStep: Int, CaseIterable, Hashable {
-    case welcome, goals, body, baseline, exclusions, checks, summary
+    case welcome, goals, body, baseline, flags, checks, summary
 
     var next: OnbStep? { OnbStep(rawValue: rawValue + 1) }
     var previous: OnbStep? { OnbStep(rawValue: rawValue - 1) }

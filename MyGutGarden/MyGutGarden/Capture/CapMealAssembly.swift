@@ -71,16 +71,16 @@ enum CapManualConfirm {
 
 enum CapMealDraftBuilder {
 
-    /// Matched, surfaced vision items → `vision` meal_items. `preference_intolerance`
-    /// matches (`silentlyOmitted`) are dropped, consistent with the surfaced-
-    /// attributes seam: a quiet omission is never persisted as something fed
-    /// (§9, the two-faced model is honoured, not flattened). Items whose `food_id`
-    /// the server marked `source='annotation'` (the user's note) persist as
-    /// `annotation` instead of `vision` (Batch C).
+    /// Matched vision items → `vision` meal_items. Every resolved item is surfaced
+    /// and logged — there is no silent omit in the single-mode model (§9;
+    /// sensitivity foods are still eaten + counted, allergies fire a LOUD banner
+    /// but are not dropped). Items whose `food_id` the server marked
+    /// `source='annotation'` (the user's note) persist as `annotation` instead of
+    /// `vision` (Batch C).
     static func visionItems(items: [ResolvedItem],
                             annotationFoodIds: Set<String> = []) -> [CapMealItem] {
         items.compactMap { item in
-            guard item.silentlyOmitted != true, let attrs = item.attributes else { return nil }
+            guard let attrs = item.attributes else { return nil }
             let source: CapItemSource = annotationFoodIds.contains(attrs.foodId) ? .annotation : .vision
             return CapMealItem(foodId: attrs.foodId,
                                portion: item.vision.portionTier,

@@ -7,13 +7,13 @@
 //  Dynamic Type, VoiceOver, and reduced motion come through the shared
 //  components; custom affordances add their own labels.
 //
-//  Phase-2 (Batch B):
+//  Steps:
 //    Q1 Goals: single-column full-width layout, 10-goal set.
-//    Q2 Body:  unit toggle (Metric/US), US ft/in/lb display, remove shareAge toggle,
-//              age wheel Picker, 2-column label/input layout, PlantConsumptionTier picker.
-//    Q3 Baseline: bowel-consistency scale added; mood relabeled Regulated..Erratic.
-//    Q4 Exclusions: category chips now toggle (deselect on re-tap); food search fixed.
-//    Q5 Checks: other-autoimmune added first; privacy disclaimer added.
+//    Q2 Body:  unit toggle (Metric/US), US ft/in/lb display, age wheel Picker,
+//              2-column label/input layout, PlantConsumptionTier picker.
+//    Q3 Baseline: mood (Regulated..Erratic), energy, clarity.
+//    Q4 Food flags: category chips toggle; food search; two-way tier picker (§9).
+//    Q5 Checks: serious conditions + red flags; disclaimers inform, never block.
 //
 
 import SwiftUI
@@ -359,13 +359,10 @@ struct OnbBodyStep: View {
 
 // MARK: - Step: Baseline (Q3)
 //
-// Phase-2 (Batch B):
-//   - Mood scale relabeled from "Low/Bright" to "Regulated/Erratic".
-//     IMPORTANT: the UI inversion means 1=Regulated(best)..5=Erratic(worst).
-//     The CANONICAL inversion (stored as 6 - uiValue) happens ONLY in
-//     OnbViewModel.usersWriteBody(), NOT here. This view binds to the raw UI value.
-//   - Bowel consistency scale added: 1=Inconsistent..5=Consistent (high=better,
-//     canonical, no inversion needed).
+//   - Mood scale is labeled "Regulated/Erratic": the UI means 1=Regulated(best)..
+//     5=Erratic(worst). The CANONICAL inversion (stored as 6 - uiValue) happens
+//     ONLY in OnbViewModel.usersWriteBody(), NOT here; this view binds the raw UI value.
+//   - Single-mode: the bowel-consistency baseline was retired (no column).
 
 struct OnbBaselineStep: View {
     @Environment(\.theme) private var theme
@@ -387,42 +384,37 @@ struct OnbBaselineStep: View {
 
                     OnbScalePicker(title: "Clarity", lowLabel: "Foggy", highLabel: "Sharp",
                                    value: $vm.baseline.clarity)
-
-                    // BOWEL CONSISTENCY (Phase-2 Batch B): 1=Inconsistent..5=Consistent.
-                    // Stored canonical high=better (no inversion; consistent = better).
-                    OnbScalePicker(title: "Bowel consistency",
-                                   lowLabel: "Inconsistent", highLabel: "Consistent",
-                                   value: $vm.baseline.bowelConsistency)
                 }
             }
         }
     }
 }
 
-// MARK: - Step: Exclusions (Q4, the two-faced model, SPEC §9)
+// MARK: - Step: Food flags (Q4, the three-tier model, SPEC §9)
 //
-// Phase-2 (Batch B):
-//   - Category chips now call toggleCategoryExclusion so re-tapping deselects.
-//   - Food search: the fix is in OnbViewModel.searchFoods (ilike.%q%); the UI
-//     now shows results immediately on typing and lets the user tap to add.
+//   - Category chips call toggleCategoryFlag so re-tapping deselects.
+//   - Food search uses ilike.%q% (OnbViewModel.searchFoods); tap a hit to add.
+//   - Each row carries a two-way tier picker (Sensitivity vs Allergy). Onboarding
+//     never offers the engine-only `watching` tier, and the old pure-preference
+//     path is dropped: everything here is health-framed.
 
-struct OnbExclusionsStep: View {
+struct OnbFlagsStep: View {
     @Environment(\.theme) private var theme
     @Bindable var vm: OnbViewModel
 
     var body: some View {
-        OnbStepScaffold(title: "Anything you leave out?",
-                        subtitle: "Add what you avoid, then tell us why. An allergy gets flagged loudly; a preference is simply left off.") {
-            // Category chips. Tapping again deselects (Phase-2 Batch B fix).
+        OnbStepScaffold(title: "Anything you react to?",
+                        subtitle: "Add it, then tell us how. An allergy is flagged loudly, even when hidden; a sensitivity gets a gentle heads-up.") {
+            // Category chips. Tapping again deselects.
             VStack(spacing: theme.metrics.space3) {
-                ForEach(OnbExclusionCategory.curated) { cat in
+                ForEach(OnbFlagCategory.curated) { cat in
                     OnbChip(label: cat.label, isSelected: isAdded(category: cat)) {
-                        vm.toggleCategoryExclusion(cat)
+                        vm.toggleCategoryFlag(cat)
                     }
                 }
             }
 
-            // Specific-food search. Fixed filter: ilike.%q% via ViewModel.searchFoods.
+            // Specific-food search (ilike.%q% via ViewModel.searchFoods).
             Card {
                 VStack(alignment: .leading, spacing: theme.metrics.space3) {
                     Text("Or search a specific food")
@@ -437,7 +429,7 @@ struct OnbExclusionsStep: View {
                     if !vm.foodHits.isEmpty {
                         VStack(alignment: .leading, spacing: theme.metrics.space1) {
                             ForEach(vm.foodHits) { hit in
-                                Button { vm.addFoodExclusion(hit) } label: {
+                                Button { vm.addFoodFlag(hit) } label: {
                                     HStack(spacing: theme.metrics.space2) {
                                         Image(systemName: "plus.circle")
                                         Text(hit.canonicalName).font(theme.typography.body())
@@ -456,23 +448,23 @@ struct OnbExclusionsStep: View {
                 }
             }
 
-            // Drafted exclusions with per-item type (NEVER collapsed, §9).
-            if !vm.exclusions.isEmpty {
+            // Drafted flags with per-item tier (NEVER collapsed, §9).
+            if !vm.foodFlags.isEmpty {
                 VStack(alignment: .leading, spacing: theme.metrics.space3) {
                     SectionHeader(title: "Your list")
-                    ForEach($vm.exclusions) { $draft in
-                        exclusionRow($draft)
+                    ForEach($vm.foodFlags) { $draft in
+                        flagRow($draft)
                     }
                 }
             }
         }
     }
 
-    private func isAdded(category cat: OnbExclusionCategory) -> Bool {
-        vm.exclusions.contains { $0.scope == .category(key: cat.key, label: cat.label) }
+    private func isAdded(category cat: OnbFlagCategory) -> Bool {
+        vm.foodFlags.contains { $0.scope == .category(key: cat.key, label: cat.label) }
     }
 
-    private func exclusionRow(_ draft: Binding<OnbDraftExclusion>) -> some View {
+    private func flagRow(_ draft: Binding<OnbDraftFlag>) -> some View {
         Card {
             VStack(alignment: .leading, spacing: theme.metrics.space2) {
                 HStack {
@@ -481,19 +473,19 @@ struct OnbExclusionsStep: View {
                         .foregroundStyle(theme.colors.textPrimary)
                     Spacer()
                     Button {
-                        vm.removeExclusion(draft.wrappedValue.id)
+                        vm.removeFoodFlag(draft.wrappedValue.id)
                     } label: {
                         Image(systemName: "xmark.circle.fill")
                             .foregroundStyle(theme.colors.textSecondary)
                     }
                     .accessibilityLabel("Remove \(draft.wrappedValue.displayName)")
                 }
-                Picker("Why", selection: draft.exclusionType) {
-                    Text("Preference").tag(ExclusionType.preferenceIntolerance)
-                    Text("Allergy").tag(ExclusionType.medicalAllergy)
+                Picker("How should we treat this?", selection: draft.flagTier) {
+                    Text("Sensitivity").tag(FlagTier.sensitivity)
+                    Text("Allergy").tag(FlagTier.allergy)
                 }
                 .pickerStyle(.segmented)
-                Text(OnbExclusionBehavior.explainer(draft.wrappedValue.exclusionType))
+                Text(OnbFlagBehavior.explainer(draft.wrappedValue.flagTier))
                     .font(theme.typography.caption())
                     .foregroundStyle(theme.colors.textSecondary)
             }
@@ -503,10 +495,10 @@ struct OnbExclusionsStep: View {
 
 // MARK: - Step: Checks (Q5, disclaimers, informs, never blocks)
 //
-// Phase-2 (Batch B):
-//   - "Other autoimmune condition" added as FIRST item in the serious-conditions list.
-//     It writes users.other_autoimmune but proposes no universal food exclusion.
-//   - Privacy disclaimer caption added at the bottom.
+//   - "Other autoimmune condition" is the FIRST serious-condition item. It drives
+//     disclaimer copy only — single-mode persists no column and proposes no flag.
+//   - Celiac proposes a loud gluten `food_flag` on acknowledgment (§9).
+//   - Privacy disclaimer caption at the bottom.
 
 struct OnbChecksStep: View {
     @Environment(\.theme) private var theme

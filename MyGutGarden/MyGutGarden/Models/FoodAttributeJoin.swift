@@ -1,12 +1,11 @@
 //
 //  FoodAttributeJoin.swift
-//  MyGutGarden, Phase 0 food-attribute derivation (SPEC §5, §10, §11).
+//  MyGutGarden — food-attribute derivation (SPEC §5, §10, §11).
 //
-//  The Edge Function performs the DB join (identified foods → fiber/FODMAP/
-//  phytochemical/guild/color attributes). This client layer turns that joined
-//  response into the per-photo insights each surface shows, the "3 P's",
-//  plant variety, rainbow contribution (Thrive); FODMAP safety + cautions
-//  (Survive). It never invents nutrition numbers (CLAUDE.md rule #2).
+//  The Edge Function performs the DB join (identified foods → fiber/phytochemical/
+//  guild/color attributes). This client layer turns that joined response into the
+//  per-photo insights: the "3 P's", plant variety, rainbow contribution. It never
+//  invents nutrition numbers (CLAUDE.md rule #2).
 //
 
 import Foundation
@@ -22,7 +21,7 @@ struct ThreePs: Sendable, Equatable {
     var allThree: Bool { prebiotic && probiotic && polyphenol }
 }
 
-/// What the Thrive per-photo view renders (SPEC §11a).
+/// What the per-photo view renders (SPEC §11a).
 struct ThrivePhotoInsights: Sendable {
     let plantNames: [String]
     let colorsHit: [String]
@@ -31,22 +30,12 @@ struct ThrivePhotoInsights: Sendable {
     let curiosityWorthyFermentedCount: Int
 }
 
-/// What the Survive per-photo view renders (SPEC §11b): FODMAP safety overlay
-/// + ferment caution. No bacteria, no diagnosis.
-struct SurvivePhotoInsights: Sendable {
-    let safety: [SafetyEntry]
-    let fermentedCaution: [String]
-    let hiddenIngredientPrompts: [HiddenIngredientPrompt]
-}
-
 enum FoodAttributeJoin {
 
-    /// Matched, non-omitted attributes (preference_intolerance items are quietly
-    /// dropped per the two-faced model, §9).
+    /// Every resolved item's attributes. (Sensitivity foods are still surfaced +
+    /// counted — SPEC §9; there is no silent omit in the single-mode model.)
     static func surfacedAttributes(_ response: RecognitionResponse) -> [FoodAttributes] {
-        response.items
-            .filter { $0.silentlyOmitted != true }
-            .compactMap(\.attributes)
+        response.items.compactMap(\.attributes)
     }
 
     static func threePs(for attributes: [FoodAttributes]) -> ThreePs {
@@ -71,19 +60,6 @@ enum FoodAttributeJoin {
             threePs: threePs(for: attrs),
             curiosityWorthyFermentedCount: summary?.fermentedCount
                 ?? attrs.filter(\.isFermented).count
-        )
-    }
-
-    static func surviveInsights(_ response: RecognitionResponse) -> SurvivePhotoInsights {
-        let attrs = surfacedAttributes(response)
-        return SurvivePhotoInsights(
-            safety: response.survive?.safetyOverview
-                ?? attrs.compactMap { a in
-                    a.fodmap.map { SafetyEntry(foodName: a.canonicalName, safety: $0.safety) }
-                },
-            fermentedCaution: response.survive?.fermentedCaution
-                ?? attrs.filter(\.isFermented).map(\.canonicalName),
-            hiddenIngredientPrompts: response.hiddenIngredientPrompts
         )
     }
 }

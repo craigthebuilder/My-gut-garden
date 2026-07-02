@@ -43,13 +43,18 @@ final class ThrCheckinModel {
         baselineClarity = profile?.baselineClarity
         userId = profile?.id
 
-        if let repo = appState.repository,
-           let rows: [ThriveCheckinRow] = try? await repo.select("thrive_checkins", order: "log_date.asc", limit: 90) {
-            history = rows
-            if let today = rows.last, today.logDate == ThrDates.dateString() {
-                todayMood = today.mood
-                todayEnergy = today.energy
-                todayClarity = today.clarity
+        if let repo = appState.repository, let uid = userId {
+            let checkIns: [CheckInRow] = (try? await repo.select(
+                "check_ins", filters: ["user_id": "eq.\(uid)"], order: "log_date.asc", limit: 200)) ?? []
+            if !checkIns.isEmpty {
+                let dayByCheckIn = Dictionary(checkIns.map { ($0.id, $0.logDate) }, uniquingKeysWith: { a, _ in a })
+                let ids = checkIns.map(\.id).joined(separator: ",")
+                let entries: [CheckInEntryRow] = (try? await repo.select(
+                    "check_in_entries", filters: ["check_in_id": "in.(\(ids))"])) ?? []
+                history = Self.aggregate(entries: entries, dayByCheckIn: dayByCheckIn)
+                if let today = history.last, today.logDate == ThrDates.dateString() {
+                    todayMood = today.mood; todayEnergy = today.energy; todayClarity = today.clarity
+                }
             }
         }
         isLoaded = true
@@ -73,25 +78,44 @@ final class ThrCheckinModel {
         await save(appState: appState)
     }
 
-    /// Upsert today's row on (user_id, log_date). All three values are sent so a
-    /// partial update never clobbers an earlier tap.
+    /// Persist today's mood/energy/clarity as a check-in (unified model). Mood is
+    /// round-tripped through the single 6 - uiValue inversion so it stays canonical
+    /// high=better (here todayMood is already high=better, so uiValue = 6 - todayMood).
     private func save(appState: AppState) async {
         guard let repo = appState.repository, let userId else {
-            // Offline: keep the optimistic local value so the UI still responds.
-            mirrorIntoHistory()
+            mirrorIntoHistory()      // offline: keep the optimistic local value
             return
         }
         isSaving = true
         defer { isSaving = false }
-        let today = ThrDates.dateString()
-        try? await repo.upsert("thrive_checkins", [
-            "user_id": .string(userId),
-            "log_date": .string(today),
-            "mood": todayMood.map(PGValue.int) ?? .null,
-            "energy": todayEnergy.map(PGValue.int) ?? .null,
-            "clarity": todayClarity.map(PGValue.int) ?? .null,
-        ], onConflict: "user_id,log_date")
+        let draft = CheckInDraft(context: .thriveCheckin)
+        draft.logDate = Date()
+        if let m = todayMood    { draft.moods = [MoodEntryDraft(uiValue: 6 - m)] }
+        if let e = todayEnergy  { draft.energy = [MetricEntryDraft(metricType: "energy", score: e)] }
+        if let c = todayClarity { draft.clarity = [MetricEntryDraft(metricType: "clarity", score: c)] }
+        try? await CheckInWriter(repository: repo, userId: userId).save(draft)
         mirrorIntoHistory()
+    }
+
+    /// Aggregate check-in entries into per-day mood/energy/clarity for the trend.
+    static func aggregate(entries: [CheckInEntryRow], dayByCheckIn: [String: String]) -> [ThriveCheckinRow] {
+        var mood: [String: [Int]] = [:], energy: [String: [Int]] = [:], clarity: [String: [Int]] = [:]
+        for e in entries {
+            guard let day = dayByCheckIn[e.checkInId], let v = e.valueInt else { continue }
+            switch e.sectionKey {
+            case "mood":    mood[day, default: []].append(v)
+            case "energy":  energy[day, default: []].append(v)
+            case "clarity": clarity[day, default: []].append(v)
+            default: break
+            }
+        }
+        func avg(_ xs: [Int]?) -> Int? {
+            guard let xs, !xs.isEmpty else { return nil }
+            return Int((Double(xs.reduce(0, +)) / Double(xs.count)).rounded())
+        }
+        let days = Set(mood.keys).union(energy.keys).union(clarity.keys)
+        return days.map { ThriveCheckinRow(logDate: $0, mood: avg(mood[$0]), energy: avg(energy[$0]), clarity: avg(clarity[$0])) }
+            .sorted { $0.logDate < $1.logDate }
     }
 
     /// Keep the in-memory trend in sync with today's taps without a refetch.
@@ -295,6 +319,6 @@ struct ThrTrendChart: View {
     NavigationStack {
         ThrIsItWorkingView(appState: AppState(auth: AuthService()))
     }
-    .themed(for: .thrive)
+    .themed()
 }
 #endif

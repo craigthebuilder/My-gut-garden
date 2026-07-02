@@ -3,20 +3,17 @@
 //  MyGutGarden, Module A: the onboarding & intake flow (SPEC §6, §10).
 //
 //  THE module entry point. A warm, multi-step intake that:
-//   - leads with Thrive's fun (never opens "how's your gut?"),
-//   - captures goals, body basics, baseline, and the two-faced exclusions (§9),
-//   - derives the fiber goal via the PURE OnbFiberGoal (est_daily_kcal stays
-//     internal, only grams are ever shown on the Thrive summary, SPEC §10 / Fence 5),
+//   - leads with the fun (never opens "how's your gut?"),
+//   - captures goals, body basics, baseline, and food flags (§9 three-tier),
+//   - derives the INTERNAL fiber numbers via the PURE OnbFiberGoal
+//     (est_daily_kcal + fiber_target_g stay internal; no fiber number is shown
+//     at onboarding, SPEC §10 / Fence 5),
 //   - surfaces disclaimers as click-to-confirm (celiac/IBD ack, red-flag care
 //     prompt), informs, never blocks,
-//   - soft-routes to a suggested mode (suggestion, never a gate),
 //   - shows truthful success stories.
 //
-//  Phase-2 (Batch B): summary branches on chosenMode.
-//    Thrive: shows fiber_goal_g in grams.
-//    Survive: shows calm low-residue framing, NO numeric ceiling.
-//    residue_ceiling_g is NEVER surfaced here or anywhere in the UI.
-//    // RD-REVIEW-REQUIRED on Survive summary copy.
+//  Single-mode: no routing, no modes, no Survive. The summary is a week-1
+//  baseline quest that unlocks the fiber goal later; it shows NO number here.
 //
 //  Reads/writes only through AppState; composes DesignSystem components; reads
 //  only Theme tokens. The shell injects `appState` and an `onFinished` hook.
@@ -41,9 +38,7 @@ struct OnbRootView: View {
 
     var body: some View {
         content
-            // Onboarding leads with Thrive's fun, so it themes Thrive regardless
-            // of the eventual mode choice (DESIGN.md §6 / SPEC §6).
-            .themed(for: .thrive)
+            .themed()
     }
 
     private var content: some View {
@@ -52,7 +47,7 @@ struct OnbRootView: View {
                     onStart: { Task { await vm.save() } })
             .task { await vm.loadSuccessStories() }
             .onChange(of: vm.didFinish) { _, done in
-                if done { onFinished?(); vm.offerSurviveIfWarranted() }
+                if done { onFinished?() }
             }
             .overlay { modalOverlay }
     }
@@ -174,7 +169,7 @@ private struct ThemedShell: View {
         case .goals:      OnbGoalsStep(vm: vm)
         case .body:       OnbBodyStep(vm: vm)
         case .baseline:   OnbBaselineStep(vm: vm)
-        case .exclusions: OnbExclusionsStep(vm: vm)
+        case .flags:      OnbFlagsStep(vm: vm)
         case .checks:     OnbChecksStep(vm: vm)
         case .summary:    summaryStep
         }
@@ -223,59 +218,30 @@ private struct ThemedShell: View {
         }
     }
 
-    // MARK: Summary (Phase-2 Batch B: branch on chosenMode)
+    // MARK: Summary — week-1 baseline quest
     //
-    // Thrive: show fiber_goal_g in grams + auto-increase caption.
-    // Survive: show calm framing, no numeric residue ceiling.
-    //   residue_ceiling_g is INTERNAL ONLY; it is NEVER surfaced here.
-    //   // RD-REVIEW-REQUIRED: Survive summary copy below.
+    // Single-mode: NO fiber number is shown at onboarding. The surfaced fiber goal
+    // is unlocked later, once the week-1 baseline quest is met (SPEC §10 / Fence 5).
+    // est_daily_kcal + fiber_target_g are INTERNAL and never surfaced here.
 
     private var summaryStep: some View {
         OnbStepScaffold(title: "You're all set",
                         subtitle: "Here is where you are starting from.") {
-            // R5 #4: everyone starts in Thrive. If signals lean relief we OFFER a
-            // Survive reset right after, via a disclaimer pop-up (never auto-entered).
-            thriveGoalCard
-            if vm.shouldOfferSurvive { surviveOfferNote }
+            baselineQuestCard
         }
     }
 
-    // MARK: Thrive goal card
-    // The ONLY anthropometric-derived number ever shown is the fiber goal in grams.
-    // est_daily_kcal and residue_ceiling_g are never surfaced (SPEC §10 / Fence 5).
+    // MARK: Baseline-quest card
+    // Replaces the old fiber-goal number. No anthropometric-derived number is ever
+    // shown here; the goal in grams unlocks with the week-1 quest (SPEC §10 / Fence 5).
 
-    private var thriveGoalCard: some View {
+    private var baselineQuestCard: some View {
         Card {
             VStack(alignment: .leading, spacing: theme.metrics.space2) {
-                Text("Your daily fiber goal")
-                    .font(theme.typography.caption(weight: .semibold))
-                    .foregroundStyle(theme.colors.textSecondary)
-                Text("\(vm.fiberGoalG) g")
-                    .font(theme.typography.display(40))
-                    .foregroundStyle(theme.colors.primary)
-                Text("Reach it by eating a wide, colorful range of plants. We will help you get there, one snap at a time.")
-                    .font(theme.typography.body())
-                    .foregroundStyle(theme.colors.textSecondary)
-                Text("We will raise this automatically as you consistently hit it.")
-                    .font(theme.typography.caption())
-                    .foregroundStyle(theme.colors.textSecondary)
-            }
-            .accessibilityElement(children: .combine)
-        }
-    }
-
-    // MARK: Survive offer note
-    // Shown only when signals lean relief. Everyone still STARTS in Thrive; the
-    // actual Survive disclaimer pop-up fires after onboarding finishes (R5 #4).
-    // // RD-REVIEW-REQUIRED: copy below is clinical-adjacent; confirm before launch.
-
-    private var surviveOfferNote: some View {
-        Card {
-            VStack(alignment: .leading, spacing: theme.metrics.space2) {
-                Label("A gentler start might help", systemImage: "leaf.circle")
+                Label("Your fiber goal unlocks this week", systemImage: "sparkles")
                     .font(theme.typography.body(weight: .semibold))
                     .foregroundStyle(theme.colors.textPrimary)
-                Text("From what you shared, a short low-residue reset could help settle things first. We'll offer it in a moment, no pressure, and you can always switch later.")
+                Text("Hit 30 plant foods and eat the rainbow \u{2014} we're learning your baseline.")
                     .font(theme.typography.body())
                     .foregroundStyle(theme.colors.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -313,9 +279,7 @@ private struct ThemedShell: View {
             if vm.isSaving {
                 ProgressView().frame(maxWidth: .infinity)
             } else {
-                let label = vm.chosenMode == .thrive ? "Start growing" : "Start"
-                let icon  = vm.chosenMode == .thrive ? "leaf.fill" : "arrow.right"
-                PrimaryButton(title: label, systemImage: icon) { onStart() }
+                PrimaryButton(title: "Start growing", systemImage: "leaf.fill") { onStart() }
             }
         default:
             PrimaryButton(title: "Continue") { vm.advance() }

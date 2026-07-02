@@ -4,7 +4,7 @@
 //  crossing into Blooming. An orchestrated bloom, petals unfurl from the guild's
 //  mascot in a warm burst. This is where Module D spends its boldness.
 //
-//  Thrive-only juice. Respects reduced motion (DESIGN.md §3/§5): when reduced,
+//  Respects reduced motion (DESIGN.md §3/§5): when reduced,
 //  it presents the fully-bloomed state instantly with no burst. Fence 2: a
 //  claim_risk guild still shows the EmergingScienceTag even mid-celebration.
 //
@@ -122,11 +122,11 @@ struct GuildBloomCelebrationView: View {
 #Preview("Bloom, standard") {
     GuildBloomCelebrationView(guildDisplayName: "The Anti-inflammatory Arsenal",
                               claimRisk: false) {}
-        .themed(for: .thrive)
+        .themed()
 }
 
 #Preview("Bloom, claim-risk (Fence 2 tag)") {
     GuildBloomCelebrationView(guildDisplayName: "The Mood Regulators",
                               claimRisk: true) {}
-        .themed(for: .thrive)
+        .themed()
 }

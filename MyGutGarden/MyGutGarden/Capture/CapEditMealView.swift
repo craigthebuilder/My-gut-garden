@@ -61,12 +61,19 @@ struct CapEditMealView: View {
         Card {
             VStack(alignment: .leading, spacing: theme.metrics.space3) {
                 HStack(spacing: theme.metrics.space3) {
-                    Image(systemName: model.photoExpired ? "photo.badge.exclamationmark" : "photo")
+                    Image(systemName: model.photoRemoved ? "photo.badge.exclamationmark" : "photo")
                         .font(.system(size: 22))
                         .foregroundStyle(theme.colors.textSecondary)
-                    Text(model.photoExpired ? "Photo no longer available" : "Photo saved")
+                    Text(model.photoRemoved ? "Photo removed" : "Photo saved")
                         .font(theme.typography.caption())
                         .foregroundStyle(theme.colors.textSecondary)
+                    Spacer()
+                    if !model.photoRemoved {
+                        Button(role: .destructive) { Task { await model.deletePhoto() } } label: {
+                            Text("Delete photo").font(theme.typography.caption(weight: .semibold))
+                        }
+                        .foregroundStyle(theme.colors.error)
+                    }
                 }
                 if let note = model.userAnnotation, !note.isEmpty {
                     Text("Your note: \(note)")

@@ -31,6 +31,7 @@ final class ThrHomeModel {
 
     // Variable reward + rainbow education content.
     var curiosity: ThrCuriosityFactRow?
+    var recipeSuggestion: RecipeRow?
     var colorEducation: [String: ThrColorEducation] = ThrRainbowContent.fallback
     var colorExampleFoods: [String: [String]] = [:]
 
@@ -71,6 +72,7 @@ final class ThrHomeModel {
         await loadTodayMealItems(repo)
         await loadRecentMeals(repo)
         await loadWeeklyColors(repo, userId: profile?.id)
+        await loadRecipeSuggestion(repo)
 
         isLoaded = true
     }
@@ -95,7 +97,7 @@ final class ThrHomeModel {
     /// real coarse tiers from the meal; the DB read below merges the rest of today.
     private func applyLatestMeal(_ latestMeal: ConfirmedMeal?) {
         guard let meal = latestMeal else { return }
-        for item in meal.response.items where item.silentlyOmitted != true {
+        for item in meal.response.items {
             guard let attrs = item.attributes else { continue }
             let amount = ThrColorAmount(tier: item.vision.portionTier)
             for color in attrs.colors { rainbowAmounts.mark(color, amount) }
@@ -136,8 +138,8 @@ final class ThrHomeModel {
     private func loadWeeklyPlantsLive(_ repo: Repository) async {
         let since = ThrDates.timestampString(ThrDates.currentMonday())
         guard let meals: [MealRow] = try? await repo.select(
-            "meals", columns: "id,mode,photo_url,captured_at,confirmed,user_annotation,photo_expires_at",
-            filters: ["captured_at": "gte.\(since)", "mode": "eq.thrive", "confirmed": "eq.true"]
+            "meals", columns: "id,photo_url,captured_at,confirmed,user_annotation",
+            filters: ["captured_at": "gte.\(since)", "confirmed": "eq.true"]
         ), !meals.isEmpty else { return }
         let mealList = "(" + meals.map(\.id).joined(separator: ",") + ")"
         guard let items: [ThrMealItemTierRow] = try? await repo.select(
@@ -174,14 +176,23 @@ final class ThrHomeModel {
         }
     }
 
+    /// A curated "try this" recipe, preferring one that covers a rainbow colour the
+    /// user is missing this week (gap-driven, SPEC §14). Curated data, never generated.
+    private func loadRecipeSuggestion(_ repo: Repository) async {
+        let recipes: [RecipeRow] = (try? await repo.select("recipes")) ?? []
+        guard !recipes.isEmpty else { return }
+        let missing = Set(rainbowAmounts.missing.map(\.rawValue))
+        recipeSuggestion = recipes.first { !Set($0.colorIds).isDisjoint(with: missing) } ?? recipes.randomElement()
+    }
+
     private func loadTodayCheckin(_ repo: Repository, userId: String?) async {
+        struct IdRow: Decodable { let id: String }
         guard let userId else { return }
         let today = ThrDates.dateString()
-        if let rows: [ThriveCheckinRow] = try? await repo.select(
-            "thrive_checkins", filters: ["user_id": "eq.\(userId)", "log_date": "eq.\(today)"], limit: 1
-        ), let row = rows.first {
-            loggedMoodToday = row.mood != nil || row.energy != nil || row.clarity != nil
-        }
+        let rows: [IdRow] = (try? await repo.select(
+            "check_ins", columns: "id",
+            filters: ["user_id": "eq.\(userId)", "log_date": "eq.\(today)"], limit: 1)) ?? []
+        loggedMoodToday = !rows.isEmpty
     }
 
     /// Today's coarse/directional fiber sum AND per-color rainbow amount, from
@@ -190,8 +201,8 @@ final class ThrHomeModel {
     private func loadTodayMealItems(_ repo: Repository) async {
         let since = ThrDates.timestampString(ThrDates.startOfToday())
         guard let meals: [MealRow] = try? await repo.select(
-            "meals", columns: "id,mode,photo_url,captured_at,confirmed,user_annotation,photo_expires_at",
-            filters: ["captured_at": "gte.\(since)", "mode": "eq.thrive", "confirmed": "eq.true"]
+            "meals", columns: "id,photo_url,captured_at,confirmed,user_annotation",
+            filters: ["captured_at": "gte.\(since)", "confirmed": "eq.true"]
         ), !meals.isEmpty else { return }
 
         let mealList = "(" + meals.map(\.id).joined(separator: ",") + ")"
@@ -251,15 +262,15 @@ final class ThrHomeModel {
         }
     }
 
-    /// Last 5 days of confirmed Thrive meals for the Recent-Meals rail. Photos are
-    /// nulled server-side after 5 days; the card renders a placeholder for nil.
+    /// Last 5 days of confirmed meals for the Recent-Meals rail. A nil photo_url
+    /// (e.g. a never-photographed manual meal) renders a neutral placeholder.
     private func loadRecentMeals(_ repo: Repository) async {
         let since = ThrDates.timestampString(
             Calendar.current.date(byAdding: .day, value: -5, to: ThrDates.startOfToday()) ?? ThrDates.startOfToday()
         )
         if let meals: [MealRow] = try? await repo.select(
-            "meals", columns: "id,mode,photo_url,captured_at,confirmed,user_annotation,photo_expires_at",
-            filters: ["captured_at": "gte.\(since)", "mode": "eq.thrive", "confirmed": "eq.true"],
+            "meals", columns: "id,photo_url,captured_at,confirmed,user_annotation",
+            filters: ["captured_at": "gte.\(since)", "confirmed": "eq.true"],
             order: "captured_at.desc", limit: 20
         ) {
             recentMeals = meals

@@ -6,9 +6,9 @@
 //  A horizontal rail of the last few days of confirmed meals. Tapping one reopens
 //  its ingredients with EDITABLE coarse amounts (trace/serving/lots, never grams,
 //  rule #3) and lets the user confirm or deny the AI's hypotheses, writing
-//  meal_items.user_confirmed / user_denied. Photos are retained 5 days then the
-//  server nulls photo_url; a nil/expired photo (and a never-photographed manual
-//  meal) all render the SAME neutral placeholder.
+//  meal_items.user_confirmed / user_denied. photo_url is permanent; a nil photo
+//  (a never-photographed manual meal, or a user-deleted photo) renders a neutral
+//  placeholder.
 //
 
 import SwiftUI
@@ -367,13 +367,13 @@ enum ThrMealDates {
     ThrRecentMealsSection(
         appState: AppState(auth: AuthService()),
         meals: [
-            MealRow(id: "1", mode: .thrive, photoUrl: nil, capturedAt: "2026-06-26T12:00:00Z",
-                    confirmed: true, userAnnotation: "lunch bowl", photoExpiresAt: nil),
-            MealRow(id: "2", mode: .thrive, photoUrl: nil, capturedAt: "2026-06-24T12:00:00Z",
-                    confirmed: true, userAnnotation: nil, photoExpiresAt: nil),
+            MealRow(id: "1", photoUrl: nil, capturedAt: "2026-06-26T12:00:00Z",
+                    confirmed: true, userAnnotation: "lunch bowl"),
+            MealRow(id: "2", photoUrl: nil, capturedAt: "2026-06-24T12:00:00Z",
+                    confirmed: true, userAnnotation: nil),
         ]
     )
     .padding()
-    .themed(for: .thrive)
+    .themed()
 }
 #endif

@@ -40,8 +40,9 @@ struct GuildDisplay: Identifiable, Sendable {
     let bloom: GuildBloomDisplay
 
     var id: String { internalName }
-    /// Eyebrow on the field-guide card, e.g. "World 1, The Backbone District".
-    func eyebrow(districtName: String) -> String { "World \(districtOrder), \(districtName)" }
+    /// Eyebrow on the field-guide card — the district it belongs to (the world is
+    /// shown in the garden section header now, SPEC §8).
+    func eyebrow(districtName: String) -> String { districtName }
 }
 
 /// One district region on the map.
@@ -54,6 +55,18 @@ struct GuildDistrictDisplay: Identifiable, Sendable {
     var id: Int { order }
     var bloomingCount: Int { guilds.filter { $0.bloom.state == .blooming }.count }
     var wellFedCount: Int { guilds.filter { $0.bloom.isWellFed }.count }
+}
+
+/// One WORLD (SPEC §8): a group of districts, the top tier of the garden. Districts
+/// belong to a world via `districts.world_id`; the existing 4 are all in World 1
+/// (The Core). Locked worlds render as fogged teasers.
+struct GuildWorldDisplay: Identifiable, Sendable {
+    let order: Int
+    let name: String
+    let introCopy: String?
+    let isUnlocked: Bool
+    let districts: [GuildDistrictDisplay]
+    var id: Int { order }
 }
 
 // MARK: - Pure assembler (testable; no I/O)
@@ -118,6 +131,28 @@ enum GuildGardenAssembler {
         }
     }
 
+    /// Group the built district displays under their worlds (SPEC §8). Every world
+    /// renders; a locked world is a fogged teaser (its districts are hidden).
+    static func groupIntoWorlds(worlds: [WorldRow], districtRows: [DistrictRow],
+                                built: [GuildDistrictDisplay],
+                                unlockedWorldOrders: Set<Int>) -> [GuildWorldDisplay] {
+        let worldOrderById = Dictionary(worlds.map { ($0.id, $0.order) }) { a, _ in a }
+        let worldOrderByDistrictOrder = Dictionary(districtRows.compactMap { d -> (Int, Int)? in
+            guard let wid = d.worldId, let wo = worldOrderById[wid] else { return nil }
+            return (d.order, wo)
+        }) { a, _ in a }
+        let fallbackWorld = worlds.map(\.order).min() ?? 1
+        var byWorld: [Int: [GuildDistrictDisplay]] = [:]
+        for dd in built {
+            byWorld[worldOrderByDistrictOrder[dd.order] ?? fallbackWorld, default: []].append(dd)
+        }
+        return worlds.sorted { $0.order < $1.order }.map { w in
+            GuildWorldDisplay(order: w.order, name: w.name, introCopy: w.introCopy,
+                              isUnlocked: unlockedWorldOrders.contains(w.order),
+                              districts: (byWorld[w.order] ?? []).sorted { $0.order < $1.order })
+        }
+    }
+
     /// Apply on-read decay to a stored guild_state row (or `.empty` if unfed).
     static func bloomDisplay(for state: GuildStateRow?, now: Date,
                              calendar: Calendar = .current) -> GuildBloomDisplay {
@@ -162,6 +197,7 @@ enum GuildGardenAssembler {
 @Observable
 final class GuildGardenViewModel {
     private(set) var districts: [GuildDistrictDisplay] = []
+    private(set) var worlds: [GuildWorldDisplay] = []
     private(set) var isLoading = false
     private(set) var errorMessage: String?
 
@@ -194,8 +230,9 @@ final class GuildGardenViewModel {
             async let guildRows = repository.fetchGuilds()
             async let stateRows: [GuildStateRow] = repository.select("guild_state")
             async let userDistrictRows: [UserDistrictRow] = repository.select("user_districts")
-            let (ds, gs, ss, uds) = try await (districtsRows, guildRows, stateRows, userDistrictRows)
-            rebuild(districts: ds, guilds: gs, states: ss, userDistricts: uds)
+            async let worldRows = repository.fetchWorlds()
+            let (ds, gs, ss, uds, ws) = try await (districtsRows, guildRows, stateRows, userDistrictRows, worldRows)
+            rebuild(districts: ds, guilds: gs, states: ss, userDistricts: uds, worlds: ws)
         } catch {
             errorMessage = "Couldn't load your garden. Pull to try again."
         }
@@ -203,10 +240,17 @@ final class GuildGardenViewModel {
 
     /// Pure rebuild from fetched rows (split out so it's exercisable in tests).
     func rebuild(districts ds: [DistrictRow], guilds gs: [GuildRow],
-                 states ss: [GuildStateRow], userDistricts uds: [UserDistrictRow]) {
+                 states ss: [GuildStateRow], userDistricts uds: [UserDistrictRow],
+                 worlds ws: [WorldRow] = []) {
         let unlocked = resolveUnlockedOrders(districts: ds, guilds: gs, states: ss, userDistricts: uds)
-        districts = GuildGardenAssembler.build(districts: ds, guilds: gs, states: ss,
+        let built = GuildGardenAssembler.build(districts: ds, guilds: gs, states: ss,
                                                unlockedOrders: unlocked, now: clock())
+        districts = built
+        let unlockedWorlds: Set<Int> = progression.isTier2Unlocked
+            ? (progression.unlockedWorldOrders.isEmpty ? [ws.map(\.order).min() ?? 1] : progression.unlockedWorldOrders)
+            : []
+        worlds = GuildGardenAssembler.groupIntoWorlds(worlds: ws, districtRows: ds, built: built,
+                                                      unlockedWorldOrders: unlockedWorlds)
     }
 
     /// Authoritative unlock set comes from `ProgressionState` / `user_districts`.

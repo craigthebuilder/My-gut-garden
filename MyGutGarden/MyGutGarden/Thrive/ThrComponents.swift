@@ -7,10 +7,10 @@
 
 import SwiftUI
 
-// MARK: - Medical-allergy banner (LOUD across both modes, SPEC §9, rule #1)
+// MARK: - Allergy banner (LOUD, fires before the overview, SPEC §9, rule #1)
 
-/// Fires even mid-celebration on the Thrive surface. `medical_allergy` only, 
-/// `preference_intolerance` is silently omitted upstream and never reaches here.
+/// Fires even mid-celebration on the Thrive surface. `allergyAlerts` carry the
+/// `.allergy` FlagTier only (server-computed); softer tiers never reach here.
 struct ThrAllergyBanner: View {
     @Environment(\.theme) private var theme
     let alerts: [AllergyAlert]

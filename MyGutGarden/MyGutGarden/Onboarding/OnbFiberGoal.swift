@@ -4,15 +4,17 @@
 //
 //  PURE, IO-free, and unit-tested in isolation (MyGutGardenTests/Onboarding).
 //  Mifflin-St Jeor -> est_daily_kcal -> baseFiberGoalG = round(14 * kcal / 1000)
-//  -> fiber_goal_g = round(baseFiberGoalG * plantConsumptionMultipliers[level])
-//  (SPEC §10, Phase-2 Batch B).
+//  -> fiber_target_g = round(baseFiberGoalG * plantConsumptionMultipliers[level])
+//  (SPEC §10). All three are INTERNAL; no fiber number is surfaced at onboarding.
 //
 //  DUTY-OF-CARE FENCE (CLAUDE.md rule #6 / Fence 5, SPEC §10):
 //    `est_daily_kcal` is INTERNAL ONLY. Computed and written to the DB column
 //    but NEVER returned to a view for display, and NEVER framed as a calorie
 //    target, deficit, or weight-loss number.
-//    `baseFiberGoalG` is also INTERNAL (never surfaced).
-//    The ONLY surfaced derived number is `fiberGoalG` (grams, Thrive only).
+//    `baseFiberGoalG` and the plant-adjusted `fiberGoalG` are ALSO INTERNAL:
+//    `fiberGoalG` is persisted to `users.fiber_target_g` and NEVER surfaced at
+//    onboarding. The user-facing fiber goal unlocks later, with the week-1
+//    baseline quest. No fiber number is shown during intake.
 //    Height and weight are never echoed back as a weight-loss frame.
 //
 //  RD-REVIEW-REQUIRED: plantConsumptionMultipliers values are clinical.
@@ -107,10 +109,11 @@ enum OnbFiberGoal {
     }
 
     /// One-shot derivation. Returns all computed values; the caller writes
-    /// `estDailyKcal` to the internal column and surfaces ONLY `fiberGoalG`
-    /// (Thrive only).
+    /// `estDailyKcal` to `users.est_daily_kcal` and the plant-adjusted `fiberGoalG`
+    /// to `users.fiber_target_g` — both INTERNAL. Single-mode surfaces no fiber
+    /// number at onboarding.
     ///
-    /// Phase-2 (Batch B): `plantConsumptionLevel` applies the multiplier from
+    /// `plantConsumptionLevel` applies the multiplier from
     /// `GameConfig.plantConsumptionMultipliers`. // RD-REVIEW-REQUIRED on values.
     static func derive(heightCm: Double, weightKg: Double, age: Int?,
                        sex: OnbSex, activity: OnbActivityLevel,
@@ -129,8 +132,9 @@ enum OnbFiberGoal {
         let estDailyKcal: Double
         /// INTERNAL base goal before the plant-consumption multiplier. Never surfaced.
         let baseFiberGoalG: Int
-        /// The plant-adjusted fiber goal in grams. The ONLY surfaced derived
-        /// number, and ONLY for Thrive. Never shown in Survive. (Fence 5)
+        /// The plant-adjusted fiber goal in grams. Persisted to the INTERNAL
+        /// `users.fiber_target_g` column; NEVER surfaced at onboarding (the
+        /// user-facing goal unlocks with the week-1 baseline quest). (Fence 5)
         let fiberGoalG: Int
     }
 }

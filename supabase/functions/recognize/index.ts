@@ -1,7 +1,7 @@
 // =====================================================================
 // recognize - the Phase-0 recognition pipeline (SPEC §4).
 // photo → provider (Anthropic vision | offline fixture) → frozen contract →
-// resolve foods → database attribute join → mode-specific response.
+// resolve foods → database attribute join → single-mode response.
 //
 // Secrets (server-side only, SPEC §3):
 //   SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY  - auto-injected by the platform
@@ -31,7 +31,6 @@ function json(body: unknown, status = 200): Response {
 }
 
 interface RequestBody {
-  mode?: "thrive" | "survive";
   provider?: "anthropic" | "fixture";
   image_base64?: string;
   image_media_type?: string;
@@ -60,7 +59,6 @@ Deno.serve(async (req) => {
     return json({ error: "invalid JSON body" }, 400);
   }
 
-  const mode = body.mode === "survive" ? "survive" : "thrive";
   const service = createClient(supabaseUrl, serviceKey);
 
   // --- pick the provider (default: fixture when no key => runs offline) ---
@@ -85,9 +83,10 @@ Deno.serve(async (req) => {
     imageBase64 = btoa(String.fromCharCode(...buf));
   }
 
-  // --- read the caller's exclusions under their own auth (RLS-scoped) ---
-  // Drives the two-faced model (§9): medical_allergy LOUD, preference quiet.
-  let exclusions: { food_id: string | null; category: string | null; exclusion_type: string }[] = [];
+  // --- read the caller's food flags under their own auth (RLS-scoped) ---
+  // Drives the three-tier flag model (§9): allergy LOUD, sensitivity a soft
+  // in-overview heads-up, watching quiet (not surfaced).
+  let foodFlags: { food_id: string | null; category: string | null; flag_tier: string }[] = [];
   const authHeader = req.headers.get("Authorization");
   if (authHeader) {
     const userClient = createClient(supabaseUrl, anonKey, {
@@ -95,9 +94,9 @@ Deno.serve(async (req) => {
       auth: { persistSession: false },
     });
     const { data } = await userClient
-      .from("exclusions")
-      .select("food_id, category, exclusion_type");
-    exclusions = data ?? [];
+      .from("food_flags")
+      .select("flag_tier, food_id, category");
+    foodFlags = data ?? [];
   }
 
   // --- run the pipeline ---
@@ -109,7 +108,7 @@ Deno.serve(async (req) => {
     const annotationVision = annotation
       ? await provider.recognizeAnnotation(annotation)
       : undefined;
-    const response = await buildResponse(service, vision, mode, provider.name, exclusions, annotationVision);
+    const response = await buildResponse(service, vision, provider.name, foodFlags, annotationVision);
     return json(response);
   } catch (err) {
     const status = err instanceof ContractError ? 422 : 500;

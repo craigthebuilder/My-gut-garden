@@ -57,13 +57,14 @@ struct CapManualConfirmTests {
         let names = unmatched.map { "\"\($0)\"" }.joined(separator: ",")
         let json = """
         {
-          "provider": "test", "mode": "thrive",
+          "provider": "test",
           "vision": { "foods": [], "scene_notes": null },
           "items": [],
           "unmatched": [\(names)],
           "hidden_ingredient_prompts": [],
           "allergy_alerts": [],
-          "thrive": null, "survive": null
+          "sensitivity_flags": [],
+          "thrive": null
         }
         """
         let decoder = JSONDecoder()

@@ -1,8 +1,8 @@
 // =====================================================================
 // The food-attribute join (SPEC §4 step 5, §5). Turns identified foods into
-// fiber/FODMAP/phytochemical/guild/color/fermented attributes - THE database
-// produces these numbers, never the LLM (CLAUDE.md hard rule #2). Also runs
-// hidden-ingredient logic (§11) and the two-faced exclusion model (§9).
+// fiber/phytochemical/guild/color/fermented attributes - THE database produces
+// these values, never the LLM (CLAUDE.md hard rule #2). Also runs hidden-
+// ingredient logic (§11) and the three-tier food-flag model (§9).
 // =====================================================================
 
 import type { SupabaseClient } from "jsr:@supabase/supabase-js@2";
@@ -14,27 +14,17 @@ export interface FoodAttributes {
   is_plant: boolean;
   plant: { name: string; rarity_tier: string } | null;
   is_fermented: boolean;
-  histamine_level: string | null;
-  fibers: { name: string; relative_amount: string; is_fodmap_trigger: boolean; est_grams_per_serving: number | null }[];
+  // fermentability: coarse tolerance hint (low | moderate | high), Fence 2. Never
+  // a FODMAP-trigger boolean and never an LLM output — the DB derives it.
+  fibers: { name: string; relative_amount: string; fermentability: string | null; est_grams_per_serving: number | null }[];
   colors: string[];
   phytochemicals: { name: string; class: string }[];
   guild_feeds: { internal_name: string; display_name: string; relevance: string; claim_risk: boolean }[];
-  fodmap: {
-    safety: string;
-    fructan_level: string;
-    gos_level: string;
-    lactose_level: string;
-    fructose_level: string;
-    polyol_level: string;
-    serving_size_desc: string | null;
-  } | null;
 }
 
 export interface ResolvedItem {
   vision: VisionFood;
   attributes: FoodAttributes | null; // null => unmatched, needs manual confirm
-  /** preference_intolerance match - UI greys the tile, no alert (SPEC §9, quiet) */
-  silently_omitted?: boolean;
   /**
    * Batch C - provenance for the meal_items.source enum. 'vision' = the photo;
    * 'annotation' = the user's free-text note (the second, text-only re-prompt).
@@ -46,8 +36,14 @@ export interface ResolvedItem {
 
 export interface AllergyAlert {
   food_name: string;
-  // medical_allergy fires LOUD across both modes, even mid-celebration (§9).
-  exclusion_type: "medical_allergy";
+  // flag_tier=allergy fires LOUD, before the result overview, never suppressed (§9).
+  flag_tier: "allergy";
+}
+
+/** Soft, in-overview heads-up. The food is still eaten + logged (§9, sensitivity). */
+export interface SensitivityFlag {
+  food_name: string;
+  food_id: string;
 }
 
 export interface HiddenIngredientPrompt {
@@ -60,14 +56,13 @@ export interface HiddenIngredientPrompt {
 
 export interface RecognitionResponse {
   provider: string;
-  mode: "thrive" | "survive";
   vision: VisionResult;
   items: ResolvedItem[];
   unmatched: string[];
   hidden_ingredient_prompts: HiddenIngredientPrompt[];
-  allergy_alerts: AllergyAlert[]; // LOUD (medical_allergy only)
+  allergy_alerts: AllergyAlert[];       // LOUD (flag_tier=allergy)
+  sensitivity_flags: SensitivityFlag[]; // soft (flag_tier=sensitivity)
   thrive?: ThriveSummary;
-  survive?: SurviveSummary;
 }
 
 export interface ThriveSummary {
@@ -75,11 +70,6 @@ export interface ThriveSummary {
   colors_hit: string[];
   guilds_fed: { display_name: string; claim_risk: boolean }[];
   fermented_count: number;
-}
-
-export interface SurviveSummary {
-  safety_overview: { food_name: string; safety: string }[];
-  fermented_caution: string[]; // ferments can be high-FODMAP/histamine (SPEC §11b)
 }
 
 // deno-lint-ignore no-explicit-any
@@ -90,18 +80,17 @@ function norm(s: string): string {
 }
 
 function toAttributes(row: FoodRow): FoodAttributes {
-  const fodmapRow = Array.isArray(row.fodmap_profiles) ? row.fodmap_profiles[0] : row.fodmap_profiles;
   return {
     food_id: row.id,
     canonical_name: row.canonical_name,
     is_plant: row.is_plant,
     plant: row.plant ?? null,
     is_fermented: row.is_fermented,
-    histamine_level: row.histamine_level ?? null,
     fibers: (row.food_fibers ?? []).map((ff: FoodRow) => ({
       name: ff.fibers?.name,
       relative_amount: ff.relative_amount,
-      is_fodmap_trigger: ff.fibers?.is_fodmap_trigger ?? false,
+      // Fence 2: coarse tolerance hint from the fibers table; null when unset.
+      fermentability: ff.fibers?.fermentability ?? null,
       est_grams_per_serving: ff.est_grams_per_serving ?? null,
     })),
     colors: (row.food_colors ?? []).map((fc: FoodRow) => fc.color_id),
@@ -115,28 +104,16 @@ function toAttributes(row: FoodRow): FoodAttributes {
       relevance: g.relevance,
       claim_risk: g.guilds?.claim_risk ?? false,
     })),
-    fodmap: fodmapRow
-      ? {
-          safety: fodmapRow.safety,
-          fructan_level: fodmapRow.fructan_level,
-          gos_level: fodmapRow.gos_level,
-          lactose_level: fodmapRow.lactose_level,
-          fructose_level: fodmapRow.fructose_level,
-          polyol_level: fodmapRow.polyol_level,
-          serving_size_desc: fodmapRow.serving_size_desc ?? null,
-        }
-      : null,
   };
 }
 
 const FOOD_SELECT = `
-  id, canonical_name, aliases, is_plant, is_fermented, histamine_level, common_hidden_in, categories,
+  id, canonical_name, aliases, is_plant, is_fermented, common_hidden_in, categories,
   plant:plants(name, rarity_tier),
-  food_fibers(relative_amount, est_grams_per_serving, fibers(name, is_fodmap_trigger)),
+  food_fibers(relative_amount, est_grams_per_serving, fibers(name, fermentability)),
   food_colors(color_id),
   food_phytochemicals(phytochemicals(name, class)),
-  food_guild_feeds(relevance, guilds(internal_name, display_name, claim_risk)),
-  fodmap_profiles(safety, fructan_level, gos_level, lactose_level, fructose_level, polyol_level, serving_size_desc)
+  food_guild_feeds(relevance, guilds(internal_name, display_name, claim_risk))
 `;
 
 /**
@@ -147,9 +124,8 @@ const FOOD_SELECT = `
 export async function buildResponse(
   service: SupabaseClient,
   vision: VisionResult,
-  mode: "thrive" | "survive",
   providerName: string,
-  exclusions: { food_id: string | null; category: string | null; exclusion_type: string }[],
+  foodFlags: { food_id: string | null; category: string | null; flag_tier: string }[],
   // Batch C - the user's annotation re-prompt result (text-only, same frozen
   // contract). Its foods are merged into `items` with source='annotation'; the
   // primary photo vision always wins on dedup. Undefined when no annotation.
@@ -164,24 +140,26 @@ export async function buildResponse(
     for (const a of f.aliases ?? []) byName.set(norm(a), f);
   }
 
+  // Three-tier flag model (§9). food_id sets + category sets (a celiac flagging
+  // "gluten" fires against foods.categories, not just food_id). `watching` is the
+  // quiet tier and is intentionally never surfaced here.
   const allergyFoodIds = new Set(
-    exclusions.filter((e) => e.exclusion_type === "medical_allergy" && e.food_id).map((e) => e.food_id),
+    foodFlags.filter((f) => f.flag_tier === "allergy" && f.food_id).map((f) => f.food_id),
   );
-  const prefFoodIds = new Set(
-    exclusions.filter((e) => e.exclusion_type === "preference_intolerance" && e.food_id).map((e) => e.food_id),
-  );
-  // §9: category-level exclusions (e.g. a celiac excluding "gluten") must ALSO
-  // fire - matched against foods.categories, not just food_id.
   const allergyCategories = new Set(
-    exclusions.filter((e) => e.exclusion_type === "medical_allergy" && e.category).map((e) => e.category!.toLowerCase()),
+    foodFlags.filter((f) => f.flag_tier === "allergy" && f.category).map((f) => f.category!.toLowerCase()),
   );
-  const prefCategories = new Set(
-    exclusions.filter((e) => e.exclusion_type === "preference_intolerance" && e.category).map((e) => e.category!.toLowerCase()),
+  const sensitivityFoodIds = new Set(
+    foodFlags.filter((f) => f.flag_tier === "sensitivity" && f.food_id).map((f) => f.food_id),
+  );
+  const sensitivityCategories = new Set(
+    foodFlags.filter((f) => f.flag_tier === "sensitivity" && f.category).map((f) => f.category!.toLowerCase()),
   );
 
   const items: ResolvedItem[] = [];
   const unmatched: string[] = [];
   const allergy_alerts: AllergyAlert[] = [];
+  const sensitivity_flags: SensitivityFlag[] = [];
   // Dedup key is the resolved food row id (1:1 with norm(canonical_name)): once a
   // food is in the set, an annotation copy is dropped so PRIMARY vision wins and
   // an annotation never upgrades a photographed food's tier (Batch C, rule #2).
@@ -209,16 +187,19 @@ export async function buildResponse(
       if (seenFoodIds.has(attrs.food_id)) continue;
       seenFoodIds.add(attrs.food_id);
       const item: ResolvedItem = { vision: vf, attributes: attrs, source };
-      // ⚠️ Two-faced model (§9): allergy = LOUD alert; preference = silent omit.
-      // Matches by food_id OR by category (foods.categories). LAYER 1 fires the
-      // LOUD allergy alert even for an annotation-added food (rule #1).
+      // Three-tier flag model (§9), matched by food_id OR category (foods.categories):
+      //   allergy     → LOUD alert (fires even for an annotation-added food, rule #1)
+      //   sensitivity → soft in-overview heads-up; the food is still eaten + logged
+      //   watching    → quiet, not surfaced
+      // Allergy wins when a food is flagged at more than one tier. No item is ever
+      // dropped — there is no silent omit in the single-mode model.
       const cats: string[] = (row.categories ?? []).map((c: string) => c.toLowerCase());
       const isAllergy = allergyFoodIds.has(attrs.food_id) || cats.some((c) => allergyCategories.has(c));
-      const isPref = prefFoodIds.has(attrs.food_id) || cats.some((c) => prefCategories.has(c));
+      const isSensitivity = sensitivityFoodIds.has(attrs.food_id) || cats.some((c) => sensitivityCategories.has(c));
       if (isAllergy) {
-        allergy_alerts.push({ food_name: attrs.canonical_name, exclusion_type: "medical_allergy" });
-      } else if (isPref) {
-        item.silently_omitted = true;
+        allergy_alerts.push({ food_name: attrs.canonical_name, flag_tier: "allergy" });
+      } else if (isSensitivity) {
+        sensitivity_flags.push({ food_name: attrs.canonical_name, food_id: attrs.food_id });
       }
       items.push(item);
     }
@@ -250,35 +231,28 @@ export async function buildResponse(
     }
   }
 
+  const matched = items.map((i) => i.attributes).filter((a): a is FoodAttributes => !!a);
+
+  // Single-mode: the per-photo garden summary is always computed. "thrive" persists
+  // only as an internal code label — there are no user-facing modes (SPEC §11a).
+  const guildMap = new Map<string, { display_name: string; claim_risk: boolean }>();
+  for (const a of matched) for (const g of a.guild_feeds) guildMap.set(g.internal_name, { display_name: g.display_name, claim_risk: g.claim_risk });
+
   const response: RecognitionResponse = {
     provider: providerName,
-    mode,
     vision,
     items,
     unmatched,
     hidden_ingredient_prompts,
     allergy_alerts,
-  };
-
-  const matched = items.map((i) => i.attributes).filter((a): a is FoodAttributes => !!a);
-
-  if (mode === "thrive") {
-    const guildMap = new Map<string, { display_name: string; claim_risk: boolean }>();
-    for (const a of matched) for (const g of a.guild_feeds) guildMap.set(g.internal_name, { display_name: g.display_name, claim_risk: g.claim_risk });
-    response.thrive = {
+    sensitivity_flags,
+    thrive: {
       unique_plants: [...new Set(matched.filter((a) => a.is_plant && a.plant).map((a) => a.plant!.name))],
       colors_hit: [...new Set(matched.flatMap((a) => a.colors))],
       guilds_fed: [...guildMap.values()],
       fermented_count: matched.filter((a) => a.is_fermented).length,
-    };
-  } else {
-    response.survive = {
-      safety_overview: matched
-        .filter((a) => a.fodmap)
-        .map((a) => ({ food_name: a.canonical_name, safety: a.fodmap!.safety })),
-      fermented_caution: matched.filter((a) => a.is_fermented).map((a) => a.canonical_name),
-    };
-  }
+    },
+  };
 
   return response;
 }

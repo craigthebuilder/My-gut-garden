@@ -7,7 +7,6 @@
 //
 
 import Foundation
-import SwiftUI
 
 // MARK: - Errors
 
@@ -100,35 +99,10 @@ struct CapResolvedHidden: Sendable, Equatable {
 /// `meal_items`) and hand off to the mode-specific insight view (the
 /// `ConfirmedMeal` seam). Built purely from the review state; no I/O.
 struct CapMealDraft: Sendable {
-    let mode: AppMode
     let photoURL: String?
     let response: RecognitionResponse
     let items: [CapMealItem]
     let hiddenAnswers: [CapHiddenIngredientAnswer]
     let capturedAt: Date
     let userAnnotation: String?              // Batch C: persisted to meals.user_annotation
-}
-
-// MARK: - Reintro "How did it feel?" answer seam (Capture-local, Batch C)
-
-/// Records the user's answer to the auto-attached "How did the [food] feel?" card
-/// (SPEC §11b / "camera Flagging Hooks"). The spine `ReintroFeelingAttacher`
-/// (`Seams.swift`) only ATTACHES the pending `reintro_meal_checks` row
-/// (felt_fine = nil); it carries no answer channel. This Capture-local seam lets
-/// Module B surface the [Felt fine] / [A bit rough] buttons and report the answer
-/// without importing Module E. The real write (reintro_meal_checks.felt_fine +
-/// CheckInWriter.appendMood) lives in Module E / the coordinator, which the lead
-/// injects here; the default is a no-op so the module compiles standalone.
-typealias CapReintroFeelingRecorder =
-    @Sendable (_ reintroFoodId: String, _ mealId: String, _ feltFine: Bool) async -> Void
-
-private struct CapReintroFeelingRecorderKey: EnvironmentKey {
-    static let defaultValue: CapReintroFeelingRecorder = { _, _, _ in }
-}
-
-extension EnvironmentValues {
-    var capReintroFeelingRecorder: CapReintroFeelingRecorder {
-        get { self[CapReintroFeelingRecorderKey.self] }
-        set { self[CapReintroFeelingRecorderKey.self] = newValue }
-    }
 }

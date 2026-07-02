@@ -45,7 +45,7 @@ struct StoolEntryDraft: Identifiable, Sendable {
 struct SymptomEntryDraft: Identifiable, Sendable {
     let id = UUID()
     var symptomType: String        // bloating | gas | pain | urgency
-    var severity: Int              // 0..3 (SrvSeverity)
+    var severity: Int              // 0..3
     var gasOdor: String?           // only when symptomType == "gas"
     var occurredAt: Date?
     var linkedMealId: String?
@@ -95,6 +95,9 @@ final class CheckInDraft {
     /// user de-selects it. nil = full check-in. Survive ignores this (no light option).
     var lightCategory: CheckInCategory?
     var lightMode: Bool { lightCategory != nil }
+    /// Customized check-in (SPEC §12): which categories to show. nil = all (default).
+    var enabledCategories: Set<CheckInCategory>?
+    var notesEnabled = true
 
     init(context: CheckInContext) { self.context = context }
 
@@ -104,7 +107,9 @@ final class CheckInDraft {
     /// score 0 / empty note); the writer skips unset entries, so an untouched seed is
     /// never saved. In light mode only the chosen category is seeded/shown.
     func seedEmptyEntries() {
-        func active(_ c: CheckInCategory) -> Bool { lightCategory == nil || lightCategory == c }
+        func active(_ c: CheckInCategory) -> Bool {
+            (lightCategory == nil || lightCategory == c) && (enabledCategories?.contains(c) ?? true)
+        }
         stools = active(.stool) ? [StoolEntryDraft()] : []
         symptoms = active(.symptom)
             ? ["bloating", "gas", "pain", "urgency"].map { SymptomEntryDraft(symptomType: $0, severity: 0) }
@@ -112,7 +117,7 @@ final class CheckInDraft {
         moods = active(.mood)      ? [MoodEntryDraft(uiValue: 0)] : []
         energy = active(.energy)   ? [MetricEntryDraft(metricType: "energy", score: 0)] : []
         clarity = active(.clarity) ? [MetricEntryDraft(metricType: "clarity", score: 0)] : []
-        notes = (lightCategory == nil) ? [CheckInNoteDraft(content: "")] : []
+        notes = (lightCategory == nil && notesEnabled) ? [CheckInNoteDraft(content: "")] : []
     }
 }
 
@@ -161,92 +166,82 @@ enum CheckInCategory: String, CaseIterable, Sendable, Identifiable {
     }
 }
 
-// MARK: - Writer (fans the drafts out to the sub-entry tables)
+// MARK: - Writer (one check_in + a check_in_entry per set field, SPEC §5/§12)
 
 @MainActor
 struct CheckInWriter {
     let repository: Repository
     let userId: String
 
-    /// Inserts every draft entry across stool_entries / symptom_entries /
-    /// mood_entries / checkin_notes concurrently. mood_score is written from
-    /// `MoodEntryDraft.storedScore` (the single 6 - uiValue inversion).
+    private struct CheckInIdRow: Decodable { let id: String }
+
+    /// The full form: create one `check_ins` row (source='full'), then fan out one
+    /// `check_in_entries` row per set field. `section_key` is the field's key; mood is
+    /// written from `storedScore` (the single 6 - uiValue inversion, canonical high=better).
     func save(_ draft: CheckInDraft) async throws {
-        let repo = repository
-        let uid = userId
         let day = Self.dateString(draft.logDate)
-        let ctx = draft.context.rawValue
+        let checkInId = try await createCheckIn(day: day, source: "full")
+        let repo = repository, uid = userId
 
         try await withThrowingTaskGroup(of: Void.self) { group in
-            for s in draft.stools where s.bss != nil {          // skip untouched seeded entry
-                let body = Self.stoolBody(s, userId: uid, day: day)
-                group.addTask { try await repo.insertVoid("stool_entries", body) }
+            for s in draft.stools where s.bss != nil {          // skip untouched seed
+                let b = Self.entry(checkInId, uid, "bss", int: s.bss, text: nil, at: s.occurredAt, meal: s.linkedMealId)
+                group.addTask { try await repo.insertVoid("check_in_entries", b) }
             }
-            for s in draft.symptoms where s.severity > 0 {      // 0 = "none", nothing to record
-                let body = Self.symptomBody(s, userId: uid, day: day)
-                group.addTask { try await repo.insertVoid("symptom_entries", body) }
+            for s in draft.symptoms where s.severity > 0 {      // 0 = "none"
+                let b = Self.entry(checkInId, uid, s.symptomType, int: s.severity, text: s.gasOdor, at: s.occurredAt, meal: s.linkedMealId)
+                group.addTask { try await repo.insertVoid("check_in_entries", b) }
             }
-            for m in draft.moods where m.uiValue >= 1 {        // 0 = unset seed, skip
-                let body = Self.moodBody(m, userId: uid, day: day, context: ctx)
-                group.addTask { try await repo.insertVoid("mood_entries", body) }
+            for m in draft.moods where m.uiValue >= 1 {         // 0 = unset seed
+                let b = Self.entry(checkInId, uid, "mood", int: m.storedScore, text: nil, at: m.occurredAt, meal: m.linkedMealId)
+                group.addTask { try await repo.insertVoid("check_in_entries", b) }
             }
-            for e in (draft.energy + draft.clarity) where e.score >= 1 {   // 0 = unset seed, skip
-                let body = Self.metricBody(e, userId: uid, day: day, context: ctx)
-                group.addTask { try await repo.insertVoid("metric_entries", body) }
+            for e in (draft.energy + draft.clarity) where e.score >= 1 {
+                let b = Self.entry(checkInId, uid, e.metricType, int: e.score, text: nil, at: e.occurredAt, meal: e.linkedMealId)
+                group.addTask { try await repo.insertVoid("check_in_entries", b) }
             }
             for n in draft.notes where !n.content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                let body = Self.noteBody(n, userId: uid, day: day, context: ctx)
-                group.addTask { try await repo.insertVoid("checkin_notes", body) }
+                let b = Self.entry(checkInId, uid, "notes", int: nil, text: n.content, at: nil, meal: n.linkedMealId)
+                group.addTask { try await repo.insertVoid("check_in_entries", b) }
             }
             try await group.waitForAll()
         }
     }
 
-    /// The camera / test-tab auto-write path: append one mood entry without any UI
-    /// being opened (e.g. the "How did the [food] feel?" answer).
+    /// Meal-followup mood (no UI opened, e.g. a "how did that sit?" answer): a small
+    /// check_in (source='meal_followup') + one mood entry.
     func appendMood(uiValue: Int, context: CheckInContext, linkedMealId: String?, on date: Date) async throws {
-        let body = Self.moodBody(
-            MoodEntryDraft(uiValue: uiValue, occurredAt: nil, linkedMealId: linkedMealId),
-            userId: userId, day: Self.dateString(date), context: context.rawValue)
-        try await repository.insertVoid("mood_entries", body)
+        let checkInId = try await createCheckIn(day: Self.dateString(date), source: "meal_followup")
+        let b = Self.entry(checkInId, userId, "mood", int: 6 - uiValue, text: nil, at: nil, meal: linkedMealId)
+        try await repository.insertVoid("check_in_entries", b)
     }
 
-    // MARK: Body builders (pure, Sendable)
-    // Typed `opt` overloads keep these dict literals fast to type-check.
-
-    private static func opt(_ v: Int?)    -> PGValue { v.map { PGValue.int($0) }    ?? .null }
-    private static func opt(_ v: String?) -> PGValue { v.map { PGValue.string($0) } ?? .null }
-    private static func opt(_ v: Date?)   -> PGValue { v.map { PGValue.date($0) }   ?? .null }
-
-    private static func stoolBody(_ s: StoolEntryDraft, userId: String, day: String) -> [String: PGValue] {
-        ["user_id": .string(userId), "log_date": .string(day),
-         "bss": opt(s.bss), "occurred_at": opt(s.occurredAt), "linked_meal_id": opt(s.linkedMealId)]
+    /// The daily pop-up "did you feel okay?" → a check_in (source='daily_popup') + a
+    /// `felt_okay` entry. `discomfort` is 0 (great) .. 3 (rough) — the guardian reads it (SPEC §11).
+    func saveDailyFeltOkay(discomfort: Int, on date: Date) async throws {
+        let checkInId = try await createCheckIn(day: Self.dateString(date), source: "daily_popup")
+        let b = Self.entry(checkInId, userId, "felt_okay", int: discomfort, text: nil, at: nil, meal: nil)
+        try await repository.insertVoid("check_in_entries", b)
     }
 
-    private static func symptomBody(_ s: SymptomEntryDraft, userId: String, day: String) -> [String: PGValue] {
-        ["user_id": .string(userId), "log_date": .string(day),
-         "symptom_type": .string(s.symptomType), "severity": .int(s.severity),
-         "gas_odor": opt(s.gasOdor), "occurred_at": opt(s.occurredAt), "linked_meal_id": opt(s.linkedMealId)]
+    private func createCheckIn(day: String, source: String) async throws -> String {
+        let rows: [CheckInIdRow] = try await repository.insert("check_ins",
+            ["user_id": .string(userId), "log_date": .string(day), "source": .string(source)])
+        guard let id = rows.first?.id else {
+            throw SupabaseError.server(status: -1, message: "check_in insert returned no id")
+        }
+        return id
     }
 
-    private static func moodBody(_ m: MoodEntryDraft, userId: String, day: String, context: String) -> [String: PGValue] {
-        ["user_id": .string(userId), "log_date": .string(day),
-         "mood_score": .int(m.storedScore),           // 6 - uiValue (canonical high=better)
-         "context": .string(context),
-         "occurred_at": opt(m.occurredAt), "linked_meal_id": opt(m.linkedMealId)]
-    }
+    // MARK: One entry body (pure, Sendable). Typed maps keep it fast to type-check.
 
-    private static func metricBody(_ e: MetricEntryDraft, userId: String, day: String, context: String) -> [String: PGValue] {
-        ["user_id": .string(userId), "log_date": .string(day),
-         "metric_type": .string(e.metricType), "score": .int(e.score),   // stored as-is, high=better
-         "context": .string(context),
-         "occurred_at": opt(e.occurredAt), "linked_meal_id": opt(e.linkedMealId)]
-    }
-
-    private static func noteBody(_ n: CheckInNoteDraft, userId: String, day: String, context: String) -> [String: PGValue] {
-        ["user_id": .string(userId), "log_date": .string(day),
-         "content": .string(n.content), "context": .string(context),
-         "linked_meal_id": opt(n.linkedMealId)]
+    private static func entry(_ checkInId: String, _ userId: String, _ section: String,
+                              int: Int?, text: String?, at: Date?, meal: String?) -> [String: PGValue] {
+        ["check_in_id": .string(checkInId), "user_id": .string(userId), "section_key": .string(section),
+         "value_int": int.map { PGValue.int($0) } ?? .null,
+         "value_text": text.map { PGValue.string($0) } ?? .null,
+         "occurred_at": at.map { PGValue.date($0) } ?? .null,
+         "linked_meal_id": meal.map { PGValue.string($0) } ?? .null]
     }
 
     private static let dayFormatter: DateFormatter = {

@@ -18,6 +18,7 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 OUT = os.path.join(ROOT, "supabase", "migrations", "20260625000010_seed_real.sql")
+OUT2 = os.path.join(ROOT, "supabase", "migrations", "20260701000005_seed_singlemode.sql")
 
 # ---- legal enum values (mirrors 20260625000001_schema.sql) --------------------
 COLORS = {"red", "orange", "yellow", "green", "blue_purple", "white_brown"}
@@ -107,6 +108,10 @@ _, food_guilds = read_csv("food_guild_feeds.csv")
 _, fodmaps = read_csv("fodmap_profiles.csv")
 _, facts = read_csv("curiosity_facts.csv")
 _, stories = read_csv("success_stories.csv")
+# Single-mode additions (SPEC §8 worlds, §14 recipes, §7 tutorials).
+_, worlds = read_csv("worlds.csv")
+_, recipes = read_csv("recipes.csv")
+_, tutorials = read_csv("tutorial_steps.csv")
 
 # lookup sets
 color_ids = {r["id"] for r in colors}
@@ -201,6 +206,25 @@ fed = {r["guild"] for r in food_guilds}
 for g in guild_names:
     if g not in fed:
         err(f"food_guild_feeds: guild {g} has no feeder food")
+
+# ---- single-mode content validation ------------------------------------------
+for r in worlds:
+    if not r["order"].isdigit():
+        err(f"worlds: order must be an integer, got {r['order']!r}")
+for r in recipes:
+    for c in split_list(r["color_ids"]):
+        if c not in COLORS:
+            err(f"recipes: illegal color {c!r} in {r['title']!r}")
+    b(r["claim_risk"])
+_tutorial_keys = set()
+for r in tutorials:
+    if not r["order"].isdigit():
+        err(f"tutorial_steps: order must be an integer for section {r['section_key']!r}")
+    key = (r["section_key"], r["order"])
+    if key in _tutorial_keys:
+        err(f"tutorial_steps: duplicate (section_key, order) {key}")
+    _tutorial_keys.add(key)
+    b(r["claim_risk"])
 
 if errors:
     print("VALIDATION FAILED:", file=sys.stderr)
@@ -438,6 +462,65 @@ w()
 
 with open(OUT, "w", encoding="utf-8") as f:
     f.write("\n".join(o))
+
+# ==============================================================================
+# Emit the single-mode content seed (worlds + districts.world_id + recipes +
+# tutorial_steps) into a SEPARATE, later migration so the already-applied
+# seed_real.sql stays untouched.
+# ==============================================================================
+o2 = []
+def w2(line=""):
+    o2.append(line)
+
+w2("-- =====================================================================")
+w2("-- 20260701000005_seed_singlemode.sql  —  single-mode content seed")
+w2("-- GENERATED from /data/worlds.csv, recipes.csv, tutorial_steps.csv by")
+w2("-- /data/build_seed_sql.py. Do not hand-edit; edit the CSVs + regenerate.")
+w2("-- Idempotent (ON CONFLICT / delete+insert). 🔒 FENCE 4/8: claim_risk rows are")
+w2("-- RD-REVIEW-REQUIRED placeholder copy. Curated, never runtime-generated (rule #9).")
+w2("-- =====================================================================")
+w2()
+
+w2('-- ---- worlds — ON CONFLICT ("order") ---------------------------------')
+w2('insert into worlds ("order", name, unlock_rule_key, intro_copy) values')
+vals = [f"  ({r['order']}, {s(r['name'])}, {s(r['unlock_rule_key'])}, {s(r['intro_copy'])})" for r in worlds]
+w2(",\n".join(vals))
+w2('on conflict ("order") do update set')
+w2("  name = excluded.name,")
+w2("  unlock_rule_key = excluded.unlock_rule_key,")
+w2("  intro_copy = excluded.intro_copy;")
+w2()
+
+w2("-- ---- districts.world_id: the existing districts all belong to World 1 (The Core)")
+w2('update districts set world_id = (select id from worlds where "order" = 1);')
+w2()
+
+w2("-- ---- recipes — no natural key; delete+insert (idempotent) -----------")
+w2("delete from recipes;")
+w2("insert into recipes (title, description, color_ids, fiber_highlights, steps, prep_minutes, source, claim_risk) values")
+vals = []
+for r in recipes:
+    vals.append("  (" + ", ".join([
+        s(r["title"]), s(r["description"]), arr(split_list(r["color_ids"])),
+        s(r["fiber_highlights"]), arr(split_list(r["steps"])), num(r["prep_minutes"]),
+        s(r["source"]), b(r["claim_risk"]),
+    ]) + ")")
+w2(",\n".join(vals) + ";")
+w2()
+
+w2('-- ---- tutorial_steps — ON CONFLICT (section_key, "order") ------------')
+w2('insert into tutorial_steps (section_key, "order", title, body, target_hint, claim_risk) values')
+vals = [f"  ({s(r['section_key'])}, {r['order']}, {s(r['title'])}, {s(r['body'])}, {s(r['target_hint'])}, {b(r['claim_risk'])})" for r in tutorials]
+w2(",\n".join(vals))
+w2('on conflict (section_key, "order") do update set')
+w2("  title = excluded.title,")
+w2("  body = excluded.body,")
+w2("  target_hint = excluded.target_hint,")
+w2("  claim_risk = excluded.claim_risk;")
+w2()
+
+with open(OUT2, "w", encoding="utf-8") as f:
+    f.write("\n".join(o2))
 
 # ---- report -------------------------------------------------------------------
 counts = {

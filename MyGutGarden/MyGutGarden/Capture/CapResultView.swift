@@ -2,14 +2,14 @@
 //  CapResultView.swift
 //  MyGutGarden, Module B insight hand-off (SPEC §11, Seams.ConfirmedMeal).
 //
-//  The meal is already auto-logged (Batch C). This screen surfaces the insight and
-//  the camera flagging layers, in strict order:
-//    LAYER 1 (LOUD, rule #1): the medical_allergy red banner - ALWAYS rendered
-//      first, independent of the soft pass, even mid-celebration.
-//    LAYER 2 (soft, the user's own notes, rules #4/#8): suspect heads-up, avoid
-//      soft flag, reintro over-eating nudge, and the "How did it feel?" card.
-//  Then the mode-specific insight (Module C/E via the injected presenter; B never
-//  imports C/E). A top-left ✕ exits the 4-plants page. Tokens only (rule #5).
+//  The meal is already auto-logged (Batch C). This screen surfaces, in strict order:
+//    1. The LOUD allergy banner (rule #1) - ALWAYS rendered first, before any
+//       insight content, from response.allergyAlerts (flag_tier=allergy).
+//    2. A SOFT sensitivity notice inside the overview, from response.sensitivityFlags
+//       (flag_tier=sensitivity). The food is still eaten + logged; calm, never an alarm.
+//    3. The per-photo insight (Module C via the injected presenter; B never imports C).
+//  Both flag tiers are server-computed and carried on `response`. A top-left ✕ exits.
+//  Tokens only (rule #5).
 //
 
 import SwiftUI
@@ -20,24 +20,64 @@ struct CapResultScreen: View {
     let presenter: (any MealInsightPresenting)?
 
     @State private var editModel: CapEditMealModel?
+    @State private var allergyAcknowledged = false
+
+    /// The LOUD allergy gate blocks the overview until acknowledged (rule #1).
+    private var showAllergyGate: Bool { !model.allergyAlerts.isEmpty && !allergyAcknowledged }
 
     var body: some View {
         ZStack(alignment: .topLeading) {
-            ScrollView {
-                VStack(alignment: .leading, spacing: theme.metrics.space5) {
-                    CapAllergyBanner(alerts: model.allergyAlerts)          // LAYER 1, always first
-                    insight
-                    bottomWarning                                          // only if a Checking/Avoid food is here
-                    actions
+            if showAllergyGate {
+                allergyGate                                                // BEFORE the overview
+            } else {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: theme.metrics.space5) {
+                        CapAllergyBanner(alerts: model.allergyAlerts)      // persistent reminder at top
+                        CapSensitivityNotice(flags: model.sensitivityFlags) // soft, in-overview
+                        insight
+                        actions
+                    }
+                    .padding(theme.metrics.space5)
+                    .padding(.top, theme.metrics.space5)                   // clear the ✕
                 }
-                .padding(theme.metrics.space5)
-                .padding(.top, theme.metrics.space5)                      // clear the ✕
             }
             dismissButton
         }
         .sheet(item: $editModel) { editor in
             CapEditMealView(model: editor) { editModel = nil }
         }
+    }
+
+    // MARK: LOUD allergy gate — shown BEFORE the overview, must be acknowledged (rule #1)
+
+    private var allergyGate: some View {
+        VStack(alignment: .leading, spacing: theme.metrics.space4) {
+            Spacer()
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 56))
+                .foregroundStyle(theme.colors.error)
+            Text("Allergy heads-up")
+                .font(theme.typography.display(30))
+                .foregroundStyle(theme.colors.error)
+            VStack(alignment: .leading, spacing: theme.metrics.space2) {
+                ForEach(model.allergyAlerts, id: \.foodName) { alert in
+                    Text("Contains \(alert.foodName), flagged as an allergy.")
+                        .font(theme.typography.body(weight: .semibold))
+                        .foregroundStyle(theme.colors.textPrimary)
+                }
+            }
+            Text("You added this to your allergy list. Double-check the dish before you eat.")
+                .font(theme.typography.body())
+                .foregroundStyle(theme.colors.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+            PrimaryButton(title: "I understand", systemImage: "checkmark") {
+                allergyAcknowledged = true
+            }
+            Spacer()
+        }
+        .padding(theme.metrics.space5)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+        .background(theme.colors.error.opacity(0.08).ignoresSafeArea())
     }
 
     // MARK: Exit (top-left ✕)
@@ -53,51 +93,6 @@ struct CapResultScreen: View {
         .accessibilityLabel("Close")
     }
 
-    // MARK: Bottom warning (ONLY when a Checking/Avoid food is in this meal)
-    //
-    // R3 Batch D: no "Worth a check" mid-screen card on every snap. It surfaces at
-    // the BOTTOM, as a calm warning, and ONLY if a food in this meal is on the
-    // user's Checking or Avoid list (or it's a big portion of a food being
-    // checked). The "How did it feel?" inline prompt is gone, a notification 30
-    // min after the photo asks instead (Survive notifications).
-
-    @ViewBuilder
-    private var bottomWarning: some View {
-        if let meal = model.confirmedMeal {
-            let checking = meal.suspectFoodIds          // foods on the user's Checking list
-            let reintroId = meal.reintroFoodId          // a food in an active reintro test
-            if !checking.isEmpty || reintroId != nil {
-                VStack(alignment: .leading, spacing: theme.metrics.space2) {
-                    HStack(spacing: theme.metrics.space2) {
-                        Image(systemName: "exclamationmark.triangle.fill")
-                        Text("Worth a check")
-                            .font(theme.typography.body(weight: .semibold))
-                    }
-                    .foregroundStyle(theme.colors.secondary)
-                    ForEach(checking, id: \.self) { foodId in
-                        warningLine("This has \(model.foodName(for: foodId)), one you're keeping an eye on.")
-                    }
-                    if let reintroId {
-                        warningLine("This has \(model.foodName(for: reintroId)), the food you're testing. We'll ask how it sat in a bit.")
-                    }
-                }
-                .padding(theme.metrics.space4)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(theme.colors.secondary.opacity(0.10),
-                            in: RoundedRectangle(cornerRadius: theme.metrics.radiusMedium, style: .continuous))
-                .accessibilityElement(children: .combine)
-            }
-        }
-    }
-
-    private func warningLine(_ text: String) -> some View {
-        Text(text)
-            .font(theme.typography.body())
-            .foregroundStyle(theme.colors.textPrimary)
-            .fixedSize(horizontal: false, vertical: true)
-            .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
     // MARK: Insight + actions
 
     @ViewBuilder
@@ -106,7 +101,7 @@ struct CapResultScreen: View {
             if let presenter {
                 presenter.insightView(for: meal)
             } else {
-                CapFallbackSummary(response: meal.response, mode: model.mode)
+                CapFallbackSummary(response: meal.response)
             }
         }
     }
@@ -125,11 +120,10 @@ struct CapResultScreen: View {
     }
 }
 
-// MARK: - LAYER 1 LOUD allergy banner (medical_allergy only, §9 / rule #1)
+// MARK: - LOUD allergy banner (flag_tier=allergy only, §9 / rule #1)
 
-/// Always rendered before any insight content, in both modes, never suppressed,
-/// and entirely independent of the soft suspect/avoid pass (the two passes are
-/// never merged). Fires even if the same food is also in Avoid.
+/// Always rendered before any insight content, never suppressed, and entirely
+/// independent of the soft sensitivity notice (the two tiers are never merged).
 struct CapAllergyBanner: View {
     @Environment(\.theme) private var theme
     let alerts: [AllergyAlert]
@@ -155,89 +149,73 @@ struct CapAllergyBanner: View {
     }
 }
 
-// MARK: - LAYER 2 soft flag (calm, informational, never an alarm)
+// MARK: - Soft sensitivity notice (calm, in-overview, never an alarm, §9)
 
-struct CapSoftFlag: View {
+/// A gentle heads-up for foods on the user's `sensitivity` list. The food is still
+/// eaten + logged; this only reminds them they're keeping an eye on it. Warning
+/// tint + a warning sign, never the LOUD error styling reserved for allergies.
+struct CapSensitivityNotice: View {
     @Environment(\.theme) private var theme
-    let systemImage: String
-    let text: String
+    let flags: [SensitivityFlag]
 
     var body: some View {
-        HStack(alignment: .top, spacing: theme.metrics.space2) {
-            Image(systemName: systemImage)
-                .foregroundStyle(theme.colors.primary)
-            Text(text)
-                .font(theme.typography.body())
-                .foregroundStyle(theme.colors.textPrimary)
-            Spacer(minLength: 0)
+        if !flags.isEmpty {
+            VStack(alignment: .leading, spacing: theme.metrics.space2) {
+                ForEach(flags) { flag in
+                    HStack(alignment: .top, spacing: theme.metrics.space2) {
+                        Image(systemName: "exclamationmark.triangle")
+                            .foregroundStyle(theme.colors.warning)
+                        Text("You're keeping an eye on \(flag.foodName). It's on your list.")
+                            .font(theme.typography.body())
+                            .foregroundStyle(theme.colors.textPrimary)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Spacer(minLength: 0)
+                    }
+                }
+            }
+            .padding(theme.metrics.space4)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(theme.colors.warning.opacity(0.12),
+                        in: RoundedRectangle(cornerRadius: theme.metrics.radiusMedium, style: .continuous))
+            .accessibilityElement(children: .combine)
         }
-        .padding(theme.metrics.space3)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(theme.colors.surface,
-                    in: RoundedRectangle(cornerRadius: theme.metrics.radiusMedium, style: .continuous))
-        .accessibilityElement(children: .combine)
     }
 }
 
 // MARK: - Built-in fallback summary (used only when no presenter is injected)
 
 /// A minimal, honest per-photo summary. Reads the shared Phase-0 join helpers so
-/// it never invents nutrition numbers (rule #2) and keeps Survive non-clinical
-/// (rule #4). The LOUD allergy banner is rendered above by CapResultScreen.
+/// it never invents nutrition numbers (rule #2). The LOUD allergy banner + the
+/// soft sensitivity notice are rendered above by CapResultScreen.
 struct CapFallbackSummary: View {
     @Environment(\.theme) private var theme
     let response: RecognitionResponse
-    let mode: AppMode
 
     var body: some View {
+        let insights = FoodAttributeJoin.thriveInsights(response)
         VStack(alignment: .leading, spacing: theme.metrics.space4) {
             Text("Meal logged")
                 .font(theme.typography.display(28))
                 .foregroundStyle(theme.colors.primary)
 
-            if mode == .thrive { thrive } else { survive }
-        }
-    }
-
-    private var thrive: some View {
-        let insights = FoodAttributeJoin.thriveInsights(response)
-        return Card {
-            VStack(alignment: .leading, spacing: theme.metrics.space3) {
-                StatPill(value: "\(insights.plantNames.count)", label: "plants")
-                if !insights.plantNames.isEmpty {
-                    Text(insights.plantNames.joined(separator: ", "))
-                        .font(theme.typography.body())
-                        .foregroundStyle(theme.colors.textPrimary)
-                }
-                if !insights.colorsHit.isEmpty {
-                    Text("Rainbow: " + insights.colorsHit
-                        .map { $0.replacingOccurrences(of: "_", with: " ") }
-                        .joined(separator: ", "))
-                        .font(theme.typography.caption())
-                        .foregroundStyle(theme.colors.textSecondary)
-                }
-                Text("3 P's: \(insights.threePs.count)/3" + (insights.threePs.allThree ? " checked" : ""))
-                    .font(theme.typography.caption())
-                    .foregroundStyle(theme.colors.textSecondary)
-            }
-        }
-    }
-
-    private var survive: some View {
-        let insights = FoodAttributeJoin.surviveInsights(response)
-        return Card {
-            VStack(alignment: .leading, spacing: theme.metrics.space3) {
-                Text("FODMAP safety")
-                    .font(theme.typography.body(weight: .semibold))
-                    .foregroundStyle(theme.colors.textPrimary)
-                ForEach(insights.safety, id: \.foodName) { entry in
-                    HStack {
-                        Text(entry.foodName)
+            Card {
+                VStack(alignment: .leading, spacing: theme.metrics.space3) {
+                    StatPill(value: "\(insights.plantNames.count)", label: "plants")
+                    if !insights.plantNames.isEmpty {
+                        Text(insights.plantNames.joined(separator: ", "))
                             .font(theme.typography.body())
                             .foregroundStyle(theme.colors.textPrimary)
-                        Spacer()
-                        SafetyChip(safety: entry.safety)
                     }
+                    if !insights.colorsHit.isEmpty {
+                        Text("Rainbow: " + insights.colorsHit
+                            .map { $0.replacingOccurrences(of: "_", with: " ") }
+                            .joined(separator: ", "))
+                            .font(theme.typography.caption())
+                            .foregroundStyle(theme.colors.textSecondary)
+                    }
+                    Text("3 P's: \(insights.threePs.count)/3" + (insights.threePs.allThree ? " checked" : ""))
+                        .font(theme.typography.caption())
+                        .foregroundStyle(theme.colors.textSecondary)
                 }
             }
         }

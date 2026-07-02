@@ -1,20 +1,19 @@
 //
 //  SharedModels.swift
-//  MyGutGarden, Phase 0 shared types (SPEC §5).
+//  MyGutGarden — shared types (SPEC §5).
 //
 //  The typed Swift mirror of the data model + the frozen recognition contract
 //  (SPEC §4). Every module decodes the `recognize` Edge Function response into
 //  these types. JSON is snake_case; decode with `.convertFromSnakeCase`
 //  (see RecognitionService) so property names stay camelCase here.
 //
+//  Single-mode: there are no modes. FODMAP + the two-faced exclusion model are
+//  retired; food restrictions live in the three-tier `FlagTier` model (SPEC §9).
+//
 
 import Foundation
 
-// MARK: - Domain enums (mirror the Postgres enums in 20260625000001_schema.sql)
-
-enum AppMode: String, Codable, Sendable, CaseIterable {
-    case thrive, survive
-}
+// MARK: - Domain enums (mirror the Postgres enums)
 
 enum PortionTier: String, Codable, Sendable {
     case trace, serving, lots
@@ -24,15 +23,12 @@ enum RarityTier: String, Codable, Sendable {
     case common, uncommon, rare, legendary
 }
 
-enum FodmapSafety: String, Codable, Sendable {
-    case green, yellow, red
-}
-
-/// ⚠️ THE load-bearing enum (SPEC §9). Drives OPPOSITE behavior, never flatten.
-/// `medicalAllergy` is LOUD across both modes; `preferenceIntolerance` is quiet.
-enum ExclusionType: String, Codable, Sendable {
-    case medicalAllergy = "medical_allergy"
-    case preferenceIntolerance = "preference_intolerance"
+/// The three-tier food-flag model (SPEC §9). Drives OPPOSITE surfacing:
+/// `allergy` is LOUD and fires BEFORE the result overview; `sensitivity` is a
+/// soft in-overview warning (the food is still eaten + logged); `watching` is
+/// quiet. Never flatten allergy into a softer tier.
+enum FlagTier: String, Codable, Sendable {
+    case watching, sensitivity, allergy
 }
 
 // MARK: - Frozen vision-LLM contract (SPEC §4)
@@ -59,8 +55,8 @@ struct PlantRef: Codable, Sendable, Hashable {
 struct FiberAttr: Codable, Sendable, Hashable {
     let name: String
     let relativeAmount: String          // minor | moderate | primary
-    let isFodmapTrigger: Bool
-    let estGramsPerServing: Double?     // coarse, RD-review-fenced (Fence 4)
+    let fermentability: String?         // low | moderate | high — coarse tolerance hint (Fence 2)
+    let estGramsPerServing: Double?     // coarse, RD-review-fenced
 }
 
 struct PhytochemicalAttr: Codable, Sendable, Hashable {
@@ -77,17 +73,7 @@ struct GuildFeedAttr: Codable, Sendable, Hashable {
     let internalName: String
     let displayName: String
     let relevance: String               // minor | moderate | primary
-    let claimRisk: Bool                  // true => render "[emerging science]" (Fence 2)
-}
-
-struct FodmapAttr: Codable, Sendable, Hashable {
-    let safety: FodmapSafety
-    let fructanLevel: String
-    let gosLevel: String
-    let lactoseLevel: String
-    let fructoseLevel: String
-    let polyolLevel: String
-    let servingSizeDesc: String?
+    let claimRisk: Bool                  // true => render "[emerging science]" (Fence 1)
 }
 
 struct FoodAttributes: Codable, Sendable, Hashable {
@@ -96,12 +82,10 @@ struct FoodAttributes: Codable, Sendable, Hashable {
     let isPlant: Bool
     let plant: PlantRef?
     let isFermented: Bool
-    let histamineLevel: String?
     let fibers: [FiberAttr]
     let colors: [String]
     let phytochemicals: [PhytochemicalAttr]
     let guildFeeds: [GuildFeedAttr]
-    let fodmap: FodmapAttr?
 }
 
 // MARK: - The `recognize` Edge Function response (SPEC §4 end-to-end)
@@ -109,12 +93,21 @@ struct FoodAttributes: Codable, Sendable, Hashable {
 struct ResolvedItem: Codable, Sendable {
     let vision: VisionFood
     let attributes: FoodAttributes?     // nil => unmatched, needs manual confirm
-    let silentlyOmitted: Bool?          // preference_intolerance match (§9, quiet)
 }
 
+/// LOUD, fires BEFORE the result overview (SPEC §9). Server-computed from the
+/// user's `food_flags` where `flag_tier = 'allergy'`.
 struct AllergyAlert: Codable, Sendable {
     let foodName: String
-    let exclusionType: ExclusionType    // always medicalAllergy here (LOUD, §9)
+    let flagTier: FlagTier              // always .allergy here
+}
+
+/// Soft, in-overview heads-up (SPEC §9). The food is still eaten + logged.
+/// Server-computed from `food_flags` where `flag_tier = 'sensitivity'`.
+struct SensitivityFlag: Codable, Sendable, Identifiable {
+    let foodName: String
+    let foodId: String
+    var id: String { foodId }
 }
 
 struct HiddenIngredientPrompt: Codable, Sendable, Identifiable {
@@ -129,6 +122,8 @@ struct GuildFed: Codable, Sendable, Hashable {
     let claimRisk: Bool
 }
 
+/// The single per-photo garden summary (SPEC §11a). "Thrive" persists only as an
+/// internal code label — there are no user-facing modes.
 struct ThriveSummary: Codable, Sendable {
     let uniquePlants: [String]
     let colorsHit: [String]
@@ -136,24 +131,13 @@ struct ThriveSummary: Codable, Sendable {
     let fermentedCount: Int
 }
 
-struct SafetyEntry: Codable, Sendable {
-    let foodName: String
-    let safety: FodmapSafety
-}
-
-struct SurviveSummary: Codable, Sendable {
-    let safetyOverview: [SafetyEntry]
-    let fermentedCaution: [String]
-}
-
 struct RecognitionResponse: Codable, Sendable {
     let provider: String
-    let mode: AppMode
     let vision: VisionResult
     let items: [ResolvedItem]
     let unmatched: [String]
     let hiddenIngredientPrompts: [HiddenIngredientPrompt]
     let allergyAlerts: [AllergyAlert]
+    let sensitivityFlags: [SensitivityFlag]
     let thrive: ThriveSummary?
-    let survive: SurviveSummary?
 }

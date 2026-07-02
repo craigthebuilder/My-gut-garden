@@ -1,83 +1,80 @@
-# SPEC.md — Gut Health App
+# SPEC.md — My Gut Garden
 
 > **Working codename:** `My Gut Garden`
-> **Source of truth:** This file is the authoritative product + technical specification. The original product thinking lives in `gut_app_framework_v2.md`; where this file and the framework differ, **this file wins** (it folds in the framework plus all locked build decisions). Section references like "§9" point to the framework.
-> **Status:** Build-ready for a phased, multi-agent Claude Code build. Read `CLAUDE.md` for build order and agent rules, and `DESIGN.md` for the visual system.
+> **Source of truth:** This file is the authoritative product + technical specification for the **single-mode** direction. The original two-mode thinking lives in `gut_app_framework_v2.md`, and the Phase-2 two-mode build contract in `PHASE2_PLAN.md`; both are **frozen historical record — superseded by this file.** Where they differ from this file, **this file wins.**
+> **Status:** Build-ready. Read `CLAUDE.md` for build order and agent rules, and `DESIGN.md` for the visual system.
 
 ---
 
 ## 1. The thesis (why this app exists)
 
-The prebiotic fibers that make a gut **thrive** are largely the **same molecules** as the FODMAPs that **trigger** IBS — fructans (inulin/FOS), GOS, and some resistant starch are simultaneously the top bacterial fuels and the top IBS triggers. One molecular truth, two lenses:
+**Grow a garden by feeding your gut diversity.**
 
-- **Thrive** feeds those fibers in (additive, aspirational, curiosity-driven).
-- **Survive** pulls them out, then reintroduces them one group at a time (relief-driven, restrictive but temporary).
+My Gut Garden is a single-mode, **additive** game: hit a personalized fiber goal by eating a wide **variety of plant foods**, eat the rainbow, feed and **bloom** an expanding microbiome garden, and **learn** the whole time — what fiber does for your body, what phytochemicals do for you, which foods and recipes to try next. The collection/Pokédex loop is the hook; education is a first-class pillar, not a footnote.
 
-The journey *is* teaching a gut to tolerate the fibers that make it thrive.
+The tension the product exists to resolve: **more fiber and diversity is the goal, but ramping it carelessly makes people feel worse** — someone unused to fiber gets gas, bloating, and cramping; someone with a food sensitivity feels unwell eating that food. So the app pairs the additive game with a **quiet back-end guardian** that watches how you're tolerating things and gently steers — titrating the goal up when you're ready, and flagging a specific food when it seems to disagree with you — without ever turning the experience into a chore or a diagnosis.
 
-**Two opposite visibility philosophies, both honest for the same reason:**
-- **Thrive renders the invisible** — you can't see your good bacteria, so we build a garden you feed.
-- **Survive hides the visible** — symptoms go in, insights come out; no bacteria are ever shown, because a "bad-bug meter" would be both unmeasurable from a photo *and* a shame mechanic.
-
-Two product principles fall out of this and constrain everything downstream:
-1. **Never claim precision the camera can't deliver.** Coarse, directional, honest. Never "12.3g inulin." (See §5, §13.)
-2. **Never diagnose.** Survive outputs patterns → experiments → "raise with a GI," never a named condition or bug. (See §11, §14.)
+**Three principles constrain everything downstream:**
+1. **Never claim precision the camera can't deliver.** Coarse, directional, honest. Never "12.3g inulin." (§4, §10.)
+2. **Never diagnose.** This is a wellness app. It never asserts a medical condition; it surfaces observations and, at most, a "worth raising with a professional" care prompt. (§9, §11, §15.)
+3. **The guardian is quiet; the user is autonomous.** People eat what they want. The engine monitors in the background and *suggests*; the user *confirms* every restriction. Nothing makes the user feel policed or surveilled — everything the engine does is transparent and editable in the **You** section. (§9, §11, §15.)
 
 ---
 
-## 2. Modes & the journey
+## 2. The experience arc (there are no modes)
 
-| | **Survive** | **Thrive** |
-|---|---|---|
-| **For** | Active gut distress | Feels fine, wants to optimize |
-| **Engine** | Relief — find triggers, reduce symptoms, graduate | Curiosity — diversity, discovery, collection |
-| **Framing** | Restrictive but *temporary* | Additive and aspirational |
-| **Business role** | Retention + word-of-mouth (the moat) | Acquisition + broad funnel (the wedge) |
+There is **one** experience. `current_mode` and the old Thrive/Survive split are retired; there is one theme (`DESIGN.md`).
 
-**The bridge between modes:**
-- **Graduation is a ceremony.** Completing Survive blooms the Thrive garden and floods confirmed-safe foods into the Thrive collection. This is the celebrated, guided path.
-- **Bidirectional and blameless.** A Thrive user who flares drops to Survive — *"let's go back to basics for a bit"* — never framed as a demotion.
-- **User-initiated switching is always available.** Either mode is one tap away at any time, gated only by a context-appropriate disclaimer pop-up + **click-to-confirm**. Graduation is the guided route; manual switch is always available.
+The user's journey is a progression, not a mode switch:
 
-`current_mode` is a per-user field. Both modes read/write the same data model (§5); only the surfaced views and copy differ.
+1. **Week one — baseline quest, no fiber goal yet.** Rather than hand someone a fiber number cold, week one is *"hit 30 plant foods this week while eating the rainbow."* Under the hood the app logs daily fiber intake and the daily "did you feel okay?" signal to learn the user's tolerance baseline.
+2. **Unlock the fiber goal.** Hitting the week-one quest **unlocks** the personalized fiber goal (§10) — framed as a reward, not a chore assigned on day one.
+3. **Titrate up.** As the user consistently hits and tolerates the goal, the guardian **offers** to raise it (accept/decline), always paired with a light "and bump your water up too" reminder — up to the personalized target, and never faster than tolerance allows (§10, §11).
+4. **Explore and bloom.** The microbiome garden opens up in layers — worlds → districts → guilds — each with its own tutorial and its own bloom to earn (§8).
+5. **Keep learning.** Education (coach-marks, the field guide, phytochemical/rainbow depth, recipes) runs throughout (§7, §14).
+
+Restriction is never a stage of this arc — it's a quiet safety rail running alongside it (§9, §11).
 
 ---
 
 ## 3. Architecture & stack (decided)
 
-**Client:** Swift + SwiftUI, **iOS 17+**, iPhone-only for v1. Use `@Observable` (Observation framework) for state; reach for a heavier architecture (e.g., TCA) only if a module genuinely needs it. Camera via `AVFoundation`; optional depth via `ARKit`/LiDAR (see §4, v1.x).
+**Client:** Swift + SwiftUI, **iOS 17+**, iPhone-only for v1. `@Observable` (Observation framework) for state. Camera via `AVFoundation`; optional depth via `ARKit`/LiDAR (§4, v1.x).
 
-**Backend:** **Supabase** (Postgres + Auth + Storage + Edge Functions) is the default.
-- *Why:* the data model is relational (foods, logs, junctions, exclusions, guild state); Supabase gives Postgres + row-level security (per-user privacy) + email/Apple auth + photo storage + serverless Edge Functions in one. Swappable for Firebase or a custom Node/Postgres server if preferred — but the schema in §5 is the contract regardless of host.
+**Backend:** **Supabase** (Postgres + Auth + Storage + Edge Functions).
+- *Why:* the data model is relational (foods, meals, junctions, food-flags, guild/world state); Supabase gives Postgres + row-level security + email/Apple auth + photo storage + serverless Edge Functions in one.
 - **Auth in v1:** accounts required (email + Sign in with Apple). Cloud-synced so progress survives device changes.
-- **LLM keys never touch the client.** All vision/LLM calls go through an Edge Function.
+- **LLM keys never touch the client.** All vision calls go through an Edge Function.
+- **Photos are retained permanently** (§4) — per-user private, user-deletable.
 
-**The recognition pipeline** (detailed in §4): photo → Edge Function → multimodal vision LLM (Claude- or GPT-4o-class) returning strict JSON → parse → join against the food/attribute database (§5) → mode-specific response.
+**Two distinct AI/rule surfaces — do not conflate them:**
+- **The recognition pipeline** (§4): a multimodal vision LLM behind an Edge Function that does **food ID + coarse portion tier only**. It never produces a number.
+- **The guardian engine** (§11): a **deterministic, rule-based** engine over the user's own logged data + the food-attribute DB. It has **no live LLM.** Every decision it makes is a tunable heuristic; every word it says is curated copy (a template filled with a food name or number). This is what keeps "never generate clinical content at runtime" true.
 
-**Curated content, not runtime generation:** curiosity facts and hidden-ingredient prompts are **stored data**, never generated by an LLM at request time (avoids hallucinated science on a health surface). See §5 `curiosity_facts`, §11 hidden-ingredient flags.
+**Curated content, not runtime generation:** curiosity facts, education/tutorial copy, recipe suggestions, and every guardian nudge are **stored/curated data**, never generated by an LLM at request time.
 
-**Repo shape (suggested):**
+**Repo shape:**
 ```
-/ios            SwiftUI app
-/supabase       migrations, edge functions, seed data
-/data           generated datasets (plants, foods, fibers, guilds, fodmap, phytochemicals)
-/design         DESIGN.md assets + /references (mood-board images)
-SPEC.md  CLAUDE.md  DESIGN.md
+/MyGutGarden   SwiftUI app
+/supabase      migrations, edge functions, seed data
+/data          generated datasets (plants, foods, fibers, colors, phytochemicals, worlds, guilds, recipes)
+/design        DESIGN.md assets + /references (mood-board images)
+SPEC.md  CLAUDE.md  DESIGN.md  FENCES.md
 ```
 
 ---
 
 ## 4. The photo→food recognition pipeline (the contract)
 
-This is the spine every food-side feature depends on. Build it once, in Phase 0, with a frozen output contract.
+The spine every food-side feature depends on. Build it once, in Phase 0, with a frozen output contract. **The contract is unchanged from prior versions** — the only removals are the FODMAP overlay and photo expiry.
 
 **Flow:**
-1. User snaps a meal photo (Thrive and Survive both use this; Survive switches functionality/ insights to be about FODMAP safety).
-2. Photo uploaded to Supabase Storage; Edge Function invoked.
-3. Edge Function sends the image to a multimodal vision LLM with a **structured prompt** that demands strict JSON only (no prose, no markdown fences). The model does **food identification + coarse portion estimation**, nothing nutritional.
-4. Response parsed and validated against the schema below; each identified food is resolved to a `food_id` (fuzzy-match canonical names + aliases; unmatched items flagged for manual confirm).
-5. Backend performs the **database join** (§5) to derive fiber, FODMAP, phytochemical, guild-feed, color, and fermented attributes. **The LLM never produces nutrition numbers — the database does.**
-6. Hidden-ingredient logic (§11) checks each identified dish against `common_hidden_in`; flagged dishes trigger an always-ask prompt.
+1. User snaps a meal photo.
+2. Photo uploaded to Supabase Storage (**retained permanently**, §5); Edge Function invoked.
+3. Edge Function sends the image to a multimodal vision LLM with a **structured prompt** demanding strict JSON only. The model does **food identification + coarse portion estimation**, nothing nutritional.
+4. Response parsed and validated; each identified food is resolved to a `food_id` (fuzzy-match canonical names + aliases; unmatched items flagged for manual confirm).
+5. Backend performs the **database join** (§5) to derive fiber, phytochemical, guild-feed, and color attributes. **The LLM never produces nutrition numbers — the database does.**
+6. **Food-flag surfacing** (§9) runs as two independent passes: a LOUD **allergy** check that fires *before* the result overview, and a soft **sensitivity/watching** check that renders *inside* the overview.
 
 **Vision LLM output contract (strict JSON):**
 ```json
@@ -87,384 +84,290 @@ This is the spine every food-side feature depends on. Build it once, in Phase 0,
       "name": "string (best guess, canonical-ish)",
       "portion_tier": "trace | serving | lots",
       "confidence": 0.0,
-      "dish_type": "string | null  // e.g. 'curry', 'stir_fry' — used for hidden-ingredient lookup"
+      "dish_type": "string | null"
     }
   ],
-  "scene_notes": "string | null  // optional, e.g. 'mixed bowl, items may be occluded'"
+  "scene_notes": "string | null"
 }
 ```
 
-**Portion = coarse tiers only.** `trace / serving / lots`, estimated from *visible* portion, leaning generous. This is deliberate (§1, §5): visible portion ≠ total intake, the camera can't see oil/sauce/hidden aromatics, so the feeding model is **directional, not precise** and says so in-product.
+**Annotation (optional second pass):** the user may add a free-text note on the photo ("lots of onion"). When present, a **second text-only call** using the same system prompt returns only additional food IDs + coarse tiers; it is validated by the same validator, joined identically, and its items get `source = 'annotation'`. Primary vision wins on dedup. The annotation **never** upgrades a tier and **never** emits a number.
 
-**Volume "diagnosis" (v1 vs v1.x):**
-- **v1:** take `portion_tier` straight from the vision model.
-- **v1.x enhancement (not a v1 blocker):** on LiDAR-equipped iPhones, capture `ARKit` depth alongside the photo to sharpen the volume estimate. Structure the pipeline so depth is an *optional input* that refines `portion_tier` when present, degrading gracefully when absent.
+**Portion = coarse tiers only.** `trace / serving / lots`, from *visible* portion, leaning generous. Visible portion ≠ total intake and the camera can't see oil/sauce/hidden aromatics — the model is **directional, and says so.**
 
-**Accuracy ceiling (design around it):** hidden-ingredient detection is inherent and mitigated, not solved. The rule everywhere is **"when unsure, flag it"** — surface uncertainty and let the user confirm, rather than guessing silently.
+**Volume "diagnosis" (v1 vs v1.x):** v1 takes `portion_tier` straight from the model. v1.x may capture `ARKit` depth on LiDAR iPhones as an *optional* refining input, degrading gracefully when absent.
+
+**Accuracy ceiling:** hidden-ingredient detection is mitigated, not solved. Everywhere: **"when unsure, flag it."**
 
 ---
 
 ## 5. Data model (the spine)
 
-Postgres/Supabase. Build this **first** (Phase 0); every module builds against it. Types are indicative. `[seed]` tables are populated by the data-generation workstream (§14) and are owner/RD-adjustable later.
+Postgres/Supabase. Build this **first** (Phase 0). Types are indicative. `[seed]` tables are populated by the data-generation workstream (§14/G) and are owner/RD-adjustable later.
+
+> **Superseded tables (removed from the go-forward schema).** The two-mode build shipped `symptom_logs`, `reintro_challenges`, `reintro_meal_checks`, `pattern_assessments`, `symptom_free_streak`, `food_suspects`, `survive_reset`, `reset_instructions`, `fodmap_profiles`, the `stool_/symptom_/mood_/checkin_` sub-entry tables, `thrive_checkins`, and the `users` columns `current_mode` / `residue_ceiling_g`. These are **dropped** in the single-mode direction (superseded by `food_flags` and the unified `check_ins` model below). Migrations that retire them are a Phase-0 task.
 
 ### Reference / content tables `[seed]`
 
-**`plants`** — the master list that defines the "30 plants" count.
-`id` · `name` · `scientific_name?` · `plant_family?` · `rarity_tier (common|uncommon|rare|legendary)`
+**`plants`** — the master variety list. `id` · `name` · `scientific_name?` · `plant_family?` · `rarity_tier (common|uncommon|rare|legendary)`
 
-**`foods`** — every recognizable food; the attribute hub.
-`id` · `canonical_name` · `aliases text[]` · `is_plant bool` · `plant_id fk?` · `is_fermented bool` · `histamine_level (low|moderate|high)?` · `common_hidden_in text[]  // dish_types this is often an invisible ingredient in`
+**`foods`** — every recognizable food; the attribute hub. `id` · `canonical_name` · `aliases text[]` · `is_plant bool` · `plant_id fk?` · `is_fermented bool` · `common_hidden_in text[]`
 
-**`fibers`** `[seed]` — `id` · `name (inulin|fos|gos|rs2|rs3|pectin|beta_glucan|arabinoxylan|psyllium|mucilage|…)` · `is_fodmap_trigger bool` · `notes`
+**`fibers`** `[seed]` — `id` · `name (inulin|fos|gos|rs2|rs3|pectin|beta_glucan|arabinoxylan|psyllium|mucilage|…)` · `fermentability (low|moderate|high)?` *(coarse "how gassy as you ramp" hint for the guardian — RD-review-fenced, framed as tolerance not FODMAP)* · `notes`
+**`food_fibers`** (junction) — `food_id` · `fiber_id` · `relative_amount (minor|moderate|primary)` · `est_grams_per_serving numeric?` *(coarse, RD-review-fenced; drives daily fiber-load estimation)*
 
-**`food_fibers`** (junction) — `food_id` · `fiber_id` · `relative_amount (minor|moderate|primary)` · `est_grams_per_serving numeric?` *(coarse, RD-review-fenced)*
-
-**`colors`** `[seed]` — rainbow groups: `id` · `name (red|orange|yellow|green|blue_purple|white_brown)` · `meaning_copy` · `what_it_does_copy`
+**`colors`** `[seed]` — rainbow groups: `id` · `name (red|orange|yellow|green|blue_purple|white_brown)` · `meaning_copy` · `what_it_does_copy` · `deficiency_copy` · `example_foods text[]`
 **`food_colors`** (junction) — `food_id` · `color_id`
 
-**`phytochemicals`** `[seed]` — `id` · `class (carotenoid|polyphenol|organosulfur|terpene|phytosterol|saponin|alkaloid|chlorophyll|betalain)` · `maps_to_color_id fk?`
+**`phytochemicals`** `[seed]` — `id` · `class (carotenoid|polyphenol|organosulfur|terpene|phytosterol|saponin|alkaloid|chlorophyll|betalain)` · `what_it_does` · `maps_to_color_id fk?` · `claim_risk bool`
 **`food_phytochemicals`** (junction) — `food_id` · `phytochemical_id`
 
-**`districts`** `[seed]` (Thrive guild garden) — `id` · `order (1-4)` · `name` · `unlock_rule_key` (see §13)
-**`guilds`** `[seed]` — `id` · `district_id fk` · `internal_name` · `display_name` · `function_copy` · `confidence_tag (solid|maturing|frontier|emerging|associational)` · `feeds_copy` · `claim_risk bool` *(true for the District 3–4 names flagged in §14)*
+**`worlds`** `[seed]` **(new tier)** — top of the garden hierarchy. `id` · `order` · `name` · `unlock_rule_key` · `intro_copy` *(tutorial)*
+**`districts`** `[seed]` — `id` · `world_id fk` · `order` · `name` · `unlock_rule_key`
+**`guilds`** `[seed]` — `id` · `district_id fk` · `internal_name` · `display_name` · `function_copy` · `confidence_tag (solid|maturing|frontier|emerging|associational)` · `feeds_copy` · `intro_copy` · `claim_risk bool` · `substantiation` *(claim_risk true for the emerging-science names — §15 Fence 1)*
 **`food_guild_feeds`** (junction) — `food_id` · `guild_id` · `relevance (minor|moderate|primary)`
 
-**`fodmap_profiles`** `[seed, RD-review-fenced]` — per-food, per-serving thresholds.
-`food_id` · `fructan_level` · `gos_level` · `lactose_level` · `fructose_level` · `polyol_level` · `serving_size_desc` · `safety (green|yellow|red)` *(derived from levels vs thresholds)*
-
+**`recipes`** `[seed]` **(new)** — curated "try this" library. `id` · `title` · `description` · `featured_food_ids uuid[]` · `featured_plant_ids uuid[]` · `color_ids text[]` · `fiber_highlights text` · `steps text[]` · `prep_minutes?` · `source` · `claim_risk bool`
 **`curiosity_facts`** `[seed]` — `id` · `fact_text` · `topic_tags text[]` · `confidence_tag`
-**`success_stories`** `[seed]` — `id` · `text` · `attribution` · `verified bool` *(truthful + representative only; no cherry-picked medical claims — §2)*
+**`success_stories`** `[seed]` — `id` · `text` · `attribution` · `verified bool`
+**`tutorial_steps`** `[seed]` **(new)** — curated coach-mark content. `id` · `section_key` · `order` · `title` · `body` · `target_hint` · `claim_risk bool`
 
 ### Per-user tables
 
-**`users`** — `id (auth)` · `created_at` · `current_mode (survive|thrive)` · `height_cm` · `weight_kg` · `age?` · `sex?` · `activity_level?` · `est_daily_kcal` *(derived, internal only — §10)* · `fiber_goal_g` *(derived, surfaced)* · `baseline_mood` · `baseline_energy` · `baseline_clarity` · `goals text[]`
+**`users`** — `id (auth)` · `created_at` · `height_cm` · `weight_kg` · `age?` · `sex?` · `activity_level?` · `plant_consumption_level?` · `est_daily_kcal` *(derived, internal only — §10)* · `fiber_target_g` *(derived personalized ceiling, internal — §10)* · `fiber_goal_g?` *(null until unlocked; the only surfaced number)* · `fiber_goal_state (baseline_pending|unlocked)` · `fiber_goal_unlocked_at?` · `fiber_goal_adjusted_week_start?` *(idempotency for auto-offers)* · `baseline_mood?` · `baseline_energy?` · `baseline_clarity?` · `goals text[]` · `daily_popup_enabled bool` · `onboarded_at?`
 
-**`meals`** — `id` · `user_id` · `mode` · `photo_url` · `captured_at` · `vision_raw_json jsonb` · `confirmed bool` · `hidden_ingredient_answers jsonb`
-**`meal_items`** — `id` · `meal_id` · `food_id` · `portion_tier` · `source (vision|manual|hidden_confirmed)` · `est_fiber_g numeric?`
+**`meals`** — `id` · `user_id` · `photo_url` *(permanent; nullable only if the user deletes it)* · `captured_at` · `vision_raw_json jsonb` · `confirmed bool` · `user_annotation text?` · `hidden_ingredient_answers jsonb`
+**`meal_items`** — `id` · `meal_id` · `food_id` · `portion_tier` · `source (vision|manual|annotation)` · `est_fiber_g numeric?`
 
-**`exclusions`** — ⚠️ **THE two-faced model (§9 / load-bearing).**
-`id` · `user_id` · `food_id fk?` · `category text?` *(food or a category)* · `exclusion_type (medical_allergy | preference_intolerance)` · `created_at`
-The `exclusion_type` enum **drives opposite behavior** (see §9 below). **This must never be collapsed into a single "excluded foods" list.**
+**`food_flags`** — ⚠️ **the three-tier restriction model (§9 / load-bearing).** Replaces `exclusions` **and** `food_suspects`.
+`id` · `user_id` · `food_id fk?` · `category text?` · `flag_tier (watching | sensitivity | allergy)` · `source (user | engine)` · `user_confirmed bool` · `note text?` · `created_at` · `updated_at`
+⚠️ **No severity / score / confidence / rank column, ever** (no bad-guy meter — §9, §15 Fence 5). `flag_tier` drives behavior; the engine may only *suggest* (`source='engine'`, `user_confirmed=false`); the user authors every confirmation and every promotion to a stricter tier.
 
-**Thrive progression:**
+**Check-ins (optional + fully customizable — §12):**
+**`check_in_prefs`** — `user_id` · `enabled_sections text[]` *(default = one quick "felt okay?" section)* · `daily_popup_enabled bool`
+**`check_ins`** — `id` · `user_id` · `log_date` · `source (daily_popup | full | meal_followup)` · `created_at`
+**`check_in_entries`** — `id` · `check_in_id` · `user_id` · `section_key text` *(gas|bloating|cramping|bss|mood|energy|clarity|notes|context|…)* · `value_int?` · `value_text?` · `occurred_at?` · `linked_meal_id fk?`
+> Mood/energy/clarity are stored **canonical high=better** (one inversion point in code if the UI presents a flipped scale). The daily login pop-up writes a `daily_popup` check-in with the quick score(s), no specific time.
+
+**Progression & collection:**
 **`user_plant_collection`** — `user_id` · `plant_id` · `first_logged_at` *(lifetime, permanent)*
-**`weekly_summaries`** — `user_id` · `week_start (Mon)` · `unique_plant_count` · `hit_30 bool` · `fiber_days_met int` *(for streaks/PRs)*
-**`guild_state`** — `user_id` · `guild_id` · `nourishment_score (0-100)` · `bloom_state (dormant|sprouting|growing|blooming)` · `last_fed_at` · `days_fed_this_week int` *(see §13 formula)*
-**`user_districts`** — `user_id` · `district_id` · `unlocked_at?`
-
-**Survive:**
-**`symptom_logs`** — `id` · `user_id` · `logged_at` · `bss (1-7)` · `bloating` · `gas` · `pain` · `urgency` *(severities)* · `mood` · `brain_fog` · `gas_odor (sulfur|sour|odorless)` · `meal_timing?` · `food_correlation?` · `confounders text[] (sick|stressed|poor_sleep|traveled|new_meds|menstruating)` · `notes?`
-**`reintro_challenges`** — `id` · `user_id` · `fodmap_group` · `status (pending|testing|passed|failed)` · `started_at?` · `ended_at?`
-**`pattern_assessments`** — `id` · `user_id` · `computed_at` · `pattern (methane|h2s|hydrogen_sibo|fat|histamine|proteolytic)` · `confidence (tentative|emerging|consistent)` · `evidence_summary` *(output of the §11 rule engine; never a diagnosis)*
-**`symptom_free_streak`** — `user_id` · `current_streak` · `longest_streak` · `last_qualifying_date`
+**`weekly_summaries`** — `user_id` · `week_start (Mon)` · `unique_plant_count` · `hit_30 bool` · `fiber_days_met int`
+**`weekly_color_amounts`** — `user_id` · `week_start` · `color_id` · `max_tier` *(rainbow, weekly)*
+**`guild_state`** — `user_id` · `guild_id` · `nourishment_score (0-100)` · `bloom_state (dormant|sprouting|growing|blooming)` · `last_fed_at` · `days_fed_this_week int` *(§13)*
+**`user_districts`** / **`user_worlds`** — `user_id` · `district_id`/`world_id` · `unlocked_at?`
+**`badges`** / **`streaks`** — positive-outcome achievements + counters (fiber-goal-met streak, weekly-30 streak, rainbow, guild blooming). Config-driven (§13). **Never attached to restriction.**
+**`tutorial_state`** — `user_id` · `section_key` · `completed_at` *(which coach-marks a user has seen)*
 
 ---
 
 ## 6. Onboarding & intake
 
-**Lead with Thrive's fun** — the broad, shareable hook. Do **not** open with "how's your gut?" (reads medical, scares installs).
+**Lead with the garden's fun** — the broad, shareable hook. Do **not** open with "how's your gut?" (reads medical, scares installs).
 
 **Capture at intake:**
-- **Goals** (multi-select): reduce bloating · eat more diversity · fix IBS · more energy · etc. Feeds personalization *and* **soft routing** (relief goals → suggest Survive; optimization goals → suggest Thrive).
-- **Height & weight** (+ age/sex/activity if cheaply available): used to derive the **fiber goal** and personalization baseline. ⚠️ **Per §10, never surfaced as a calorie target, deficit, or weight-loss frame.** See §10 for the derivation.
-- **Baseline mood / energy / clarity**: gives the "Is it working?" dashboard a *before*.
+- **Goals** (multi-select): eat more diversity · more energy · clearer skin · ease bloating · just curious · etc. Feeds personalization and copy.
+- **Height & weight** (+ age/sex/activity if cheaply available): used to derive the **internal** fiber target and personalization baseline. ⚠️ **Never surfaced as a calorie target, deficit, or weight-loss frame** (§10).
+- **Optional baseline mood / energy / clarity**: gives Trends (§12) a *before*.
+- **Foods you already know don't sit well** (new): the user can pre-seed the food-flag list (§9) — added as `sensitivity` (`source='user'`, confirmed) or, if they say it's an allergy, `allergy`.
 
-**Social proof:** show truthful, representative success stories (`success_stories`) at intake. No cherry-picked medical claims.
+**Social proof:** truthful, representative success stories (`success_stories`). No cherry-picked medical claims.
 
-**Disclaimers, not exclusion — nobody is locked out:**
-- Where a condition matters, a **disclaimer + click-to-confirm** does the work; the user then proceeds. No hard gates.
-- **Survive intake** surfaces disclaimers for the serious stuff (**celiac / IBD**) and asks for acknowledgment.
-- **Red-flag symptoms** (blood, unexplained weight loss, etc.) trigger a *"please also see a doctor"* care prompt — a recommendation, never a block.
+**Disclaimers (light + playful, not gates):**
+- **Fiber ramps gradually, and water rises with it.** A recurring, friendly reminder — never alarming (§15 Fence 2).
+- Allergy acknowledgment where the user marks one.
+- Red-flag symptoms → a gentle *"worth also seeing a doctor"* care prompt — a recommendation, never a block.
 
-**Soft routing** is a suggestion by goal + symptoms, never a hard gate.
+**The week-one framing:** onboarding ends by handing the user the **baseline quest** — *"hit 30 plant foods this week while eating the rainbow"* — and explaining (via a coach-mark, §7) that the fiber goal unlocks once we've learned their baseline. No fiber number is shown yet (§2, §10).
 
 ---
 
-## 7. Progressive depth
+## 7. Progressive depth & the tutorial layer
 
 - **Tier 1 — everyone:** one snap → a couple of insights → one fun fact. Dead simple.
-- **Tier 2 — unlockable, staggered, earned:** the nerd pokédexes, one depth layer at a time. The guild districts unlock in sequence (§13).
-- **Rule:** gate nothing behind complexity; hide nothing from the curious. Tease the depth so quantified-self users dig down before they churn.
+- **Tier 2 — unlockable, staggered, earned:** the nerd pokédexes and the deeper garden layers, one at a time. Worlds/districts unlock in sequence (§13).
+- **Rule:** gate nothing behind complexity; hide nothing from the curious.
+
+**The coach-mark / call-out tutorial system (first-class — see `DESIGN.md`).** Education is delivered as **call-outs**: the screen dims, one element is spotlighted, a short curated line explains *what it is and why it matters*, and the user taps **Next** (or **Skip**). This is not a one-time intro dumped at launch — every surface has its own replayable tutorial, and new garden layers teach themselves as they unlock:
+
+- An **intro tour** on first run threads the core idea: *"eating 30 plant foods does X" → "eat the rainbow to collect phytochemicals, which do Y" → "we watch your fiber so it climbs at a comfortable pace" → "our guardian keeps you honest in the background" → "keep going to unlock more about how your body handles this, and grow your microbiome."*
+- **Every section** (Field Guide, Plant Garden, Rainbow, Fermented Finds, Phytochemicals, Trends, the Garden itself) carries its own coach-mark set.
+- **Each world/district/guild** teaches itself with a tutorial the moment it unlocks.
+
+All tutorial copy is **curated seed data** (`tutorial_steps`), never runtime-generated. Completion is tracked in `tutorial_state`; tours are replayable from the **You** section.
 
 ---
 
-## 8. The Pokédex Stack
+## 8. The collection stack
 
-| Pokédex | Tier | Scope | Measures | Mechanic |
-|---|---|---|---|---|
-| **Plant** | 1 | Both | Variety | 30/week, presence-based, rarity tiers |
-| **Rainbow** | 1 | Both | Color (polyphenol/carotenoid proxy) | Eat-the-rainbow; shows missing + weak colors, click-in education |
-| **Microbial Guild Garden** | 2 | **Thrive only** | *Feeding* beneficial bacteria | Volume × frequency; **bloom** when fed (§13) |
-| **Phytochemical** | 2 | Both | Compound classes collected | Food-ID → database lookup |
-| **Fermented Finds** | Cross | Both | Probiotic intake | Daily tally + nudge; *celebrated in Thrive, cautioned in Survive* |
+| Pokédex | Tier | Measures | Mechanic |
+|---|---|---|---|
+| **Plant** | 1 | Variety | 30/week, presence-based, rarity tiers |
+| **Rainbow** | 1 | Color (polyphenol/carotenoid proxy) | Eat-the-rainbow; missing + weak colors, click-in education |
+| **Phytochemical** | 2 | Compound classes collected | Food-ID → database lookup; category → compound → detail |
+| **Fermented Finds** | Cross | Probiotic intake | Daily tally + nudge, celebrated |
+| **Microbiome Garden** | 2 | *Feeding* beneficial bacteria | Volume × frequency; **bloom** when fed; **worlds → districts → guilds** |
 
-**Make this distinction legible in-app:** the **Plant** pokédex measures **variety** (one garlic counts); the **Guild** garden measures **feeding** (one garlic barely moves it). Different units, not a bug.
+**Make the distinction legible:** the **Plant** pokédex measures **variety** (one garlic counts); the **Garden** measures **feeding** (one garlic barely moves it). Different units, not a bug.
 
-**Plant count reconciliation (resolves a framework ambiguity):** the canonical target is **30 *unique* plants per week** (presence-based, Sunday reset — §13). The daily view shows that day's plant count *and* the running weekly total toward 30. "30/day" phrasing in the framework is treated as loose; weekly is canonical.
+**Plant count:** the canonical target is **30 unique plants per week** (presence-based, Sunday reset — §13). The daily view shows that day's count *and* the running weekly total.
 
----
-
-## 9. The two-faced data model (load-bearing — do not flatten)
-
-Applies to the Thrive garden and all food flags. Every exclusion is tagged at onboarding with an `exclusion_type`:
-
-| | **medical_allergy** (celiac, anaphylaxis) | **preference_intolerance** (onion gives me gas) |
-|---|---|---|
-| **Behavior** | **LOUD across both modes** | **Quiet** |
-| **In Thrive photo view** | Fires even mid-celebration | Silently omitted, no nagging |
-| **Hidden-ingredient sensitivity** | Elevated — flag aggressively | Normal |
-| **Cost of a miss** | Harm | Discomfort |
-
-The UI greys the same tile in both cases; the behavior **underneath** is opposite. **Collapsing these into one "excluded foods" list is THE bug to avoid** — it would treat a celiac's gluten like someone's onion preference. Any module touching exclusions must branch on `exclusion_type`.
+**The Microbiome Garden — now a layered world to explore.** The old four districts become the first **world**; additional worlds/districts/guilds expand the roster so there's always more to discover and bloom (data-generation scope, §14/G). Districts and worlds unlock in sequence (§13), each with its own tutorial (§7). The claim-risky guild names remain fenced (§15 Fence 1).
 
 ---
 
-## 10. Fiber & energy goal derivation (Thrive) — privacy-fenced
+## 9. The three-tier food-flag model (load-bearing — do not flatten)
 
-The framework sets the daily fiber goal at **14 g fiber per 1,000 kcal** of estimated energy needs.
+Every restriction the app knows about lives in `food_flags` at one of three tiers. This replaces the old two-faced `exclusion_type` and the `food_suspects` system with a single spectrum the guardian can move foods along.
+
+| Tier | What it means | How it surfaces on the snap | Who sets it |
+|---|---|---|---|
+| **allergy** | Harm on exposure | **LOUD** — a warning **before** the result overview | User only (self-classified). Engine may *suggest* considering it (§11), never sets it. |
+| **sensitivity** | This food tends to make *you* feel unwell; you're free to eat it | **Soft** — a small warning modal in the overview *after* the snap: warning sign, light-red accent/bolding | User, or engine-suggested → user-confirmed |
+| **watching** | The engine (or user) is quietly keeping an eye on it | Little to none, by default (feeds the engine's reasoning) | User, or engine (unconfirmed) |
+
+**Rules that never bend:**
+- **Allergy is LOUD and fires before the overview.** It renders even mid-celebration. Elevated hidden-ingredient sensitivity. Cost of a miss = harm. **Never collapse allergy into a soft preference; never merge it away.**
+- **No bad-guy meter.** `food_flags` carries no severity/score/rank. Counts are neutral ("2 foods you're keeping an eye on"). Restriction is **never** gamified (§13, §15 Fence 5).
+- **The user authors every restriction.** The engine may create a `watching` flag or *suggest* a promotion, but moving a food *into* `sensitivity` or `allergy` is always a user tap on a plain-language question.
+- **Blameless and reversible.** Every flag can be relaxed. "Seems you've overcome this — want to bring it back in moderation?" is a normal, celebrated transition.
+
+**Education travels with the flag.** When a food is flagged, the app teaches *why it's uncertain*: "feeling unwell after this could mean your gut is still adjusting to it, or that you don't carry the bacteria that ferment it comfortably. Testing small amounts at a fiber load you already tolerate helps tell which." (§11, §15 Fence 3.)
+
+---
+
+## 10. Fiber & energy goal derivation — privacy-fenced
+
+The daily fiber goal is **14 g fiber per 1,000 kcal** of estimated energy needs — but it is **titrated up to**, never assigned cold.
 
 **Derivation:**
-1. Estimate basal energy from intake anthropometrics using **Mifflin–St Jeor** (height, weight, and age/sex if captured), × an activity factor → estimated daily kcal → store as `est_daily_kcal`.
-2. `fiber_goal_g = round(14 * est_daily_kcal / 1000)`.
+1. Estimate basal energy from intake anthropometrics via **Mifflin–St Jeor** (× activity factor) → `est_daily_kcal`.
+2. `fiber_target_g = round(14 * est_daily_kcal / 1000)`, adjusted by `plant_consumption_level`. This is the **internal personalized ceiling** the guardian titrates toward (and can exceed for heavy plant-eaters).
 
-⚠️ **Duty-of-care fence (§14 / disordered-eating):**
-- `est_daily_kcal` is an **internal derivation only**. It is **never displayed**, never framed as a calorie target, deficit, or weight-loss number.
-- The **only surfaced number is the fiber goal in grams.**
-- Height/weight are never shown back as a weight-loss frame anywhere in the app.
+**The unlock + titration flow (§2, §11):**
+- **Week one:** `fiber_goal_state = baseline_pending`; **no goal is shown.** The app gathers the user's actual daily fiber intake + tolerance signal.
+- **Unlock:** completing the baseline quest sets `fiber_goal_state = unlocked` and surfaces the first `fiber_goal_g` (a comfortable starting point informed by the observed baseline, not the full target on day one).
+- **Ramp:** the guardian *offers* increases (accept/decline) as tolerance holds (§11), each paired with a water reminder, capped at `fiber_target_g` and an absolute safety max. Increases are **RD-review-fenced** (§15 Fence 2).
 
-**Daily Thrive goals (surfaced):** fiber goal (g) · progress toward 30 plants this week · eat-the-rainbow (which colors are missing, which are weak/low-quantity; tap a color to learn what it means and does for the gut).
+⚠️ **Duty-of-care fence (§15 Fence 5):**
+- `est_daily_kcal` and `fiber_target_g` are **internal only** — never displayed, never framed as a calorie/deficit/weight-loss number.
+- The **only surfaced goal number is `fiber_goal_g` in grams.**
+- Height/weight are never shown back as a weight-loss frame anywhere.
 
----
-
-## 11. THRIVE & SURVIVE specs
-
-### 11a. Thrive
-
-**Per-photo daily view:** fiber count + plant count + new discoveries (*"6 plants — 2 new: sumac, nutmeg!"*) · which P's this meal hit · rainbow contribution · *[T2]* guilds fed / phytochemicals collected · one curiosity fact (variable reward, from `curiosity_facts`). **Medical/allergy flag fires here too**, mid-celebration if needed (§9).
-
-**Pokédex views:** Plant Garden · Rainbow · *[T2]* Guild Garden (four districts) · *[T2]* Phytochemical · Fermented Finds.
-
-**"Is it working?" dashboard:** mood / energy / clarity tracked against the onboarding baseline — the retention engine for users with no symptoms to chase.
-
-**Notifications (all gain-framed):** *"27/30 plants — 3 to go before Sunday resets"* · *"Your Anti-inflammatory Arsenal is hungry — feed it some resistant starch"* · *"Prebiotic + Polyphenol done — one fermented food completes your 3 P's"* · rare-find and guild-unlock celebrations.
-
-**Goals:** hit your daily fiber goal · 30+ plants/week · 3 P's daily · keep your guilds blooming · complete the districts.
-
-### 11b. Survive
-
-**No guilds, no bacteria shown. Symptoms in, insights out.**
-
-**Front end — symptom tracking (~20 sec, evening):** BSS (Bristol 1–7, tap a picture) · bloating / gas / pain / urgency (quick severity) · mood / brain-fog · timing · food-correlation · context tags · **gas-odor descriptor (sulfur / sour / odorless)** — the single most discriminating cheap signal.
-
-**Per-photo daily view (food side):** FODMAP **safety check** (green/yellow/red vs `fodmap_profiles` per-serving thresholds) · hidden-trigger flags (*"this dish often contains onion — was it?"*) · during reintro: *"contains [the group you're testing] — logging for your challenge."*
-
-**Backend — the invisible pattern engine (rule-based heuristics).** Over a few weeks, matches the symptom fingerprint to one of these patterns, with a confidence tier (§13 timing):
-methane-leaning (bloat + constipation) · hydrogen-sulfide-leaning (sulfur gas, looser stools, worse after fatty meals) · hydrogen/SIBO-leaning (odorless gas + bloat) · fat-triggered · histamine (ferment/aged-food triggers, sometimes flushing/headache) · proteolytic shift (chronic low-fiber/high-protein).
-⚠️ **The exact decision rules (which fingerprint → which pattern, at what confidence) are RD-review-fenced (§14).** Build the *engine and interfaces* with clearly-marked placeholder rules; do not improvise clinical logic as if it were final.
-
-**Output — insight → experiment → routing.** *"Your pattern leans hydrogen-sulfide"* → *"drop these high-sulfur foods for ten days, we'll watch the signal"* (structurally identical to FODMAP reintro) → *"this is also what a breath test checks — worth raising with a GI."*
-⚠️ **Never a diagnosis, never a named bug, never an accumulating bad-guy meter.** IMO/SIBO/IBS subtypes are medical diagnoses — copy stays **pattern → experiment → confirm.**
-
-**The hook — reintro-as-leveling:** clearing a FODMAP group **unlocks** that food back into the garden (a visible win) + a positive **symptom-free streak** (§13). Relief + visible progress *is* the engagement; **restriction is never gamified** (§14).
-
-**Pokédex views (foods, not bacteria):** Safe Foods (greyed-in as cleared) · Triggers (greyed-out, with severity) · Reintro progress (tested / passed / failed / pending) · symptom-vs-food timeline.
-
-**Red-flag escalation:** persistent serious symptoms → *"these warrant a doctor."*
+**Daily surfaced goals:** fiber goal (g, once unlocked) · progress toward 30 plants this week · eat-the-rainbow (missing/weak colors, tap to learn) · 3 P's.
 
 ---
 
-## 12. Symptom & lifestyle tracking
+## 11. The guardian engine (deterministic; rules + curated copy)
 
-- **Burden is mode-dependent.** Thrive: one optional mood tap. Survive: the ~20-sec evening check. Default minimal; pain pulls people into more.
-- **Odor matters (Survive):** sulfur vs sour vs odorless separates H₂S patterns better than anything else cheap.
-- **Confounders matter.** Optional one-tap context at logging (*sick · stressed · poor sleep · traveled · new meds · menstruating*). The engine **down-weights confounder-heavy days** so it doesn't blame food for an illness- or stress-driven flare. Confounder days also **freeze** (don't break) the symptom-free streak.
-- **v1:** manual context tags. **v2 (out of scope):** Apple Watch / Oura / Whoop → passive sleep / HRV / activity for auto-context.
+The guardian replaces the old Survive pattern engine entirely. It is a **deterministic, tunable, rule-based** engine — **no live LLM** (§3). It reads the user's own logged data and the food-attribute DB, and it does exactly two jobs: **grow the goal when the user is ready**, and **spot a food that seems to disagree** — surfacing both only as gentle, user-confirmed prompts.
+
+**Inputs:** the daily "felt okay?" score (and any fuller check-in, §12); per-day estimated **fiber load** (from `meal_items` → `food_fibers`); which specific foods/fiber types were eaten in quantity (portion tiers); existing `food_flags`; optional confounder context.
+
+**Job 1 — titrate the fiber goal (§10).**
+- If the user reports feeling fine for **N consecutive days** at/above the current goal, **or** consistently exceeds it comfortably, the guardian **offers** a `+X g` increase: a congratulations pop-up with **Accept / Decline**, plus the water reminder.
+- Capped at `fiber_target_g` and an absolute max; step size, N, and caps are config + **RD-review-fenced** (§15 Fence 2). Never auto-applied; idempotent per week via `fiber_goal_adjusted_week_start`.
+
+**Job 2 — attribute discomfort, carefully.** When a day comes back "not great," the guardian weighs candidates *before* saying anything:
+- **Already-flagged food present?** If a `watching`/`sensitivity` food was eaten in quantity, attribute there first — and *educate*: "you felt off yesterday; you ate a lot of garlic, which is on your watch list — that could be the cause rather than the fiber itself."
+- **Fiber ramp too fast?** If fiber load spiked versus recent days, attribute to the ramp: suggest holding the goal and nudging water up — not flagging a food.
+- **A specific high-load food recurring across multiple off days?** Only when the pattern **repeats** (≥ threshold occurrences, sufficient portion, within a proximity window, and **not** better explained by a confounder) does the guardian create a `watching` flag or *suggest* the user promote it to `sensitivity`.
+- **False-positive discernment is a first-class requirement.** A single off day, an isolated "food seemed a bit off/expired" event, or a confounder-heavy day must **not** trigger a flag. Sensitivity thresholds are tunable and **RD-review-fenced** (§15 Fence 3).
+
+**Job 3 — move foods along the spectrum (§9), always user-confirmed.**
+- **Promote:** repeated discomfort → "want to keep an eye on [food]?" / "this really doesn't seem to sit well — some people find that worth checking with a doctor or allergist; want to mark it as an allergy?" (a care prompt, **never** a diagnosis — §15 Fence 3).
+- **Titration-to-tolerance:** for a `sensitivity` food, once the user is tolerating their fiber load well, offer *small* reintroductions at coarse tiers ("try a little, at a serving you already handle") to learn maladjustment vs missing-bacteria (§9).
+- **Demote / graduate:** sustained comfort while eating a flagged food → "seems you've overcome this — bring it back in moderation?" A celebrated, additive win.
+
+**Surfacing (quiet by design):** the guardian's day-to-day home is invisible — it lives in the back-end and is viewable/editable **discreetly in the You section** (§12). It reaches the user only through (a) the soft food-warning on the snap (§9), (b) occasional accept/decline offers, and (c) the education attached to a flag. The user never feels they are *playing* a symptom game; they eat freely while the guardian works behind them.
+
+**Hard invariants:** never diagnose or name a condition/microbe; never a severity/score/meter; the user confirms every negative transition; positive transitions (goal up, overcame-it) may celebrate mildly; all copy is curated templates (§3, §15).
+
+---
+
+## 12. Check-ins & tracking
+
+**Tracking is a back-end priority but a front-end whisper.** The guardian needs a tolerance signal; the user should barely feel it.
+
+**The daily pop-up (default path).** After a day of use, on next open the app shows one small pop-up: *"Congrats on hitting 18 g of fiber yesterday — did you feel okay?"* The user taps a score and it dismisses. Under the hood this writes a `daily_popup` check-in with that score (mapped to the enabled quick section, e.g. gas/bloating), no specific time. That's the whole interaction for most users.
+
+**The full check-in is optional and customizable.** From the **You** section the user can open a fuller check-in and **customize which sections exist** — adding or removing gas, bloating, cramping, BSS (Bristol), mood, energy, clarity, free-text notes, and optional context/confounders. **Customizing the check-in changes the daily pop-up** to match. Default is a single quick "felt okay?" section; power users can build it out.
+
+**Trends.** A **line-graph** view of whatever sections the user tracks over time (fiber intake, comfort, mood/energy/clarity). If a user has nothing enabled, Trends invites them in: *"Customize your daily check-in to see your trends,"* linking to the **You** settings.
+
+**The You section** is home to: profile, the fiber goal, **check-in customization**, the discreet **food-flags** list (watching/sensitivity/allergy, all editable), **Trends**, badges/streaks, replayable tutorials, disclaimers, and account/privacy (including photo deletion).
+
+**Duty-of-care off-ramp (§15 Fence 5):** tracking can be softened or turned off entirely from You, blamelessly, at any time. Nothing about restriction is ever streaked or scored.
 
 ---
 
 ## 13. Gamification mechanics & formulas (locked defaults)
 
-All numbers below are tunable defaults, surfaced in a single `config` so they can be adjusted without code changes.
+All numbers are tunable defaults in a single `config`, adjustable without code changes.
 
-**Guild bloom (Thrive, Tier 2).** Each guild carries a `nourishment_score` 0–100.
-- A feeding event adds `portion_weight × relevance`, where `portion_weight = {trace:1, serving:3, lots:5}` and `relevance = {minor:1, moderate:2, primary:3}`. (A hearty serving of a primary food = +15; a trace of a minor food = +1.)
-- **Decay ≈ 12%/day** (score roughly halves every 5–6 days) so a single clove fades — **sustained intake is what blooms a guild**, matching "not permanent credit."
+**Positive outcomes only.** Streaks, badges, and celebrations attach to **fiber goal met · plant variety · eating the rainbow · feeding/blooming guilds** — **never** to restriction, "days avoided," or a food-flag count (§9, §15 Fence 5).
+
+**Guild bloom.** Each guild carries `nourishment_score` 0–100.
+- A feeding event adds `portion_weight × relevance`, `portion_weight = {trace:1, serving:3, lots:5}`, `relevance = {minor:1, moderate:2, primary:3}`.
+- **Decay ≈ 12%/day** (score roughly halves every 5–6 days) — sustained intake blooms a guild, a single clove fades.
 - **Bloom states:** Dormant 0–20 · Sprouting 21–45 · Growing 46–70 · Blooming 71–100.
+- **Consistent feeding:** 3+ distinct days in a week → a bonus + "well-fed" state.
 
-**Consistent feeding.** Feeding a guild on **3+ distinct days in a week** → a bonus + a "well-fed" state. Rewards rhythm over big one-offs — also the biologically honest message (bacteria respond to sustained intake).
+**Sunday reset (Plant variety).** Weekly variety (the 30) resets **Sunday 23:59 local**, tracks a "best week" PR; lifetime collection is permanent. 30 is a target, not a cap.
 
-**Sunday reset (Plant variety).** Two separate counters:
-- **Weekly variety** (the 30) resets **Sunday 23:59 local**, clean slate, tracks a "best week" PR. 30 is a target, not a cap — logging past 30 still counts toward streaks.
-- **Lifetime collection** (`user_plant_collection`, every unique plant ever, with rarity) is **permanent**.
+**Rarity tiers (Plant).** Common / Uncommon / Rare / Legendary by dietary commonness; scales celebration intensity. Legendary → a rare-find celebration.
 
-**Streaks (positive outcomes only — never "days restricted", §14).**
-- *Thrive:* weekly 30-plant streak (consecutive weeks hitting 30) + daily 3-P's streak (prebiotic + probiotic + polyphenol same day). Optional lightweight "logged today."
-- *Survive:* **symptom-free streak** — consecutive days with no symptom rated above "mild." Framed *"X days feeling good,"* never restriction. Confounder days freeze rather than break it.
+**World / district / guild unlocks (sequential).**
+- **Tier 2 itself** unlocks after the first full week (hits 30 once, or logs ≥5 days).
+- **District 1 (Backbone)** unlocks with Tier 2; later districts unlock as earlier guilds reach Blooming + cumulative engagement; **new worlds** unlock after their preceding world is well-established. Each unlock is a celebration + its own tutorial (§7).
 
-**Rarity tiers (Plant).** Common / Uncommon / Rare / Legendary, by dietary commonness. Assigned manually in the `plants` master list for v1; data-driven (log-frequency across the user base) later. Rarity scales celebration intensity + points; a Legendary find triggers a rare-find celebration.
-
-**District unlocks (Thrive Guild Garden, sequential).**
-- **Tier 2 itself** unlocks after the user's **first full week** (hits 30 plants once, *or* logs ≥5 days).
-- **D1 Backbone** unlocks with Tier 2 (everyone hosts these).
-- **D2 Keystones** unlocks when **≥2 Backbone guilds have reached Blooming** at least once.
-- **D3 Scientists** unlocks at **≥1 Keystone guild Blooming + ~10 cumulative days in Tier 2.**
-- **D4 Hidden Gems** unlocks **last**, after D3 engagement — the endgame ("find which crews *you* host").
-- Each unlock is a celebration moment.
-
-**Survive pattern timing (confidence-tiered, never a diagnosis).**
-- **< 14 logged days:** *"still gathering signal"* + progress (*"9 more days of logs to spot your first pattern"*). No pattern claim.
-- **14 days (≥10 with symptoms):** first **tentative** lean (*"your pattern leans …"*).
-- **21 days:** **emerging** confidence.
-- **28+ days:** **consistent** → suggest the structured experiment + the GI mention.
-- Confounder-heavy days are down-weighted in the fingerprint.
+**Fiber-goal titration (§10, §11).** `fiberRampConsecutiveDaysToOffer`, `fiberRampStepG`, `fiberGoalAbsoluteMaxG`, cap at `fiber_target_g` — all **RD-review-fenced** (§15 Fence 2).
 
 ---
 
-## 14. Compliance, safety & the RD-review fences
+## 14. Recipes, suggestions & education content
 
-These are the framework's "open gates" (§10). They are **not blockers to building the app** — they are **fences around specific content** that must be clearly marked so no agent ships them as final, and so the owner + a registered dietitian (RD) can fill them in later.
+Education and "what to eat next" are a core pillar, and **all of it is curated** (§3, rule: curated content, not runtime generation).
 
-**🔒 FENCE 1 — Survive pattern-engine rules.** The decision logic mapping symptom fingerprints → patterns → confidence is **clinical**. Build the engine, the data interfaces, and the UI with **clearly-labeled placeholder rules** (`// RD-REVIEW-REQUIRED`). Never present placeholder logic as validated. The engine must structurally stay **pattern → experiment → confirm**, never "you have an overgrowth." This (plus the celiac flag) is what keeps the product on the wellness-app side of the line, not a regulated medical device.
+- **Recipes & foods to try** (`recipes` seed): surfaced against **gaps** the app can see — a missing rainbow color, a plant the user has never logged, a hungry guild. ("Low on reds this week — try this pomegranate bowl.")
+- **Plant suggestions:** a "try this" that picks a plant absent from `user_plant_collection`.
+- **Rainbow + phytochemical depth:** per-color meaning/what-it-does/deficiency copy; phytochemicals as **category → compound → detail**, with gap insights drawn from curated junctions.
+- **Curiosity facts** (`curiosity_facts`): the per-snap variable-reward fun fact.
+- **Tutorials** (`tutorial_steps`, §7).
 
-**🔒 FENCE 2 — Health-claim naming risk.** Several District 3–4 guild names — **The Mood Regulators, The Estrogen Regulators, The Mitochondria Boosters, The Tumor Preventors** — make implied health/disease claims that are associational or emerging, not established. Cancer-prevention claims especially are heavily scrutinized (FDA/FTC, app-store review). For the build: mark these with `claim_risk = true`, render an **"[emerging science]"** tag inline, and keep a `substantiation` field per guild. **Do not ship these names as bare health claims.** Treat as placeholder copy pending review.
-
-**🔒 FENCE 3 — Reintro phase lengths & challenge sequencing.** Reintro durations, challenge order, and symptom interpretation are clinical — not improvised from a database. Build the reintro *system* with placeholder durations marked `// RD-REVIEW-REQUIRED`.
-
-**🔒 FENCE 4 — FODMAP thresholds.** `fodmap_profiles` is reverse-engineered placeholder data for v1, marked for RD adjustment. (Note for the owner: validate licensing of any FODMAP threshold source before launch.)
-
-**🔒 FENCE 5 — Disordered-eating duty of care (applies app-wide).**
-- **No streaks or gamification on restriction** ("days restricted" is never a metric or streak).
-- **Height/weight never framed as weight-loss**; `est_daily_kcal` never surfaced (§10).
-- **Build the off-ramp in** — make leaving/softening tracking easy and blameless.
-
-**Accuracy ceiling (design principle, not a fence):** hidden-ingredient detection is mitigated, not solved. Everywhere: **"when unsure, flag it."**
+Health-benefit copy that is associational carries an inline **`[emerging science]`** tag and a `claim_risk` flag; all of it is **RD/legal-review-fenced** (§15 Fence 4).
 
 ---
 
-## 15. v1 scope vs later
+## 15. Compliance, safety & the RD-review fences
 
-**In v1:** both modes, Tier 1 + Tier 2, all five pokédexes, the guild districts, the rule-based Survive pattern engine (placeholder rules), the two-faced exclusion model, accounts + cloud sync, the recognition pipeline (visual portion estimation), curated curiosity-fact + success-story libraries, manual confounder tags, all gamification in §13.
+Fences mark **content** that a registered dietitian (RD) + owner must review before launch. They **do not block building** — build the machinery fully; mark the *content* `// RD-REVIEW-REQUIRED` with `claim_risk` / `substantiation` where relevant. Keep `FENCES.md` as the single index.
 
-**Deferred (v1.x / v2):** ARKit/LiDAR depth-refined volume · wearable integrations (Apple Watch / Oura / Whoop) for passive confounders · data-driven rarity tiers · any feature requiring final RD-validated clinical content to be *launched* (build it fenced now, launch after review).
+**🔒 FENCE 1 — Health-claim naming (guilds/worlds).** Emerging/associational guild names (e.g. Mood / Estrogen / Mitochondria / Tumor-related) make implied health claims. Mark `claim_risk = true`, render an inline **`[emerging science]`** tag, keep a `substantiation` field. Do not ship as bare health claims. Expands as the garden roster grows.
 
----
+**🔒 FENCE 2 — Fiber-titration safety.** Ramp rate, step size, consecutive-day thresholds, the target ceiling, the absolute max, and the "raise water with fiber" guidance are clinical. Increasing fiber too fast causes GI distress — the entire point of titration is to do it safely. Build the engine; mark the numbers `// RD-REVIEW-REQUIRED`.
 
-## 16. Phase 2 expansion (Batches B–E) — implemented, RD-content fenced
+**🔒 FENCE 3 — Food-sensitivity engine + care prompts.** The suggestion thresholds (min occurrences, min portion, proximity window, confounder handling), the "test small amounts to learn maladjustment vs missing-bacteria" education, and the **"could this be an allergy? — worth checking with a doctor/allergist"** care prompt are all fenced. The prompt is a **care nudge, never a diagnosis**; the app never asserts a condition and never auto-promotes a tier. Wellness-only, user-confirmed. `// RD-REVIEW-REQUIRED`.
 
-Phase 2 broadened both modes. The machinery is built and runtime-verified; all
-clinical content ships as `// RD-REVIEW-REQUIRED` placeholders (see `FENCES.md`, now
-incl. Fences 6 & 7) and `PHASE2_PLAN.md` (the frozen design contract).
+**🔒 FENCE 4 — Education & recipe claims.** Phytochemical/fiber benefit copy, per-color "what it does"/deficiency copy, and recipe health framing → RD + legal pass; `[emerging science]` tags where associational; curated, never runtime-generated.
 
-**Central-tension ruling (load-bearing):** the Suspects/Avoid system and the
-low-residue reset are the **user's own observations and experiments** ("your data,
-raise with a GI"), never an app diagnosis, never an accumulating "bad-guy" meter,
-never gamified restriction. The only surfaced anthropometric number remains the
-Thrive fiber goal in grams.
+**🔒 FENCE 5 — Disordered-eating & privacy duty of care (app-wide).**
+- **No gamification on restriction.** Streaks/badges/scores attach to positive outcomes only; `food_flags` are never ranked, scored, or streaked (no bad-guy meter).
+- **Height/weight never a weight-loss frame;** `est_daily_kcal` / `fiber_target_g` internal-only (§10).
+- **The guardian is transparent, not surveillant.** Everything it does is viewable/editable in You; the user confirms every restriction; tracking is optional and has a blameless off-ramp.
+- **Photos are retained permanently** to power the experience and enable future feature experimentation (e.g. re-processing past meals with improved recognition) — but kept **private (per-user RLS), user-deletable, and disclosed** at onboarding and in You. Never shared with third parties.
 
-- **§6/§10 Onboarding (B):** 10-goal Q1; `plant_consumption_level` → a fiber-goal
-  multiplier (RD-REVIEW); **Survive has no fiber goal** — it uses an internal
-  `residue_ceiling_g` (never surfaced, twin of `est_daily_kcal`); a bowel-consistency
-  baseline; the mood scale flips to **regulated→erratic**, stored CANONICAL high=better
-  via `6 - ui_value`; a Thrive fiber-goal **auto-increase** after sustained success.
-- **§4 Snap (C):** auto-log on capture; a pre-analysis accept/retake/annotate step;
-  Snapchat-style annotations feed a **text-only structured re-prompt** that stays inside
-  the frozen vision contract (ID + coarse tier only, primary-vision-wins dedup);
-  **5-day photo retention** then the image is dropped (all food data kept).
-- **§11a Thrive (D/E):** fiber **mini-bar**; **Recent Meals** with AI-hypothesis
-  confirm/deny; **three-ring rainbow** (any amount = X/6, full ring only at "lots") +
-  weekly per-color charts + example foods; relative-fill **3 P's**; collected-only field
-  guide + a random "try this" suggestion; a daily **check-in** tab; the
-  **Suspects/Re-intro/Timeline/Avoid** surface (over the shared food-status store).
-- **§11b Survive (D/E):** a **multi-entry** check-in (stool/symptom/mood/notes sub-tables)
-  with per-entry time / tie-to-photo and a gas-odor popup; the same food-status surface;
-  and an **aggressive low-residue reset** — user-initiated, relief-framed, persistent
-  clinician disclaimer, frictionless Pause, **progress measured only in symptom-free
-  days** (`resetProgressMetric = .symptomFreeDays`, never a restriction counter). Reintro
-  bars are **event-driven** (felt-fine meals), never time-based.
-- **§13 Config:** new fiber/reintro/avoid/reset constants + the `resetProgressMetric`
-  structural pin. **§14 Fences:** Fence 6 (low-residue reset protocol + DE mitigations)
-  and Fence 7 (suspect/avoid thresholds + the pattern-engine auto-suggest gate); Fence 3
-  now also covers the reintro pass threshold + reset reintroduction sequencing.
+**Accuracy ceiling (principle, not a fence):** hidden-ingredient detection is mitigated, not solved — **"when unsure, flag it."**
 
-### 16.1 Round-3 refinements (product-shaping pass) — implemented, RD-content fenced
-
-- **Thrive Today:** full-width header with a one-line fiber readout; the "30 plants"
-  count now recomputes **live** from the week's meals (the server `weekly_summaries`
-  lagged a fresh snap); Today refreshes on appear so 3 P's / field-guide counts move.
-- **Rainbow + Phytochemicals (Fence 8):** per-color **deficiency** copy; "Eat the
-  rainbow" routes into the Field Guide's Rainbow (same data, one source of truth);
-  phytochemicals are a **category → compound → detail** hierarchy; both surfaces carry
-  a **gap insight** with a refresh (drawn from curated junctions, never generated).
-- **One check-in:** the Today button and the Check-in tab open the **same** multi-entry
-  form; the Check-in tab is a **history log** (month/week, editable). Adds **Energy +
-  Clarity** categories (`metric_entries`, high=better, no inversion), a **meal-offset**
-  time tie ("30 min after a meal"), one empty seed per category, and a **persisted**
-  single-category **light** check-in (`users.light_checkin_category`, Thrive-only). The
-  add-then-remove **freeze is fixed** (id-based bindings).
-- **Snap:** the "Worth a check" flag now surfaces only when a meal food is on the user's
-  **Checking** list, as a calm **bottom** warning; the inline "How did it feel?" prompt
-  is replaced by a 30-min post-meal notification.
-- **Survive is a time-boxed EPISODE (Fence 6 extended):** entering Survive IS starting
-  the reset (the ~2-week disclaimer fires up front); the reset is the home surface, with
-  a curated **7-day suggested-meal plan** per phase, **recent meals**, relief-only
-  progress, advance/graduate, a persistent clinician disclaimer, **no light option**,
-  and **post-meal + evening** notifications. One unified "Foods you're checking" surface
-  (the separate food guide is retired). A high-residue **diet-break** that precedes an
-  unwell check-in **auto-adds** the food to Checking with a removable note.
-
-### 16.2 Round-4 refinements (root-cause pass) — implemented
-
-- **Annotations are real.** The `recognize` edge function was redeployed (it predated the
-  Phase-2 annotation code, so `user_annotation` was silently ignored). The LLM now also
-  maps quantity words ("lots"/"tiny") to coarse tiers. Deterministic correction
-  (search the foods DB + tap to add) remains as a reliable fallback in the meal editor.
-- **ONE check-in, everywhere.** The same form (icon Bristol grid; one seeded empty entry
-  per category incl. each symptom subtype + "Anything else?") is used by Thrive Today,
-  both **Check-in tabs** (Survive gained one), Survive Today, and "Is it working?" (which
-  now links to it instead of a separate mini-form; the "chore" off-ramp text is gone).
-- **3 P's** now recompute from the DB on the Today tab (not only post-snap), closing the
-  same dual-path gap that hit "30 plants."
-- **Rainbow** copy is benefit-forward and lands harder (RD-fenced); the **phytochemical**
-  encyclopedia has ≥5 food-linked compounds per class.
-- **Survive snap is reset-aware:** high-residue foods are flagged "not for this phase"
-  (FODMAP-safe ≠ low-residue), instead of a misleading "safe serving."
-- **Snap "Worth a check"** gates on the Checking list (+ an active reintro food) only;
-  the reintro food is flagged so its post-meal follow-up is logged.
-- **Survive home:** suggested meals are 1/slot with a **refresh**, plus a **weekly plan +
-  grocery haul** click-in; recent meals use the **same** component as Thrive. The
-  lighter-check-in is removed; **Pause** + **Return to Thrive** live in the off-ramp menu.
-
-### 16.3 Round-5 (owner direction)
-
-- **Survive is now an intentional low-residue PROGRAM** (owner decision), not an
-  apologetic "we're not counting days." Today shows a neutral **"Day N"** cue and
-  program-framed copy; the curated 7-day plan + grocery haul stand. The duty-of-care
-  that remains: persistent **clinician disclaimer**, frictionless **Pause**, always-on
-  **Return to Thrive**, never a diagnosis, never "carnivore." Phase advancement stays
-  relief-informed; still no rewards/streaks ON the restriction itself (`FENCES` Fence 5/6
-  updated).
-- **The legacy time-based FODMAP reintro engine is retired.** Reintro is the
-  event-driven food-suspect system only; the FODMAP *safety* overlay (per-food chip)
-  and `SrvFodmapGroup` remain.
-- **Onboarding never auto-enters Survive.** Everyone lands in **Thrive** (fiber goal
-  written); when signals lean relief, a **Survive offer pop-up** (program disclaimer)
-  appears right after onboarding, decline-able, never forced.
-
-### 16.4 Round-6 (snap fixes)
-
-- **Snap annotations now work everywhere.** Root cause: the simulator/sample-meal path
-  uses the **fixture** recognizer, whose annotation handler returned empty by design (its
-  canned vision is Garlic/Oats/Spinach/Blueberry, the "spinach/oats" seen earlier). The
-  fixture now **deterministically** parses the note against the foods table (words +
-  adjacent pairs, quantity word → coarse tier), so "lots of onion" adds Onion (lots) on
-  the sample path too. The real-photo (Anthropic) path was already fixed by the R4
-  redeploy (verified: Onion/Pomegranate flow through as `source=annotation`). Still
-  ID + coarse tier only; the DB derives every number (rule #2).
-- **The generic "Worth a (quick) check" hidden-ingredient prompts were removed** from the
-  Thrive AND Survive snap results (curated guesses the user didn't want). Corrections go
-  through the photo annotation or the meal editor's search-and-add instead.
+**Retired fences (superseded by the single-mode direction):** the old Survive pattern-rule fence, reintro-duration fence, FODMAP-threshold fence, low-residue-reset fence, and suspect/avoid-threshold fence are **removed** — their subsystems no longer exist. Their intent survives, redistributed into Fences 2, 3, and 5.
 
 ---
 
-*End of SPEC.md. Build order and agent rules: `CLAUDE.md`. Visual system: `DESIGN.md`.*
+## 16. v1 scope vs later
+
+**In v1:** the single-mode garden experience; Tier 1 + Tier 2; all pokédexes (Plant, Rainbow, Phytochemical, Fermented Finds); the layered Microbiome Garden (worlds/districts/guilds, bloom); the coach-mark tutorial layer; the deterministic guardian engine (fiber titration + food-flag attribution, fenced); the three-tier food-flag model; optional customizable check-ins + the daily pop-up; Trends; the You section; curated recipes/facts/education; accounts + cloud sync; the recognition pipeline; permanent private photo storage; all gamification in §13.
+
+**Deferred (v1.x / v2):** ARKit/LiDAR depth-refined volume · wearable integrations (Apple Watch / Oura / Whoop) for passive confounders · data-driven rarity tiers · an LLM-phrasing layer over the guardian's curated copy (would move Fence 3/4 review scope) · any feature requiring final RD-validated clinical content to *launch* (build it fenced now, launch after review).
+
+---
+
+*End of SPEC.md. Build order and agent rules: `CLAUDE.md`. Visual system: `DESIGN.md`. RD-review index: `FENCES.md`. Frozen historical record: `gut_app_framework_v2.md`, `PHASE2_PLAN.md`.*

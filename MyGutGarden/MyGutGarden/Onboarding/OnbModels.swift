@@ -2,25 +2,22 @@
 //  OnbModels.swift
 //  MyGutGarden, Module A: the remaining intake value types (SPEC §6).
 //
-//  Goals (multi-select + soft-routing lean), baseline mood/energy/clarity/bowel,
+//  Goals (multi-select personalization strings), baseline mood/energy/clarity,
 //  curated success stories, red-flag symptoms, and serious-condition flags.
 //  All gain-framed and warm; nobody is ever locked out, conditions and
 //  red flags drive disclaimers + click-to-confirm, never hard gates.
 //
-//  Phase-2 (Batch B): 10-goal set, PlantConsumptionTier, UnitSystem,
-//  bowel-consistency baseline, otherAutoimmune serious-condition.
+//  Single-mode: no routing, no modes. 10-goal set, PlantConsumptionTier,
+//  UnitSystem.
 //
 
 import Foundation
 
-// MARK: - Goals + soft routing (SPEC §6)
+// MARK: - Goals (SPEC §6)
 
-/// Intake goals (multi-select). Each carries a routing lean used ONLY for the
-/// soft suggestion (SPEC §6): relief goals lean Survive, optimization goals lean
-/// Thrive. Never a gate.
-///
-/// Phase-2 (Batch B): expanded to 10 product strings stored in users.goals text[].
-/// First five are relief goals (+1 Survive); last five are optimization goals (-1 Thrive).
+/// Intake goals (multi-select), stored as plain personalization strings in
+/// `users.goals` (text[]). Single-mode: goals no longer route anywhere; they
+/// simply shape what the app highlights first.
 enum OnbGoal: String, CaseIterable, Identifiable, Sendable {
     case calmIbs             = "calm_ibs"
     case easeBloating        = "ease_bloating"
@@ -65,36 +62,6 @@ enum OnbGoal: String, CaseIterable, Identifiable, Sendable {
         }
     }
 
-    /// +1 leans Survive (relief), -1 leans Thrive (optimization).
-    /// First five are relief goals; last five are optimization goals.
-    var routingLean: Int {
-        switch self {
-        case .calmIbs, .easeBloating, .findTriggers, .relieveConstipation, .ibdAutoimmune:
-            1
-        case .increaseEnergy, .decreaseBrainFog, .regulateMood, .clearSkin, .justCurious:
-            -1
-        }
-    }
-}
-
-/// Soft routing (SPEC §6): a SUGGESTION from goals (+ any relief/red-flag
-/// signal), never a gate. Either mode is one tap away. PURE + testable.
-enum OnbRouting {
-    static func suggestedMode(goals: Set<OnbGoal>, hasReliefSignal: Bool) -> AppMode {
-        if hasReliefSignal { return .survive }   // active distress -> start with relief
-        let lean = goals.reduce(0) { $0 + $1.routingLean }
-        return lean > 0 ? .survive : .thrive
-    }
-
-    /// Calm, honest rationale shown beside the suggestion (no diagnosis).
-    static func rationale(for mode: AppMode) -> String {
-        switch mode {
-        case .survive:
-            "You mentioned relief. Survive helps you spot triggers and feel steady first. You can switch to Thrive any time."
-        case .thrive:
-            "You are here to optimize. Thrive turns variety into a garden you grow, and Survive is one tap away if a flare hits."
-        }
-    }
 }
 
 // MARK: - Unit system (display only; canonical storage is always cm/kg)
@@ -135,22 +102,17 @@ enum PlantConsumptionTier: String, CaseIterable, Sendable, Hashable {
 
 // MARK: - Baseline (the "Is it working?" before, SPEC §6, §11a)
 
-/// Onboarding baseline on a 1-5 scale; gives the Thrive dashboard a before.
+/// Onboarding baseline on a 1-5 scale; gives the home dashboard a before.
 ///
-/// Phase-2 (Batch B):
-///   mood is NOW presented as Regulated(1, best) -> Erratic(5, worst) in the UI.
-///   It is stored CANONICAL high=better via 6 - uiValue at write time; only the
-///   INVERSION in usersWriteBody() is the canonical storage point. The field here
-///   holds the raw UI value, NOT the stored value.
-///   bowelConsistency added: 1=Inconsistent..5=Consistent (high=better, canonical,
-///   no inversion needed).
+/// mood is presented as Regulated(1, best) -> Erratic(5, worst) in the UI, then
+/// stored CANONICAL high=better via `6 - uiValue` at write time. The single
+/// inversion point is `OnbViewModel.usersWriteBody()`; the field here holds the
+/// raw UI value, NOT the stored value.
 struct OnbBaseline: Equatable, Sendable {
     /// UI value 1=Regulated(best)..5=Erratic(worst). INVERTED at write: stored as 6 - mood.
     var mood = 3
     var energy = 3
     var clarity = 3
-    /// 1=Inconsistent..5=Consistent (high=better, canonical, no inversion).
-    var bowelConsistency = 3
 }
 
 // MARK: - Social proof (SPEC §5 `success_stories`, §6)
@@ -165,10 +127,10 @@ struct OnbSuccessStory: Decodable, Identifiable, Sendable {
     let verified: Bool
 }
 
-// MARK: - Lightweight food search hit (specific-food exclusions)
+// MARK: - Lightweight food search hit (specific-food flags)
 
-/// A `foods` row trimmed for the intake exclusion search (real `id` so a
-/// specific-food exclusion writes a valid FK).
+/// A `foods` row trimmed for the intake food-flag search (real `id` so a
+/// specific-food flag writes a valid `food_id` FK).
 struct OnbFoodHit: Decodable, Identifiable, Sendable, Hashable {
     let id: String
     let canonicalName: String
@@ -196,17 +158,17 @@ struct OnbRedFlag: Identifiable, Sendable, Hashable {
 }
 
 /// Serious conditions that warrant a disclaimer + acknowledgment at intake
-/// (SPEC §6). Celiac additionally PROPOSES a loud gluten exclusion
-/// (medical_allergy, §9), proposed and removable, never silently added.
-/// Phase-2 (Batch B): otherAutoimmune added FIRST; writes users.other_autoimmune=true
-/// but proposes NO universal exclusion (unlike celiac).
+/// (SPEC §6). Celiac additionally PROPOSES a loud gluten `food_flag`
+/// (`flag_tier = allergy`, §9), proposed and removable, never silently added.
+/// otherAutoimmune is listed FIRST but proposes no flag and persists no column
+/// (single-mode: `other_autoimmune` was retired); it drives disclaimer copy only.
 // RD-REVIEW-REQUIRED: disclaimer copy is clinical-adjacent; confirm before launch.
 struct OnbSeriousCondition: Identifiable, Sendable, Hashable {
     var id: String { key }
     let key: String
     let label: String
 
-    /// Phase-2: added first. Writes users.other_autoimmune; proposes no exclusion.
+    /// Listed first. Drives disclaimer copy only; proposes no flag, persists no column.
     static let otherAutoimmune = OnbSeriousCondition(key: "other_autoimmune",
                                                      label: "Another autoimmune condition")
     static let celiac = OnbSeriousCondition(key: "celiac", label: "Celiac disease")

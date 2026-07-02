@@ -1,26 +1,26 @@
 //
 //  OnbExclusions.swift
-//  MyGutGarden, Module A: the two-faced exclusion model at intake.
+//  MyGutGarden, Module A: capturing food flags at intake (SPEC §9).
 //
-//  ⚠️ LOAD-BEARING (SPEC §9 / CLAUDE.md hard rule #1). Every exclusion is tagged
-//  with an `ExclusionType` that drives OPPOSITE downstream behavior:
-//    • medicalAllergy        → LOUD across both modes, elevated hidden-ingredient
-//                              sensitivity. Cost of a miss = harm.
-//    • preferenceIntolerance → quiet, silently omitted, no nagging. Cost = discomfort.
-//  This file NEVER collapses the two into one flat "excluded foods" list. The
-//  scope (specific food OR category) and the type are kept as distinct fields all
-//  the way to the write body.
+//  Single-mode rework: the retired two-faced exclusion model is replaced by the
+//  three-tier `food_flags` model. Onboarding captures the two HEALTH tiers only:
+//    • allergy     → LOUD. Fires BEFORE the result overview, even for hidden
+//                    ingredients. Cost of a miss = harm.
+//    • sensitivity → soft. A gentle in-overview heads-up; the food is still
+//                    eaten + logged. Cost of a miss = discomfort.
+//  The quiet `watching` tier is engine-only (never offered at intake), and the
+//  old pure-preference path is dropped: everything captured here is health-framed.
 //
-//  The branching + write-body logic here is PURE and unit-tested
-//  (MyGutGardenTests/Onboarding).
+//  Writes always carry source='user', user_confirmed=true, and food_id XOR
+//  category. The write-body logic is PURE (unit-testable in isolation).
 //
 
 import Foundation
 
-/// What an exclusion is scoped to: a specific food (a real `foods.id`) OR a
-/// category like "gluten" / "allium" (SPEC §9 examples). Exactly one is stored;
-/// the DB CHECK requires `food_id is not null OR category is not null`.
-enum OnbExclusionScope: Sendable, Hashable {
+/// What a food flag is scoped to: a specific food (a real `foods.id`) OR a
+/// category like "gluten" / "allium" (SPEC §9 examples). Exactly one is written;
+/// the `food_flags` CHECK requires `food_id is not null OR category is not null`.
+enum OnbFlagScope: Sendable, Hashable {
     case food(id: String, name: String)
     case category(key: String, label: String)
 
@@ -32,63 +32,47 @@ enum OnbExclusionScope: Sendable, Hashable {
     }
 }
 
-/// A drafted exclusion before it is written. Carries the load-bearing
-/// `exclusionType` alongside (never merged into) the scope.
-struct OnbDraftExclusion: Identifiable, Sendable, Hashable {
+/// A drafted food flag before it is written. Carries the load-bearing `flagTier`
+/// (allergy = LOUD, sensitivity = soft) alongside — never merged into — the scope.
+/// Intake only ever sets the two health tiers; `watching` is engine-only.
+struct OnbDraftFlag: Identifiable, Sendable, Hashable {
     let id = UUID()
-    var scope: OnbExclusionScope
-    var exclusionType: ExclusionType
+    var scope: OnbFlagScope
+    var flagTier: FlagTier
 
     var displayName: String { scope.displayName }
 }
 
-/// The §9 behavior that `exclusion_type` drives, surfaced as a pure value so the
-/// "two-faced" branching lives in ONE tested place instead of scattered `==`
-/// checks across modules. (Module A only needs it for intake copy/affordances;
-/// the food surfaces re-derive their own, but the truth table is identical.)
-struct OnbExclusionBehavior: Equatable, Sendable {
-    /// Fires across BOTH modes, even mid-celebration (medical allergy, §9).
-    let isLoud: Bool
-    /// Flag hidden-ingredient dishes aggressively (elevated sensitivity, §9).
-    let elevatedHiddenIngredientSensitivity: Bool
-    /// Silently omitted in the Thrive photo view, no nagging (§9).
-    let silentlyOmitted: Bool
-
-    static func of(_ type: ExclusionType) -> OnbExclusionBehavior {
-        switch type {
-        case .medicalAllergy:
-            OnbExclusionBehavior(isLoud: true,
-                                 elevatedHiddenIngredientSensitivity: true,
-                                 silentlyOmitted: false)
-        case .preferenceIntolerance:
-            OnbExclusionBehavior(isLoud: false,
-                                 elevatedHiddenIngredientSensitivity: false,
-                                 silentlyOmitted: true)
-        }
-    }
-
-    /// One-line, gain-/clarity-framed explainer shown beside the type toggle so
-    /// the user makes the §9 distinction deliberately (a celiac's gluten is not
-    /// an onion preference).
-    static func explainer(_ type: ExclusionType) -> String {
-        switch type {
-        case .medicalAllergy:
+/// Intake copy for the tier picker. The downstream surfacing (allergy fires LOUD
+/// before the overview; sensitivity is a soft in-overview flag) is driven by
+/// `FlagTier` in the food surfaces; here we only need the one-line explainer.
+enum OnbFlagBehavior {
+    /// Gain-/clarity-framed explainer shown beside the tier toggle so the user
+    /// makes the §9 distinction deliberately (a celiac's gluten is not an onion
+    /// sensitivity).
+    static func explainer(_ tier: FlagTier) -> String {
+        switch tier {
+        case .allergy:
             "We'll flag this loudly, even when it's a hidden ingredient."
-        case .preferenceIntolerance:
-            "We'll just leave this off your suggestions. No alerts."
+        case .sensitivity:
+            "We'll give you a gentle heads-up, but still log it."
+        case .watching:
+            "We'll quietly keep an eye on this one."
         }
     }
 }
 
-/// Builds the PostgREST write body for one exclusion. PURE + unit-tested.
-enum OnbExclusionWriter {
-    /// Includes `user_id` and the load-bearing `exclusion_type`, and sets
-    /// `food_id` XOR `category` to match the scope (the DB CHECK requires at
-    /// least one). NEVER flattens scope + type into a single blob.
-    static func insertBody(userId: String, draft: OnbDraftExclusion) -> [String: PGValue] {
+/// Builds the PostgREST insert body for one `food_flags` row. PURE + unit-tested.
+enum OnbFlagWriter {
+    /// Always source='user', user_confirmed=true, and sets `food_id` XOR
+    /// `category` to match the scope (the DB CHECK requires at least one).
+    /// NEVER flattens scope + tier into a single blob.
+    static func insertBody(userId: String, draft: OnbDraftFlag) -> [String: PGValue] {
         var body: [String: PGValue] = [
-            "user_id": .string(userId),
-            "exclusion_type": .string(draft.exclusionType.rawValue),
+            "user_id":        .string(userId),
+            "flag_tier":      .string(draft.flagTier.rawValue),
+            "source":         .string("user"),
+            "user_confirmed": .bool(true),
         ]
         switch draft.scope {
         case let .food(id, _):
@@ -100,23 +84,24 @@ enum OnbExclusionWriter {
     }
 }
 
-/// Curated common exclusion categories shown as chips at intake (SPEC §9 names
+/// Curated common flag categories shown as chips at intake (SPEC §9 names
 /// categories like "gluten", "allium"). `commonAllergen` only PRE-SELECTS the
-/// type toggle as a sensible default that leans toward the safer (loud)
-/// direction for the foods most likely to be true allergies, the user ALWAYS
-/// chooses and can flip it. We never auto-classify on the user's behalf.
-struct OnbExclusionCategory: Identifiable, Sendable, Hashable {
+/// tier toggle toward the safer (loud) `allergy` default for the foods most
+/// likely to be true allergies; the user ALWAYS chooses and can flip it. We
+/// never auto-classify on the user's behalf.
+struct OnbFlagCategory: Identifiable, Sendable, Hashable {
     var id: String { key }
     let key: String
     let label: String
     let commonAllergen: Bool
 
-    /// Pre-selection only, leans loud for likely allergens, quiet otherwise.
-    var suggestedType: ExclusionType { commonAllergen ? .medicalAllergy : .preferenceIntolerance }
+    /// Pre-selection only: leans `allergy` for likely allergens, `sensitivity`
+    /// otherwise. Onboarding never offers the engine-only `watching` tier.
+    var suggestedTier: FlagTier { commonAllergen ? .allergy : .sensitivity }
 
     // RD-REVIEW-REQUIRED: the category list + allergen flags are an opinionated
     // starter set; a dietitian should confirm coverage/labels before launch.
-    static let curated: [OnbExclusionCategory] = [
+    static let curated: [OnbFlagCategory] = [
         .init(key: "gluten",    label: "Gluten / wheat",  commonAllergen: true),
         .init(key: "dairy",     label: "Dairy / lactose", commonAllergen: true),
         .init(key: "allium",    label: "Onion & garlic",  commonAllergen: false),

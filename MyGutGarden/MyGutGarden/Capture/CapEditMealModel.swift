@@ -33,7 +33,7 @@ final class CapEditMealModel: Identifiable {
 
     private(set) var rows: [Row] = []
     private(set) var photoURL: String?
-    private(set) var photoExpired = false      // photo_url nil while the meal exists → swept after retention
+    private(set) var photoRemoved = false      // photos are permanent; photo_url is nil only if the user deleted it
     private(set) var userAnnotation: String?   // shown read-only
     var hiddenAnswers: [CapHiddenIngredientAnswer] = []
 
@@ -69,7 +69,7 @@ final class CapEditMealModel: Identifiable {
                 "meals", filters: ["id": "eq.\(mealId)"], limit: 1)
             if let meal = meals.first {
                 photoURL = meal.photoUrl
-                photoExpired = meal.photoUrl == nil      // both "no photo" + "swept" render the same placeholder
+                photoRemoved = meal.photoUrl == nil      // nil photo_url means the user deleted the photo
                 userAnnotation = meal.userAnnotation
             }
 
@@ -118,6 +118,18 @@ final class CapEditMealModel: Identifiable {
 
     func searchFoods(_ term: String) async -> [CapFoodSearchResult] {
         (try? await CapFoodSearchService(repository: repository).search(term)) ?? []
+    }
+
+    /// Delete the meal's photo (privacy, Fence 5). Nils photo_url server-side; the
+    /// food data is kept. Photos are otherwise permanent (SPEC §4/§15).
+    func deletePhoto() async {
+        do {
+            try await CapMealPersistence(repository: repository, userId: userId).deletePhoto(mealId: mealId)
+            photoRemoved = true
+            photoURL = nil
+        } catch {
+            errorText = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+        }
     }
 
     // MARK: - Save (delete-then-reinsert, coarse tiers only)

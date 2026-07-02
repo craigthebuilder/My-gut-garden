@@ -1,10 +1,9 @@
 //
 //  AppShell.swift
-//  MyGutGarden, the root shell (orchestrator-owned consolidation). Routes
-//  auth → onboarding → the mode-themed surfaces, injects the per-mode insight
-//  presenter (which also fires the MealIngestion coordinator so Module B stays
-//  untouched), and hosts the cross-cutting flows: mode switch (disclaimer +
-//  click-to-confirm, §2), graduation, and the celebration overlay.
+//  MyGutGarden — the root shell. Routes auth → onboarding → the single-mode
+//  surfaces, injects the insight presenter (which also fires the MealIngestion
+//  coordinator so Capture stays untouched), and hosts the cross-cutting overlays:
+//  the celebration channel and the calm guardian-prompt channel (SPEC §11).
 //
 
 import SwiftUI
@@ -25,114 +24,209 @@ struct AppShell: View {
                 ShellHome(appState: appState)
             }
         }
-        .themed(for: appState.mode)
+        .themed()
         .task(id: appState.isSignedIn) {
             guard appState.isSignedIn else { return }
             await appState.refreshProfile()
             if let uid = appState.profile?.id, let repo = appState.repository {
                 await MealIngestion(repository: repo, appState: appState).recomputeProgression(userId: uid)
+                // Yesterday's soft "did you feel okay?" pop-up if due; otherwise the
+                // guardian may surface a calm prompt. They don't stack (SPEC §11/§12).
+                let offered = await DailyCheckInRunner(repository: repo, appState: appState).offerIfDue(userId: uid)
+                if !offered {
+                    await GuardianRunner(repository: repo, appState: appState).run(userId: uid)
+                }
             }
         }
     }
 }
 
-// MARK: - Mode home (tabs themed by current mode)
+// MARK: - Home (single-mode tabs)
 
-private enum ThriveTab: Hashable { case today, snap, checkin, garden, you }
+private enum AppTab: Hashable { case today, snap, fieldGuide, garden, you }
 
 private struct ShellHome: View {
     @Environment(\.theme) private var theme
     let appState: AppState
-    @State private var thriveTab: ThriveTab = .today
+    @State private var tab: AppTab = .today
+    @State private var recognizer = RecognitionService()
 
     var body: some View {
         ZStack {
-            if appState.mode == .thrive {
-                ThriveTabs(appState: appState, selection: $thriveTab)
-            } else {
-                SurviveTabs(appState: appState)
+            TabView(selection: $tab) {
+                Tab("Today", systemImage: "leaf", value: AppTab.today) { ThrRootView(appState: appState) }
+                Tab("Snap", systemImage: "camera", value: AppTab.snap) {
+                    CapRootView(appState: appState, recognizer: recognizer)
+                        .environment(\.mealInsightPresenter,
+                                     ShellInsightPresenter(inner: ThrInsightPresenter(appState: appState), appState: appState))
+                }
+                Tab("Field Guide", systemImage: "book", value: AppTab.fieldGuide) {
+                    NavigationStack { ThrPokedexView(appState: appState, latestMeal: nil) }
+                }
+                if appState.progression.isTier2Unlocked {
+                    Tab("Garden", systemImage: "map", value: AppTab.garden) {
+                        GuildRootView(repository: appState.repository, progression: appState.progression)
+                    }
+                }
+                Tab("You", systemImage: "person", value: AppTab.you) { ShellSettings(appState: appState) }
             }
             if let event = appState.pendingCelebration {
                 celebration(for: event)
             }
-            // Care prompt (Avoid→Survive offer, graduate offer). Calm + dismissible,
-            // never a celebration, and it fires in either mode (Batch E).
-            if let prompt = appState.pendingSurvivePrompt {
-                survivePrompt(prompt)
+            // A calm, user-confirmed guardian prompt (fiber-increase offer, flag
+            // suggestion, care prompt). SEPARATE from celebrations (SPEC §11).
+            if let prompt = appState.pendingGuardianPrompt {
+                guardianPrompt(prompt)
             }
+            // The soft daily "did you feel okay yesterday?" pop-up (SPEC §12).
+            if let offer = appState.pendingDailyCheckIn {
+                dailyCheckIn(offer)
+            }
+            // The dim-page tutorial call-outs (SPEC §7), above everything.
+            CoachMarkOverlay(controller: appState.coach, appState: appState)
         }
         .tint(theme.colors.primary)
+        .task {
+            await appState.coach.loadCompleted(appState)
+            await appState.coach.startIfNeeded("intro", appState: appState)
+        }
+    }
+
+    private static let feltOptions = ["Great", "Pretty good", "A bit off", "Rough"]  // → discomfort 0..3
+
+    /// The one-tap daily pop-up: a warm fiber acknowledgement + "how did you feel?".
+    /// The answer writes a `daily_popup` check-in, then the guardian gets a fresh look.
+    @ViewBuilder
+    private func dailyCheckIn(_ offer: DailyCheckInOffer) -> some View {
+        ModalScrim(onTapOutside: { appState.pendingDailyCheckIn = nil }) {
+            VStack(alignment: .leading, spacing: theme.metrics.space3) {
+                Text(offer.fiberG > 0 ? "Nice — \(offer.fiberG) g of fiber yesterday" : "Yesterday's check-in")
+                    .font(theme.typography.title())
+                    .foregroundStyle(theme.colors.textPrimary)
+                Text("How did you feel? (directional — no wrong answer)")
+                    .font(theme.typography.caption())
+                    .foregroundStyle(theme.colors.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                ForEach(Array(Self.feltOptions.enumerated()), id: \.offset) { i, label in
+                    Button { answerDaily(discomfort: i, date: offer.date) } label: {
+                        Text(label)
+                            .font(theme.typography.body(weight: .medium))
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, theme.metrics.space3)
+                            .foregroundStyle(theme.colors.textPrimary)
+                            .background(theme.colors.background)
+                            .clipShape(RoundedRectangle(cornerRadius: theme.metrics.radiusSmall, style: .continuous))
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(theme.metrics.space5)
+            .frame(maxWidth: theme.metrics.calloutMaxWidth)
+            .background(theme.colors.surface)
+            .clipShape(RoundedRectangle(cornerRadius: theme.metrics.radiusLarge, style: .continuous))
+        }
+    }
+
+    private func answerDaily(discomfort: Int, date: Date) {
+        appState.pendingDailyCheckIn = nil
+        Task {
+            guard let repo = appState.repository, let uid = appState.profile?.id else { return }
+            try? await CheckInWriter(repository: repo, userId: uid).saveDailyFeltOkay(discomfort: discomfort, on: date)
+            // Now that yesterday's comfort is recorded, let the guardian take a fresh look.
+            await GuardianRunner(repository: repo, appState: appState).run(userId: uid)
+        }
     }
 
     private func dismissCelebration() { appState.pendingCelebration = nil }
-    private func dismissSurvivePrompt() { appState.pendingSurvivePrompt = nil }
+    private func dismissGuardian() { appState.pendingGuardianPrompt = nil }
+
+    // MARK: Guardian prompts (SPEC §11) — the user confirms every step.
 
     @ViewBuilder
-    private func survivePrompt(_ event: SurvivePromptEvent) -> some View {
-        ModalScrim(onTapOutside: dismissSurvivePrompt) {
+    private func guardianPrompt(_ event: GuardianPrompt) -> some View {
+        ModalScrim(onTapOutside: dismissGuardian) {
             switch event {
-            case let .switchToSurvivePrompt(count):
+            case let .fiberGoalIncrease(current, proposed):
                 ConfirmationModal(
-                    title: "A calmer way to sort this out?",
-                    message: "You're keeping an eye on \(count) foods right now. Survive mode gives you a gentler, more structured way to find what your gut is reacting to. Want to try it?",
-                    confirmTitle: "Try Survive",
-                    cancelTitle: "Not now",
-                    severity: .info,
-                    onConfirm: { dismissSurvivePrompt(); Task { await appState.setMode(.survive) } },
-                    onCancel: dismissSurvivePrompt
-                )
-            case .graduateToThrive:
-                ConfirmationModal(
-                    title: "Ready for Thrive?",
-                    message: "You've been feeling good. The foods you're still checking come with you. Want to move to Thrive and start growing?",
-                    confirmTitle: "Move to Thrive",
+                    title: "Ready for a little more fiber?",
+                    message: "You've been handling \(current) g comfortably. Want to nudge your daily goal up to \(proposed) g? Add a little more water to match.",
+                    confirmTitle: "Raise it",
                     cancelTitle: "Not yet",
                     severity: .info,
-                    onConfirm: { dismissSurvivePrompt(); Task { await appState.setMode(.thrive); appState.celebrate(.graduation) } },
-                    onCancel: dismissSurvivePrompt
+                    onConfirm: { dismissGuardian(); Task { await applyFiberGoal(proposed) } },
+                    onCancel: dismissGuardian
                 )
-            case .offerSurvive:
-                // Post-onboarding OFFER (R5 #4): same program disclaimer as the
-                // "Start Survive" switch, never auto-entered.
+            case let .suggestWatching(foodName, foodId):
                 ConfirmationModal(
-                    title: "Try a gentle reset?",
-                    message: "From what you shared, a short low-residue program might help settle things first. It's a roughly two-week experiment with real dietary restriction, best done with a registered dietitian's guidance and not right for everyone. You can pause or return to Thrive anytime. Want to start?",
-                    confirmTitle: "Start Survive",
+                    title: "Keep an eye on \(foodName)?",
+                    message: "You've noted feeling off after a few meals with \(foodName). Want to keep an eye on it? It stays on your plate — we'll just watch how it sits.",
+                    confirmTitle: "Yes, add it",
+                    cancelTitle: "Not now",
+                    severity: .info,
+                    onConfirm: { dismissGuardian(); Task { await setFlag(foodId: foodId, tier: "watching") } },
+                    onCancel: dismissGuardian
+                )
+            case let .couldBeAllergy(foodName, foodId):
+                ConfirmationModal(
+                    title: "Worth a closer look?",
+                    message: "\(foodName) really doesn't seem to agree with you. Some people find that worth raising with a doctor or allergist. Want to mark it as an allergy so we always flag it clearly?",
+                    confirmTitle: "Mark as allergy",
                     cancelTitle: "Not now",
                     severity: .caution,
-                    onConfirm: {
-                        dismissSurvivePrompt()
-                        Task {
-                            await appState.setMode(.survive)
-                            await SrvEpisode.ensureStarted(appState: appState)
-                            await SrvNotifications.enableEveningReminder()
-                        }
-                    },
-                    onCancel: dismissSurvivePrompt
+                    onConfirm: { dismissGuardian(); Task { await setFlag(foodId: foodId, tier: "allergy") } },
+                    onCancel: dismissGuardian
+                )
+            case let .overcameSensitivity(foodName, foodId):
+                ConfirmationModal(
+                    title: "\(foodName) looks good again",
+                    message: "You've been enjoying \(foodName) with no trouble lately. Want to bring it back in and stop flagging it?",
+                    confirmTitle: "Bring it back",
+                    cancelTitle: "Keep flagging",
+                    severity: .info,
+                    onConfirm: { dismissGuardian(); Task { await clearFlag(foodId: foodId) } },
+                    onCancel: dismissGuardian
                 )
             }
         }
-        .themed(for: appState.mode)
+    }
+
+    private func applyFiberGoal(_ g: Int) async {
+        guard let repo = appState.repository, let id = appState.profile?.id else { return }
+        try? await repo.update("users", set: ["fiber_goal_g": .int(g)], filters: ["id": "eq.\(id)"])
+        await appState.refreshProfile()
+    }
+    private func setFlag(foodId: String, tier: String) async {
+        guard let repo = appState.repository, let id = appState.profile?.id else { return }
+        try? await repo.upsert("food_flags", [
+            "user_id": .string(id), "food_id": .string(foodId),
+            "flag_tier": .string(tier), "source": .string("user"), "user_confirmed": .bool(true),
+            "updated_at": .date(Date()),
+        ], onConflict: "user_id,food_id")
+    }
+    private func clearFlag(foodId: String) async {
+        guard let repo = appState.repository, let id = appState.profile?.id else { return }
+        try? await repo.delete("food_flags", filters: ["user_id": "eq.\(id)", "food_id": "eq.\(foodId)"])
     }
 
     @ViewBuilder
     private func celebration(for event: CelebrationEvent) -> some View {
         switch event {
         case let .districtUnlock(name):
-            // Tapping "Explore" routes straight to the garden map (the new district).
             CelebrationOverlay(
-                title: "New district unlock!",
+                title: "New district unlocked!",
                 message: "Tap to explore \(name).",
                 systemImage: "map.fill",
                 primaryTitle: "Explore",
-                onPrimary: { dismissCelebration(); thriveTab = .garden },
+                onPrimary: { dismissCelebration(); tab = .garden },
                 onDismiss: dismissCelebration
             )
-        case .graduation:
+        case let .worldUnlock(name):
             CelebrationOverlay(
-                title: "Congratulations!",
-                message: "Welcome to Thrive. Your garden is blooming, and your safe foods are flowing in.",
-                systemImage: "party.popper.fill",
+                title: "A new world opened!",
+                message: "Tap to explore \(name).",
+                systemImage: "globe.americas.fill",
+                primaryTitle: "Explore",
+                onPrimary: { dismissCelebration(); tab = .garden },
                 onDismiss: dismissCelebration
             )
         case let .rareFind(plant, rarity):
@@ -159,77 +253,9 @@ private struct ShellHome: View {
     }
 }
 
-private struct ThriveTabs: View {
-    let appState: AppState
-    @Binding var selection: ThriveTab
-    @State private var recognizer = RecognitionService()
-
-    var body: some View {
-        TabView(selection: $selection) {
-            Tab("Today", systemImage: "leaf", value: ThriveTab.today) { ThrRootView(appState: appState) }
-            Tab("Snap", systemImage: "camera", value: ThriveTab.snap) {
-                CapRootView(appState: appState, recognizer: recognizer)
-                    .environment(\.mealInsightPresenter,
-                                 ShellInsightPresenter(inner: ThrInsightPresenter(appState: appState), appState: appState))
-                    .captureSeams(appState: appState)
-            }
-            // The Thrive "test" check-in: reintroduce 1-2 foods while thriving (Batch E).
-            Tab("Check-in", systemImage: "checklist", value: ThriveTab.checkin) {
-                ThrTestTabView(appState: appState)
-            }
-            if appState.progression.isTier2Unlocked {
-                Tab("Garden", systemImage: "map", value: ThriveTab.garden) {
-                    GuildRootView(repository: appState.repository, progression: appState.progression)
-                }
-            }
-            Tab("You", systemImage: "person", value: ThriveTab.you) { ShellSettings(appState: appState) }
-        }
-    }
-}
-
-private struct SurviveTabs: View {
-    let appState: AppState
-    @State private var recognizer = RecognitionService()
-    @State private var store: SrvStore
-
-    init(appState: AppState) {
-        self.appState = appState
-        _store = State(initialValue: SrvStore(appState: appState))
-    }
-
-    var body: some View {
-        TabView {
-            Tab("Today", systemImage: "heart.text.square") { SrvRootView(store: store) }
-            Tab("Snap", systemImage: "camera") {
-                CapRootView(appState: appState, recognizer: recognizer)
-                    .environment(\.mealInsightPresenter,
-                                 ShellInsightPresenter(inner: store.makeInsightPresenter(), appState: appState))
-                    .captureSeams(appState: appState)
-            }
-            // The SAME check-in as Thrive (R4), in Survive context: no light option,
-            // and saving refreshes the streak + runs the reset break-detector.
-            Tab("Check-in", systemImage: "checklist") {
-                ThrTestTabView(appState: appState, context: .surviveLogger, showsLight: false,
-                               onSaved: { await store.load(); await SrvResetBreakDetector.run(appState: appState) })
-            }
-            Tab("You", systemImage: "person") { ShellSettings(appState: appState) }
-        }
-        .task {
-            // Survive IS the reset episode: ensure one is active and turn on the
-            // evening check-in reminder (R3 Batch E).
-            await SrvEpisode.ensureStarted(appState: appState)
-            await SrvNotifications.enableEveningReminder()
-            // Wire Module F: refresh the (read-only) pattern assessment on entry.
-            if let uid = appState.profile?.id, let repo = appState.repository {
-                try? await PatPatternEngine().refresh(repository: repo, userId: uid, asOf: Date())
-            }
-        }
-    }
-}
-
-/// Wraps the mode's insight presenter so confirming a meal also runs the
-/// ingestion coordinator (plants, guild feeding, progression), Module B never
-/// learns about the coordinator. Side effect runs once, when the insight appears.
+/// Wraps the insight presenter so confirming a meal also runs the ingestion
+/// coordinator (plants, guild feeding, progression). Capture never learns about
+/// the coordinator. The side effect runs once, when the insight appears.
 private struct ShellInsightPresenter: MealInsightPresenting {
     let inner: any MealInsightPresenting
     let appState: AppState
@@ -241,67 +267,19 @@ private struct ShellInsightPresenter: MealInsightPresenting {
             if let repo = state.repository {
                 await MealIngestion(repository: repo, appState: state).ingest(meal)
             }
-            // Survive cadence: a 30-min "how did that sit?" nudge replaces the old
-            // inline "How did X feel?" prompt (R3 Batch E).
-            if state.mode == .survive {
-                SrvNotifications.schedulePostMealNudge(mealId: meal.id.uuidString)
-            }
         })
     }
 }
 
-// MARK: - Capture seam injection (Module E food-status services → Module B)
-
-private struct CaptureSeams: ViewModifier {
-    let appState: AppState
-    func body(content: Content) -> some View {
-        content
-            .environment(\.suspectCheckService, Self.suspectService(appState))
-            .environment(\.capReintroFeelingRecorder, { reintroFoodId, mealId, feltFine in
-                await recordReintroAnswer(appState, foodId: reintroFoodId, mealId: mealId, feltFine: feltFine)
-            })
-    }
-    private static func suspectService(_ appState: AppState) -> any SuspectCheckService {
-        if let repo = appState.repository { return RepositorySuspectCheckService(repository: repo) }
-        return NoopSuspectCheckService()
-    }
-}
-
-private extension View {
-    func captureSeams(appState: AppState) -> some View { modifier(CaptureSeams(appState: appState)) }
-}
-
-/// Writes a reintro "How did [food] feel?" answer: derives the meal's coarse
-/// portion from meal_items, then records it through Module E's store, which
-/// advances the event-driven challenge and upserts the check-in entry.
-@MainActor
-private func recordReintroAnswer(_ appState: AppState, foodId: String, mealId: String, feltFine: Bool) async {
-    guard let repo = appState.repository, let uid = appState.profile?.id else { return }
-    let portion = (await mealItemPortion(repo, mealId: mealId, foodId: foodId)) ?? .serving
-    let store = FoodStatusStore(repository: repo, userId: uid, appState: appState)
-    await store.load()
-    await store.recordReintroMeal(foodId: foodId, mealId: mealId, portion: portion, feltFine: feltFine)
-}
-
-private struct MealItemPortionRow: Decodable, Sendable { let portionTier: String }
-
-@MainActor
-private func mealItemPortion(_ repo: Repository, mealId: String, foodId: String) async -> PortionTier? {
-    let rows: [MealItemPortionRow]? = try? await repo.select(
-        "meal_items", columns: "portion_tier",
-        filters: ["meal_id": "eq.\(mealId)", "food_id": "eq.\(foodId)"], limit: 1)
-    guard let raw = rows?.first?.portionTier else { return nil }
-    return PortionTier(rawValue: raw)
-}
-
-// MARK: - Settings / mode switch / graduation (cross-cutting, §2)
+// MARK: - You (spine version; the full You surface is Phase 1E)
 
 private struct ShellSettings: View {
     @Environment(\.theme) private var theme
     let appState: AppState
-    @State private var pending: PendingSwitch?
-
-    private enum PendingSwitch: Identifiable { case toSurvive, graduate ; var id: Int { hashValue } }
+    @State private var showFoods = false
+    @State private var showCheckIn = false
+    @State private var showCustomize = false
+    @State private var showBadges = false
 
     var body: some View {
         ScrollView {
@@ -309,24 +287,35 @@ private struct ShellSettings: View {
                 SectionHeader(title: "You")
                 Card {
                     VStack(alignment: .leading, spacing: theme.metrics.space3) {
-                        Text(appState.mode == .thrive ? "You're in Thrive" : "You're in Survive")
-                            .font(theme.typography.title())
-                            .foregroundStyle(theme.colors.textPrimary)
-                        // Thrive-only: Survive has no fiber goal (it uses the fiber
-                        // calc as a residue ceiling, never a target to hit).
-                        if appState.mode == .thrive, let goal = appState.profile?.fiberGoalG {
+                        if let goal = appState.profile?.fiberGoalG {
                             Text("Daily fiber goal: \(goal) g")     // the only surfaced derived number (§10)
-                                .font(theme.typography.body())
+                                .font(theme.typography.title())
+                                .foregroundStyle(theme.colors.textPrimary)
+                            Text("We'll offer to raise this as you consistently hit it.")
+                                .font(theme.typography.caption())
+                                .foregroundStyle(theme.colors.textSecondary)
+                        } else {
+                            Text("Your fiber goal unlocks after your first week")
+                                .font(theme.typography.title())
+                                .foregroundStyle(theme.colors.textPrimary)
+                            Text("Hit 30 plant foods this week and eat the rainbow — we're learning your baseline.")
+                                .font(theme.typography.caption())
                                 .foregroundStyle(theme.colors.textSecondary)
                         }
-                        if appState.mode == .thrive {
-                            SecondaryButton(title: "Go back to basics (Survive)", systemImage: "arrow.uturn.down") {
-                                pending = .toSurvive
-                            }
-                        } else {
-                            PrimaryButton(title: "Graduate to Thrive", systemImage: "sun.max") {
-                                pending = .graduate
-                            }
+                        SecondaryButton(title: "Daily check-in", systemImage: "checklist") {
+                            showCheckIn = true
+                        }
+                        SecondaryButton(title: "Customize check-in", systemImage: "slider.horizontal.3") {
+                            showCustomize = true
+                        }
+                        SecondaryButton(title: "Badges", systemImage: "rosette") {
+                            showBadges = true
+                        }
+                        SecondaryButton(title: "Foods you're keeping an eye on", systemImage: "eye") {
+                            showFoods = true
+                        }
+                        SecondaryButton(title: "Replay the intro tour", systemImage: "sparkles") {
+                            Task { await appState.coach.start("intro", appState: appState) }
                         }
                         SecondaryButton(title: "Sign out", systemImage: "rectangle.portrait.and.arrow.right") {
                             appState.auth.signOut()
@@ -337,49 +326,10 @@ private struct ShellSettings: View {
             .padding(theme.metrics.space5)
         }
         .background(theme.colors.background.ignoresSafeArea())
-        // A clear-backed full-screen cover + scrim, so the dialog floats over the
-        // dimmed app instead of on an opaque white sheet.
-        .fullScreenCover(item: $pending) { which in
-            ModalScrim(onTapOutside: { pending = nil }) {
-                switch which {
-                case .toSurvive:
-                    // Entering Survive IS starting the ~2-week reset, so the disclaimer
-                    // is here, up front (Fence 6), not buried in a sub-feature.
-                    ConfirmationModal(
-                        title: "Start Survive?",
-                        message: "Survive is a roughly two-week experiment. You'll eat a very gentle, low-residue diet and log symptoms closely, then add foods back slowly. It asks for real dietary restriction and is best done with a registered dietitian's guidance. It isn't right for everyone, and you can pause or switch back any time. Sure you want to start?",
-                        confirmTitle: "Start Survive",
-                        severity: .caution,
-                        onConfirm: {
-                            pending = nil
-                            Task {
-                                await appState.setMode(.survive)
-                                await SrvEpisode.ensureStarted(appState: appState)
-                                await SrvNotifications.enableEveningReminder()
-                            }
-                        },
-                        onCancel: { pending = nil }
-                    )
-                case .graduate:
-                    ConfirmationModal(
-                        title: "Graduate to Thrive?",
-                        message: "You've done the hard part. Your garden blooms and your confirmed-safe foods flow into your collection.",
-                        confirmTitle: "Begin the ceremony",
-                        severity: .info,
-                        onConfirm: {
-                            pending = nil
-                            Task {
-                                await appState.setMode(.thrive)
-                                appState.celebrate(.graduation)
-                            }
-                        },
-                        onCancel: { pending = nil }
-                    )
-                }
-            }
-            .themed(for: appState.mode)
-            .presentationBackground(.clear)
-        }
+        .sheet(isPresented: $showFoods) { YouFoodFlagsView(appState: appState) }
+        .sheet(isPresented: $showCheckIn) { ThrTestTabView(appState: appState) }
+        .sheet(isPresented: $showCustomize) { YouCheckInPrefsSheet(appState: appState) { showCustomize = false } }
+        .sheet(isPresented: $showBadges) { YouBadgesView(appState: appState) }
     }
 }
 

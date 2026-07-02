@@ -6,8 +6,8 @@
 //  plants toward 30 this week (the hero), a compact fiber mini-bar (the only
 //  anthropometric number shown, §10 / rule #6), the relative-fill 3 P's, the
 //  three-ring "eat the rainbow", a Recent-Meals rail, one curated curiosity fact,
-//  and routes into the field guide, the daily check-in, and Your Foods. Medical
-//  allergy flags from the most recent meal surface here too, LOUD (§9, rule #1).
+//  and routes into the field guide, the daily check-in, and trends. Allergy-tier
+//  food flags from the most recent meal surface here too, LOUD (§9, rule #1).
 //
 //  No guild content lives here, the Guild Garden is Module D's surface.
 //
@@ -24,6 +24,7 @@ struct ThrRootView: View {
     @State private var model = ThrHomeModel()
     @State private var educatingColor: ThrRainbowGroup?
     @State private var showDailyCheckin = false
+    @State private var showingRecipe: RecipeRow?
 
     var body: some View {
         NavigationStack {
@@ -38,6 +39,7 @@ struct ThrRootView: View {
                     if let fact = model.curiosity {
                         ThrCuriosityCard(fact: fact.factText, confidenceTag: fact.confidenceTag)
                     }
+                    recipeSection
                     exploreSection
                 }
                 .padding(theme.metrics.space5)
@@ -62,6 +64,9 @@ struct ThrRootView: View {
         .sheet(isPresented: $showDailyCheckin) {
             // ONE check-in: the same multi-entry form the Check-in tab uses (Batch C).
             ThrCheckInFormView(appState: appState, mode: .new) { showDailyCheckin = false }
+        }
+        .sheet(item: $showingRecipe) { recipe in
+            ThrRecipeSheet(recipe: recipe).presentationDetents([.medium, .large])
         }
         // Refresh from the DB whenever Today reappears (e.g. after a snap in another
         // tab), so plants-this-week and field-guide counts aren't stuck on cold-load
@@ -186,7 +191,38 @@ struct ThrRootView: View {
         }
     }
 
-    // MARK: - Explore (check-in + field guide + your foods + trends)
+    // MARK: - Try this (a curated recipe, gap-driven from the rainbow)
+
+    @ViewBuilder private var recipeSection: some View {
+        if let recipe = model.recipeSuggestion {
+            Card {
+                VStack(alignment: .leading, spacing: theme.metrics.space2) {
+                    SectionHeader(title: "Try this")
+                    Text(recipe.title)
+                        .font(theme.typography.title(18))
+                        .foregroundStyle(theme.colors.textPrimary)
+                    if let d = recipe.description {
+                        Text(d).font(theme.typography.body())
+                            .foregroundStyle(theme.colors.textSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    if let f = recipe.fiberHighlights, !f.isEmpty {
+                        HStack(spacing: theme.metrics.space1) {
+                            Text(f).font(theme.typography.caption()).foregroundStyle(theme.colors.secondary)
+                            if recipe.claimRisk {
+                                Text("[emerging science]")
+                                    .font(theme.typography.caption(weight: .semibold))
+                                    .foregroundStyle(theme.colors.secondary)
+                            }
+                        }
+                    }
+                    SecondaryButton(title: "See how", systemImage: "list.bullet") { showingRecipe = recipe }
+                }
+            }
+        }
+    }
+
+    // MARK: - Explore (check-in + field guide + trends)
 
     private var exploreSection: some View {
         VStack(spacing: theme.metrics.space4) {
@@ -201,13 +237,7 @@ struct ThrRootView: View {
                         ThrNavRow(icon: "books.vertical.fill", title: "Field guide",
                                   subtitle: "Plants, rainbow, phytochemicals, fermented finds")
                     }
-                    Divider().overlay(theme.colors.divider)
-                    NavigationLink {
-                        ThrYourFoodsView(appState: appState)
-                    } label: {
-                        ThrNavRow(icon: "list.bullet.clipboard.fill", title: "Your foods",
-                                  subtitle: "Foods you're keeping an eye on")
-                    }
+                    // TODO(Phase 1E): Your foods (food_flags) moves here.
                     Divider().overlay(theme.colors.divider)
                     NavigationLink {
                         ThrIsItWorkingView(appState: appState)
@@ -221,10 +251,65 @@ struct ThrRootView: View {
     }
 }
 
+// MARK: - Recipe detail
+
+struct ThrRecipeSheet: View {
+    @Environment(\.theme) private var theme
+    let recipe: RecipeRow
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: theme.metrics.space4) {
+                Text(recipe.title)
+                    .font(theme.typography.display(28))
+                    .foregroundStyle(theme.colors.primary)
+                if let m = recipe.prepMinutes {
+                    Text("\(m) min")
+                        .font(theme.typography.caption(weight: .semibold))
+                        .foregroundStyle(theme.colors.textSecondary)
+                }
+                if let d = recipe.description {
+                    Text(d).font(theme.typography.body())
+                        .foregroundStyle(theme.colors.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                if let f = recipe.fiberHighlights, !f.isEmpty {
+                    Text(f).font(theme.typography.body())
+                        .foregroundStyle(theme.colors.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    if recipe.claimRisk {
+                        Text("[emerging science]")
+                            .font(theme.typography.caption(weight: .semibold))
+                            .foregroundStyle(theme.colors.secondary)
+                    }
+                }
+                if !recipe.steps.isEmpty {
+                    VStack(alignment: .leading, spacing: theme.metrics.space2) {
+                        ForEach(Array(recipe.steps.enumerated()), id: \.offset) { i, step in
+                            HStack(alignment: .top, spacing: theme.metrics.space2) {
+                                Text("\(i + 1).")
+                                    .font(theme.typography.body(weight: .semibold))
+                                    .foregroundStyle(theme.colors.primary)
+                                Text(step)
+                                    .font(theme.typography.body())
+                                    .foregroundStyle(theme.colors.textPrimary)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                        }
+                    }
+                }
+            }
+            .padding(theme.metrics.space5)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .background(theme.colors.background.ignoresSafeArea())
+    }
+}
+
 #if DEBUG
 #Preview("Thrive home") {
     ThrRootView(appState: AppState(auth: AuthService()),
                 latestMeal: try? ThrPreviewData.confirmedMeal())
-        .themed(for: .thrive)
+        .themed()
 }
 #endif

@@ -30,17 +30,15 @@ private enum Fix {
             isPlant: isPlant,
             plant: isPlant ? PlantRef(name: name, rarityTier: rarity) : nil,
             isFermented: isFermented,
-            histamineLevel: nil,
             fibers: fibers,
             colors: colors,
             phytochemicals: phytos,
-            guildFeeds: guildFeeds,
-            fodmap: nil
+            guildFeeds: guildFeeds
         )
     }
 
     static func fiber(_ name: String) -> FiberAttr {
-        FiberAttr(name: name, relativeAmount: "moderate", isFodmapTrigger: false, estGramsPerServing: 1.0)
+        FiberAttr(name: name, relativeAmount: "moderate", fermentability: nil, estGramsPerServing: 1.0)
     }
 
     static func context(_ attrs: [FoodAttributes]) -> MealContext {

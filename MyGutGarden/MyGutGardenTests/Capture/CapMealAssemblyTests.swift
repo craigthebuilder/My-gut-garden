@@ -4,9 +4,8 @@
 //  (vision / manual / hidden_confirmed), SPEC §5, §9.
 //
 //  Covers the load-bearing rules: surfaced vision items map straight through,
-//  `preference_intolerance` (silentlyOmitted) matches are never persisted as fed
-//  (§9), unmatched-with-no-attributes are skipped, the source enum matches the
-//  DB exactly, and the combined set de-duplicates by food.
+//  unmatched-with-no-attributes are skipped, the source enum matches the DB
+//  exactly, and the combined set de-duplicates by food.
 //
 
 import Testing
@@ -24,27 +23,25 @@ struct CapMealAssemblyTests {
         #expect(items.allSatisfy { $0.source == .vision })
     }
 
-    @Test func silentlyOmittedAndUnmatchedItemsAreDropped() {
-        // medical/preference two-faced model (§9): a quiet omission is never fed.
-        let omitted = ResolvedItem(
-            vision: VisionFood(name: "Onion", portionTier: .serving, confidence: 0.9, dishType: nil),
-            attributes: Fixtures.food(name: "Onion"),
-            silentlyOmitted: true
-        )
+    @Test func unmatchedItemsAreDroppedButSurfacedItemsAreKept() {
+        // Single-mode (§9): sensitivity foods are still eaten + logged; only items
+        // the DB could not resolve (attributes == nil) are dropped.
         let kept = ResolvedItem(
             vision: VisionFood(name: "Kale", portionTier: .serving, confidence: 0.9, dishType: nil),
-            attributes: Fixtures.food(name: "Kale"),
-            silentlyOmitted: false
+            attributes: Fixtures.food(name: "Kale")
+        )
+        let alsoKept = ResolvedItem(
+            vision: VisionFood(name: "Onion", portionTier: .serving, confidence: 0.9, dishType: nil),
+            attributes: Fixtures.food(name: "Onion")
         )
         let unresolvable = ResolvedItem(
             vision: VisionFood(name: "Mystery", portionTier: .serving, confidence: 0.3, dishType: nil),
-            attributes: nil,
-            silentlyOmitted: nil
+            attributes: nil
         )
 
-        let items = CapMealDraftBuilder.visionItems(items: [omitted, kept, unresolvable])
-        #expect(items.count == 1)
-        #expect(items.first?.foodId == "demo-kale")
+        let items = CapMealDraftBuilder.visionItems(items: [kept, alsoKept, unresolvable])
+        #expect(items.count == 2)
+        #expect(Set(items.map(\.foodId)) == ["demo-kale", "demo-onion"])
     }
 
     @Test func hiddenConfirmedItemsUseTheConfirmedSourceAndCoarseDefault() {

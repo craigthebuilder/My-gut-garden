@@ -18,7 +18,7 @@
 import SwiftUI
 import Observation
 
-private let mealColumns = "id,mode,photo_url,captured_at,confirmed,user_annotation,photo_expires_at"
+private let mealColumns = "id,photo_url,captured_at,confirmed,user_annotation"
 
 // MARK: - Rainbow detail model
 
@@ -60,7 +60,7 @@ final class ThrRainbowDetailModel {
 
     func load(appState: AppState, latestMeal: ConfirmedMeal?) async {
         if let meal = latestMeal {
-            for item in meal.response.items where item.silentlyOmitted != true {
+            for item in meal.response.items {
                 guard let attrs = item.attributes else { continue }
                 for color in attrs.colors { amounts.mark(color, ThrColorAmount(tier: item.vision.portionTier)) }
             }
@@ -88,7 +88,7 @@ final class ThrRainbowDetailModel {
         let since = ThrDates.timestampString(ThrDates.startOfToday())
         guard let meals: [MealRow] = try? await repo.select(
             "meals", columns: mealColumns,
-            filters: ["captured_at": "gte.\(since)", "mode": "eq.thrive", "confirmed": "eq.true"]
+            filters: ["captured_at": "gte.\(since)", "confirmed": "eq.true"]
         ), !meals.isEmpty else { return }
         let mealList = "(" + meals.map(\.id).joined(separator: ",") + ")"
         guard let items: [ThrMealItemTierRow] = try? await repo.select(

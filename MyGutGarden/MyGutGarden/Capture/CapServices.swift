@@ -107,7 +107,7 @@ struct CapRecognizer: Sendable {
     /// `accessToken` is resolved by the (@MainActor) caller from `AuthService`,
     /// keeping this client free of actor-isolated state so the network await can
     /// run off the main actor.
-    func recognize(mode: AppMode, accessToken: String?,
+    func recognize(accessToken: String?,
                    imageBase64: String?, userAnnotation: String?) async throws -> CapRecognitionResult {
         let annotation = userAnnotation?.trimmingCharacters(in: .whitespacesAndNewlines)
 
@@ -117,7 +117,7 @@ struct CapRecognizer: Sendable {
                                         annotationFoodIds: [])
         }
 
-        var body: [String: Any] = ["mode": mode.rawValue]
+        var body: [String: Any] = [:]
         if let imageBase64 {
             body["image_base64"] = imageBase64
         } else {
@@ -195,7 +195,6 @@ struct CapMealPersistence: Sendable {
     func persist(_ draft: CapMealDraft) async throws -> String {
         var mealBody: [String: PGValue] = [
             "user_id": .string(userId),
-            "mode": .string(draft.mode.rawValue),
             "captured_at": .date(draft.capturedAt),
             "confirmed": .bool(true)
         ]
@@ -233,6 +232,16 @@ struct CapMealPersistence: Sendable {
         for item in items {
             try await insertItem(mealId: mealId, item: item)
         }
+    }
+
+    /// Delete the meal's photo. Photos are permanent otherwise; nilling
+    /// `meals.photo_url` is the ONLY thing that makes the edit sheet show
+    /// "Photo removed" (SPEC §4/§15). The DB side is done here.
+    // TODO(Phase 1G): also delete the Storage object (Repository covers PostgREST
+    // only; the Storage delete is a separate authenticated call) + surface a
+    // "Delete photo" control in the edit sheet.
+    func deletePhoto(mealId: String) async throws {
+        try await repository.update("meals", set: ["photo_url": .null], filters: ["id": "eq.\(mealId)"])
     }
 
     private func insertItem(mealId: String, item: CapMealItem) async throws {

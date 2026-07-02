@@ -87,7 +87,7 @@ struct ThrColorRow: Decodable, Sendable {
     let deficiencyCopy: String?        // R3 Batch B: "what going short could mean" (RD-REVIEW)
 }
 
-// MARK: - Meal-item / food rows (Recent Meals, rainbow + 3 P's day reads, Your Foods)
+// MARK: - Meal-item / food rows (Recent Meals, rainbow + 3 P's day reads)
 
 /// One `meal_items` row for the Recent-Meals detail sheet: editable coarse tier
 /// (no grams, rule #3) + the user's confirm/deny verdict on the AI hypothesis.
@@ -114,7 +114,7 @@ struct ThrFoodColorRow: Decodable, Sendable {
     let colorId: String
 }
 
-/// A `foods` name lookup (detail-sheet labels + the Suspects food search).
+/// A `foods` name lookup (Recent-Meals detail-sheet labels + field-guide reads).
 struct ThrFoodNameRow: Decodable, Sendable, Identifiable {
     let id: String
     let canonicalName: String

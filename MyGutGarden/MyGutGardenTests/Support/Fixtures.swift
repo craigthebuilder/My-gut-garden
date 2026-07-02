@@ -30,8 +30,7 @@ enum Fixtures {
         fibers: [FiberAttr] = [],
         colors: [String] = [],
         phytochemicals: [PhytochemicalAttr] = [],
-        guildFeeds: [GuildFeedAttr] = [],
-        fodmap: FodmapAttr? = nil
+        guildFeeds: [GuildFeedAttr] = []
     ) -> FoodAttributes {
         FoodAttributes(
             foodId: "demo-\(name.lowercased())",
@@ -39,12 +38,10 @@ enum Fixtures {
             isPlant: isPlant,
             plant: isPlant ? PlantRef(name: name, rarityTier: .common) : nil,
             isFermented: isFermented,
-            histamineLevel: nil,
             fibers: fibers,
             colors: colors,
             phytochemicals: phytochemicals,
-            guildFeeds: guildFeeds,
-            fodmap: fodmap
+            guildFeeds: guildFeeds
         )
     }
 }

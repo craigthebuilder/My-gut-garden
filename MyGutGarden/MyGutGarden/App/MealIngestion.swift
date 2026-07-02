@@ -147,35 +147,9 @@ struct MealIngestion {
             unlockedDistrictOrders: unlocked,
             cumulativeTier2Days: cumulativeTier2Days
         ))
-
-        await autoIncreaseFiberGoalIfEarned(userId: userId, summaries: summaries)
-    }
-
-    // MARK: - Thrive fiber auto-increase (Batch B)
-
-    /// Steps the Thrive fiber goal up after sustained success (consecutive weeks
-    /// meeting the daily threshold). Idempotent per week via
-    /// `users.fiber_goal_adjusted_week_start`. Thrive only, a positive, earned
-    /// nudge, never surfaced as a deficit (§14 / rule #6).
-    private func autoIncreaseFiberGoalIfEarned(userId: String, summaries: [WeeklySummaryRow]) async {
-        guard appState.mode == .thrive, let goal = appState.profile?.fiberGoalG else { return }
-        let cfg = GameConfig.shared
-        let newestFirst = summaries.sorted { $0.weekStart > $1.weekStart }
-        guard let latestWeek = newestFirst.first?.weekStart else { return }
-        // Already bumped for this week → nothing to do.
-        guard appState.profile?.fiberGoalAdjustedWeekStart != latestWeek else { return }
-
-        var consecutive = 0
-        for s in newestFirst {
-            if s.fiberDaysMet >= cfg.fiberGoalAutoIncreaseMinDaysPerWeek { consecutive += 1 } else { break }
-        }
-        guard consecutive >= cfg.fiberGoalAutoIncreaseConsecutiveWeeks else { return }
-
-        try? await repository.update("users",
-            set: ["fiber_goal_g": .int(goal + cfg.fiberGoalAutoIncrementG),
-                  "fiber_goal_adjusted_week_start": .string(latestWeek)],
-            filters: ["id": "eq.\(userId)"])
-        await appState.refreshProfile()
+        // Fiber-goal titration is owned by the guardian engine (SPEC §11, Phase 1F):
+        // it reads check-ins + fiber load and OFFERS an increase (Accept/Decline),
+        // never auto-applies here.
     }
 }
 

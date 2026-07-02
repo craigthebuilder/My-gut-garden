@@ -175,7 +175,7 @@ struct GuildDetailView: View {
         GuildDetailView(guild: GuildGardenViewModel.preview().districts[0].guilds[0],
                         districtName: "The Backbone District")
     }
-    .themed(for: .thrive)
+    .themed()
 }
 
 #Preview("Guild detail, claim-risk (Fence 2)") {
@@ -185,5 +185,5 @@ struct GuildDetailView: View {
         GuildDetailView(guild: scientists.guilds.first { $0.claimRisk }!,
                         districtName: scientists.name)
     }
-    .themed(for: .thrive)
+    .themed()
 }

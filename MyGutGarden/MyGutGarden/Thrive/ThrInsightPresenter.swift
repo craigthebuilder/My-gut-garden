@@ -3,8 +3,8 @@
 //  MyGutGarden, Module C: the Thrive per-photo insight surface (SPEC §11a).
 //
 //  Conforms to `MealInsightPresenting` (App/Seams.swift): the AppShell injects
-//  whichever presenter matches `current_mode`, so Module B (capture) never
-//  imports C. Over a `ConfirmedMeal` this renders the celebration view, 
+//  the single presenter, so Module B (capture) never
+//  imports C. Over a `ConfirmedMeal` this renders the celebration view,
 //  plant + new-discovery count, which P's, rainbow contribution, a directional
 //  fiber read, and one curiosity fact, and fires a rare-find celebration
 //  through `appState.celebrate(.rareFind(...))`.
@@ -42,8 +42,8 @@ struct ThrInsightView: View {
 
     private var insights: ThrivePhotoInsights { FoodAttributeJoin.thriveInsights(meal.response) }
 
-    /// Surfaced (non-omitted) attributes, `preference_intolerance` already
-    /// dropped upstream (§9). Used for rarity + fiber.
+    /// Every resolved item's attributes (single-mode: nothing is omitted, §9).
+    /// Used for rarity + fiber.
     private var attrs: [FoodAttributes] { FoodAttributeJoin.surfacedAttributes(meal.response) }
 
     private var newDiscoveries: [String] {
@@ -201,7 +201,7 @@ struct ThrInsightView: View {
 
         // This meal's max tier per color group (coarse only, rule #3).
         var mealMax: [String: PortionTier] = [:]
-        for item in meal.response.items where item.silentlyOmitted != true {
+        for item in meal.response.items {
             guard let attrs = item.attributes else { continue }
             let tier = item.vision.portionTier
             for color in attrs.colors {

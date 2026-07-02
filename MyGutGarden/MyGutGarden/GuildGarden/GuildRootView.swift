@@ -4,7 +4,7 @@
 //
 //  A fog-of-war trail (GuildDistrictMap) of the four districts; tapping an
 //  unlocked guild pushes its collectible field-guide card (GuildDetailView).
-//  Thrive-only (SPEC §8: the Guild Garden never appears in Survive). Reads the
+//  Reads the
 //  bloom state on the fly (decay applied on read) and the unlock state from the
 //  ProgressionState read surface, it never writes `guild_state`/`user_districts`.
 //
@@ -101,6 +101,16 @@ struct GuildRootView: View {
     // MARK: The trail
 
     private var trail: some View {
+        VStack(spacing: theme.metrics.space5) {
+            if viewModel.worlds.isEmpty {
+                flatDistricts                       // offline/preview fallback
+            } else {
+                ForEach(viewModel.worlds) { world in worldSection(world) }
+            }
+        }
+    }
+
+    private var flatDistricts: some View {
         VStack(spacing: 0) {
             ForEach(Array(viewModel.districts.enumerated()), id: \.element.id) { index, district in
                 if index > 0 { GuildTrailConnector() }
@@ -109,6 +119,38 @@ struct GuildRootView: View {
                 }
             }
         }
+    }
+
+    @ViewBuilder
+    private func worldSection(_ world: GuildWorldDisplay) -> some View {
+        VStack(alignment: .leading, spacing: theme.metrics.space3) {
+            HStack {
+                Text(world.name)
+                    .font(theme.typography.title(22))
+                    .foregroundStyle(world.isUnlocked ? theme.colors.primary : theme.colors.textSecondary)
+                Spacer()
+                if !world.isUnlocked {
+                    Image(systemName: "lock.fill").foregroundStyle(theme.colors.textSecondary)
+                }
+            }
+            if let intro = world.introCopy {
+                Text(intro)
+                    .font(theme.typography.caption())
+                    .foregroundStyle(theme.colors.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            if world.isUnlocked && !world.districts.isEmpty {
+                VStack(spacing: 0) {
+                    ForEach(Array(world.districts.enumerated()), id: \.element.id) { i, district in
+                        if i > 0 { GuildTrailConnector() }
+                        GuildDistrictMapZone(district: district) { guild in
+                            path.append(GuildRoute(districtOrder: district.order, internalName: guild.internalName))
+                        }
+                    }
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     // MARK: Routing
@@ -123,17 +165,17 @@ struct GuildRootView: View {
 
 #Preview("Guild Garden, partial unlock") {
     GuildRootView(viewModel: .preview())
-        .themed(for: .thrive)
+        .themed()
 }
 
 #Preview("Guild Garden, Tier 2 locked") {
     GuildRootView(viewModel: .preview(
         progression: ProgressionState(isTier2Unlocked: false, unlockedDistrictOrders: [], cumulativeTier2Days: 0)))
-        .themed(for: .thrive)
+        .themed()
 }
 
 #Preview("Guild Garden, fully unlocked") {
     GuildRootView(viewModel: .preview(
         progression: ProgressionState(isTier2Unlocked: true, unlockedDistrictOrders: [1, 2, 3, 4], cumulativeTier2Days: 30)))
-        .themed(for: .thrive)
+        .themed()
 }

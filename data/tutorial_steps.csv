@@ -1,0 +1,17 @@
+# tutorial_steps.csv — curated coach-mark copy (SPEC §7, DESIGN §4). One replayable
+# set per section_key; shown as dim-page spotlight call-outs.
+# 🔒 FENCE 4/8 (RD-REVIEW-REQUIRED): steps that state a benefit/mechanism carry
+#    claim_risk=true. Curated, never runtime-generated (rule #9).
+section_key|order|title|body|target_hint|claim_risk
+intro|0|Grow a garden by feeding your gut|Snap your meals and we turn them into a living garden — the more variety you feed it, the more it grows.|home|false
+intro|1|Aim for 30 plants a week|Different plant foods feed different microbes, so thirty a week keeps your garden diverse and resilient.|plants|true
+intro|2|Eat the rainbow|Each colour brings its own phytochemicals; collecting all six keeps your garden well-rounded.|rainbow|true
+intro|3|We'll pace your fibre|More fibre is great, but ramping too fast can feel rough — we raise your goal gently as you're ready, and nudge you to drink more water.|fiber|true
+intro|4|A quiet guardian has your back|If a food doesn't sit well, we help you spot it — no tracking chores. You just eat; we watch quietly.|home|false
+garden|0|Your microbiome garden|These are the bacterial crews you're feeding. Feed one steadily and it blooms.|garden|true
+garden|1|Worlds to explore|Your garden grows in worlds. Bloom the Core and the next world opens up.|garden|false
+rainbow|0|Eat the rainbow|Tap any colour to learn what it does for you and which foods bring it.|rainbow|true
+plants|0|Your plant field guide|Every new plant you eat joins your collection — rarer finds are a bigger deal.|plants|false
+fermented|0|Fermented finds|Fermented foods add live cultures; a little each day is a lovely habit.|fermented|true
+phytochemicals|0|Phytochemicals|The compounds behind the colours. Collect classes as you eat a wider range.|phytochemicals|true
+trends|0|Your trends|Customise your daily check-in and watch how you feel over time.|trends|false

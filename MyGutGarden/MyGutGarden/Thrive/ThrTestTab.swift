@@ -167,7 +167,9 @@ struct ThrLightCheckInPicker: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .onAppear { selection = appState.profile?.lightCheckinCategory.flatMap(CheckInCategory.init(rawValue:)) }
+        // TODO(Phase 1E): re-hydrate the persisted light-check-in pick once the
+        // profile/prefs model resurfaces it (dropped from the frozen UserProfile).
+        .onAppear { selection = nil }
     }
 
     @ViewBuilder private func pickRow(_ title: String, on: Bool) -> some View {
@@ -176,13 +178,8 @@ struct ThrLightCheckInPicker: View {
 
     private func set(_ cat: CheckInCategory?) {
         selection = cat
-        Task {
-            guard let repo = appState.repository, let uid = appState.profile?.id else { return }
-            try? await repo.update("users",
-                                   set: ["light_checkin_category": cat.map { PGValue.string($0.rawValue) } ?? .null],
-                                   filters: ["id": "eq.\(uid)"])
-            await appState.refreshProfile()
-        }
+        // TODO(Phase 1E): persist to check_in_prefs.enabled_sections (users.light_checkin_category
+        // was dropped in the single-mode migration). For now the pick is session-only.
     }
 }
 
@@ -209,11 +206,13 @@ struct ThrCheckInFormView: View {
 
     @State private var draft = CheckInDraft(context: .thriveCheckin)
     @State private var meals: [ThrTodayMeal] = []
-    @State private var editing = ThrEditingIds()
+    @State private var editingCheckInIds: [String] = []   // the day's check_ins, dropped-and-reinserted on save
     @State private var isSaving = false
     @State private var configured = false
 
-    private func active(_ c: CheckInCategory) -> Bool { draft.lightCategory == nil || draft.lightCategory == c }
+    private func active(_ c: CheckInCategory) -> Bool {
+        (draft.lightCategory == nil || draft.lightCategory == c) && (draft.enabledCategories?.contains(c) ?? true)
+    }
 
     var body: some View {
         NavigationStack {
@@ -225,7 +224,7 @@ struct ThrCheckInFormView: View {
                     if active(.mood)    { ThrMoodSection(draft: draft, meals: meals) }
                     if active(.energy)  { ThrMetricSection(draft: draft, title: "Energy", metricType: "energy", keyPath: \.energy, meals: meals) }
                     if active(.clarity) { ThrMetricSection(draft: draft, title: "Clarity", metricType: "clarity", keyPath: \.clarity, meals: meals) }
-                    if draft.lightCategory == nil { ThrNotesSection(draft: draft) }
+                    if draft.lightCategory == nil && draft.notesEnabled { ThrNotesSection(draft: draft) }
                     saveButton
                 }
                 .padding(theme.metrics.space4)
@@ -240,7 +239,7 @@ struct ThrCheckInFormView: View {
             }
         }
         .task {
-            if !configured { configure(); configured = true }
+            if !configured { await loadPrefs(); configure(); configured = true }
             await loadMeals()
         }
     }
@@ -267,30 +266,36 @@ struct ThrCheckInFormView: View {
         .disabled(isSaving)
     }
 
+    private func loadPrefs() async {
+        guard let repo = appState.repository else { return }
+        struct PrefsRow: Decodable { let enabledSections: [String] }
+        let rows: [PrefsRow] = (try? await repo.select("check_in_prefs", columns: "enabled_sections", limit: 1)) ?? []
+        guard let sections = rows.first?.enabledSections else { return }
+        let cats = Set(sections.compactMap { CheckInCategory(rawValue: $0) })
+        guard !cats.isEmpty else { return }        // no real category chosen → keep all (default)
+        draft.enabledCategories = cats
+        draft.notesEnabled = sections.contains("notes")
+    }
+
     private func configure() {
         draft.context = context
         switch mode {
         case .new:
             draft.logDate = Date()
-            // Light check-in is Thrive-only; Survive is always the full check-in.
-            draft.lightCategory = context == .thriveCheckin
-                ? appState.profile?.lightCheckinCategory.flatMap(CheckInCategory.init(rawValue:))
-                : nil
+            // TODO(Phase 1E): restore the persisted light-check-in pick once the
+            // profile/prefs model resurfaces `light_checkin_category`. For now every
+            // new check-in opens as the full form.
+            draft.lightCategory = nil
             draft.seedEmptyEntries()
         case .edit(let day):
             draft.logDate = day.date
             draft.lightCategory = nil            // editing always shows the full form
+            editingCheckInIds = day.checkInIds
             prefill(from: day)
         }
     }
 
     private func prefill(from day: ThrCheckInDay) {
-        editing.stools   = day.stools.map(\.id)
-        editing.symptoms = day.symptoms.map(\.id)
-        editing.moods    = day.moods.map(\.id)
-        editing.metrics  = day.metrics.map(\.id)
-        editing.notes    = day.notes.map(\.id)
-
         draft.stools = day.stools.map {
             StoolEntryDraft(bss: $0.bss, occurredAt: ThrDates.parseTimestamp($0.occurredAt ?? ""), linkedMealId: $0.linkedMealId)
         }
@@ -320,11 +325,10 @@ struct ThrCheckInFormView: View {
         guard let repo = appState.repository else { return }
         let dayStart = Calendar.current.startOfDay(for: draft.logDate)
         let dayEnd = dayStart.addingTimeInterval(24 * 3600)
-        let mealMode = context == .thriveCheckin ? "thrive" : "survive"
         guard let rows: [MealRow] = try? await repo.select(
-            "meals", columns: "id,mode,photo_url,captured_at,confirmed,user_annotation,photo_expires_at",
+            "meals", columns: "id,photo_url,captured_at,confirmed,user_annotation",
             filters: ["captured_at": "gte.\(ThrDates.timestampString(dayStart))",
-                      "confirmed": "eq.true", "mode": "eq.\(mealMode)"], order: "captured_at.asc"
+                      "confirmed": "eq.true"], order: "captured_at.asc"
         ) else { return }
         meals = rows.filter { ($0.capturedAtDate ?? dayStart) < dayEnd }
                     .enumerated().map { ThrTodayMeal.make($0.element, index: $0.offset + 1) }
@@ -334,55 +338,15 @@ struct ThrCheckInFormView: View {
         guard let repo = appState.repository, let uid = appState.profile?.id else { dismiss(); return }
         isSaving = true
         defer { isSaving = false }
-        if case .edit = mode { await deleteEditingRows(repo) }   // replace-in-place
-        try? await CheckInWriter(repository: repo, userId: uid).save(draft)
-        if context == .thriveCheckin {
-            await upsertDailyAggregate(repo, uid: uid)           // keep "Is it working?" trends fed
+        // Replace-in-place on edit: delete the day's check_ins (cascade removes entries).
+        if case .edit = mode, !editingCheckInIds.isEmpty {
+            try? await repo.delete("check_ins", filters: ["id": "in.(\(editingCheckInIds.joined(separator: ",")))"])
         }
-        await onSaved?()                                         // mode-specific refresh (Survive)
+        try? await CheckInWriter(repository: repo, userId: uid).save(draft)
+        await onSaved?()                                         // mode-specific refresh
         onDone()
         dismiss()
     }
-
-    /// Mirrors the day's mood/energy/clarity into thrive_checkins so the trends
-    /// dashboard (which reads the scalar table) keeps getting points.
-    private func upsertDailyAggregate(_ repo: Repository, uid: String) async {
-        func avg(_ xs: [Int]) -> Int? { xs.isEmpty ? nil : Int((Double(xs.reduce(0, +)) / Double(xs.count)).rounded()) }
-        let mood = avg(draft.moods.filter { $0.uiValue >= 1 }.map(\.storedScore))
-        let energy = avg(draft.energy.filter { $0.score >= 1 }.map(\.score))
-        let clarity = avg(draft.clarity.filter { $0.score >= 1 }.map(\.score))
-        var body: [String: PGValue] = ["user_id": .string(uid), "log_date": .string(ThrDates.dateString(draft.logDate))]
-        if let mood { body["mood"] = .int(mood) }
-        if let energy { body["energy"] = .int(energy) }
-        if let clarity { body["clarity"] = .int(clarity) }
-        guard body.count > 2 else { return }
-        try? await repo.upsert("thrive_checkins", body, onConflict: "user_id,log_date")
-    }
-
-    private func deleteEditingRows(_ repo: Repository) async {
-        async let a: Void = delete(repo, "stool_entries", editing.stools)
-        async let b: Void = delete(repo, "symptom_entries", editing.symptoms)
-        async let c: Void = delete(repo, "mood_entries", editing.moods)
-        async let d: Void = delete(repo, "metric_entries", editing.metrics)
-        async let e: Void = delete(repo, "checkin_notes", editing.notes)
-        _ = await (a, b, c, d, e)
-    }
-
-    private func delete(_ repo: Repository, _ table: String, _ ids: [String]) async {
-        guard !ids.isEmpty else { return }
-        let list = ids.joined(separator: ",")
-        try? await repo.delete(table, filters: ["id": "in.(\(list))"])
-    }
-}
-
-/// DB row ids loaded for an edit, deleted-and-reinserted on save (replace-in-place,
-/// so it never touches rows the form didn't load, e.g. a same-day Survive entry).
-struct ThrEditingIds {
-    var stools: [String] = []
-    var symptoms: [String] = []
-    var moods: [String] = []
-    var metrics: [String] = []
-    var notes: [String] = []
 }
 
 // MARK: - History model
@@ -390,6 +354,7 @@ struct ThrEditingIds {
 struct ThrCheckInDay: Identifiable, Sendable {
     let id: String           // log_date "yyyy-MM-dd"
     let date: Date
+    var checkInIds: [String] = []    // the check_ins making up this day (deleted on edit; cascade)
     var stools: [StoolEntryRow] = []
     var symptoms: [SymptomEntryRow] = []
     var moods: [MoodEntryRow] = []
@@ -424,23 +389,44 @@ final class ThrCheckInHistoryModel {
         guard let repo = appState.repository, let uid = appState.profile?.id else { return }
         isLoading = true
         defer { isLoading = false }
-        let f = ["user_id": "eq.\(uid)"]
-        async let st: [StoolEntryRow]   = (try? await repo.select("stool_entries",   filters: f, order: "log_date.desc", limit: 500)) ?? []
-        async let sy: [SymptomEntryRow] = (try? await repo.select("symptom_entries", filters: f, order: "log_date.desc", limit: 500)) ?? []
-        async let mo: [MoodEntryRow]    = (try? await repo.select("mood_entries",    filters: f, order: "log_date.desc", limit: 500)) ?? []
-        async let mt: [MetricEntryRow]  = (try? await repo.select("metric_entries",  filters: f, order: "log_date.desc", limit: 500)) ?? []
-        async let nt: [CheckinNoteRow]  = (try? await repo.select("checkin_notes",   filters: f, order: "log_date.desc", limit: 500)) ?? []
-        let (stools, symptoms, moods, metrics, notes) = await (st, sy, mo, mt, nt)
+        let checkIns: [CheckInRow] = (try? await repo.select(
+            "check_ins", filters: ["user_id": "eq.\(uid)"], order: "log_date.desc", limit: 500)) ?? []
+        guard !checkIns.isEmpty else { days = []; return }
+        let dayByCheckIn = Dictionary(checkIns.map { ($0.id, $0.logDate) }, uniquingKeysWith: { a, _ in a })
+        let ids = checkIns.map(\.id).joined(separator: ",")
+        let entries: [CheckInEntryRow] = (try? await repo.select(
+            "check_in_entries", filters: ["check_in_id": "in.(\(ids))"])) ?? []
 
         var map: [String: ThrCheckInDay] = [:]
         func ensure(_ d: String) -> ThrCheckInDay {
             map[d] ?? ThrCheckInDay(id: d, date: Self.dayParser.date(from: d) ?? Date())
         }
-        for r in stools   { var x = ensure(r.logDate); x.stools.append(r);   map[r.logDate] = x }
-        for r in symptoms { var x = ensure(r.logDate); x.symptoms.append(r); map[r.logDate] = x }
-        for r in moods    { var x = ensure(r.logDate); x.moods.append(r);    map[r.logDate] = x }
-        for r in metrics  { var x = ensure(r.logDate); x.metrics.append(r);  map[r.logDate] = x }
-        for r in notes    { var x = ensure(r.logDate); x.notes.append(r);    map[r.logDate] = x }
+        for ci in checkIns { var x = ensure(ci.logDate); x.checkInIds.append(ci.id); map[ci.logDate] = x }
+        for e in entries {
+            guard let day = dayByCheckIn[e.checkInId] else { continue }
+            var x = ensure(day)
+            switch e.sectionKey {
+            case "bss":
+                x.stools.append(StoolEntryRow(id: e.id, userId: uid, logDate: day, bss: e.valueInt,
+                                              occurredAt: e.occurredAt, linkedMealId: e.linkedMealId, loggedAt: ""))
+            case "bloating", "gas", "pain", "urgency", "cramping":
+                x.symptoms.append(SymptomEntryRow(id: e.id, userId: uid, logDate: day, symptomType: e.sectionKey,
+                                                  severity: e.valueInt ?? 0, gasOdor: e.valueText,
+                                                  occurredAt: e.occurredAt, linkedMealId: e.linkedMealId))
+            case "mood":
+                x.moods.append(MoodEntryRow(id: e.id, userId: uid, logDate: day, moodScore: e.valueInt ?? 0,
+                                            context: "", occurredAt: e.occurredAt, linkedMealId: e.linkedMealId))
+            case "energy", "clarity":
+                x.metrics.append(MetricEntryRow(id: e.id, userId: uid, logDate: day, metricType: e.sectionKey,
+                                                score: e.valueInt ?? 0, context: "", occurredAt: e.occurredAt,
+                                                linkedMealId: e.linkedMealId))
+            case "notes":
+                x.notes.append(CheckinNoteRow(id: e.id, userId: uid, logDate: day, content: e.valueText ?? "",
+                                              context: "", linkedMealId: e.linkedMealId, createdAt: ""))
+            default: break   // felt_okay / context aren't shown in the form history
+            }
+            map[day] = x
+        }
         days = map.values.sorted { $0.date > $1.date }
     }
 
@@ -984,9 +970,90 @@ enum ThrGasOdor {
     }
 }
 
+// MARK: - Customize check-in (which sections appear; SPEC §12)
+
+struct YouCheckInPrefsSheet: View {
+    @Environment(\.theme) private var theme
+    let appState: AppState
+    let onDone: () -> Void
+
+    @State private var enabled: Set<CheckInCategory> = Set(CheckInCategory.allCases)
+    @State private var notesEnabled = true
+    @State private var loaded = false
+    @State private var saving = false
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: theme.metrics.space4) {
+                    Text("Pick what your check-in asks about — add as much or as little as you like. This also shapes your trends.")
+                        .font(theme.typography.body())
+                        .foregroundStyle(theme.colors.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Card {
+                        VStack(spacing: theme.metrics.space2) {
+                            ForEach(CheckInCategory.allCases) { cat in
+                                toggleRow(cat.title, on: enabled.contains(cat)) {
+                                    if enabled.contains(cat) { enabled.remove(cat) } else { enabled.insert(cat) }
+                                }
+                            }
+                            toggleRow("Notes", on: notesEnabled) { notesEnabled.toggle() }
+                        }
+                    }
+                    PrimaryButton(title: saving ? "Saving\u{2026}" : "Save") { Task { await save() } }
+                        .disabled(saving)
+                }
+                .padding(theme.metrics.space4)
+            }
+            .background(theme.colors.background.ignoresSafeArea())
+            .navigationTitle("Customize check-in")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Close", action: onDone) } }
+        }
+        .task { await load() }
+    }
+
+    private func toggleRow(_ title: String, on: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack {
+                Text(title).foregroundStyle(theme.colors.textPrimary)
+                Spacer()
+                Image(systemName: on ? "checkmark.circle.fill" : "circle")
+                    .foregroundStyle(on ? theme.colors.primary : theme.colors.textSecondary)
+            }
+            .font(theme.typography.body())
+            .padding(.vertical, theme.metrics.space1)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func load() async {
+        guard !loaded, let repo = appState.repository else { return }
+        struct PrefsRow: Decodable { let enabledSections: [String] }
+        let rows: [PrefsRow] = (try? await repo.select("check_in_prefs", columns: "enabled_sections", limit: 1)) ?? []
+        if let sections = rows.first?.enabledSections {
+            let cats = Set(sections.compactMap { CheckInCategory(rawValue: $0) })
+            if !cats.isEmpty { enabled = cats; notesEnabled = sections.contains("notes") }
+        }
+        loaded = true
+    }
+
+    private func save() async {
+        guard let repo = appState.repository, let uid = appState.profile?.id else { return }
+        saving = true
+        defer { saving = false }
+        var sections = enabled.map(\.rawValue)
+        if notesEnabled { sections.append("notes") }
+        try? await repo.upsert("check_in_prefs",
+            ["user_id": .string(uid), "enabled_sections": .stringArray(sections)],
+            onConflict: "user_id")
+        onDone()
+    }
+}
+
 #if DEBUG
 #Preview("Thrive check-in tab") {
     ThrTestTabView(appState: AppState(auth: AuthService()))
-        .themed(for: .thrive)
+        .themed()
 }
 #endif

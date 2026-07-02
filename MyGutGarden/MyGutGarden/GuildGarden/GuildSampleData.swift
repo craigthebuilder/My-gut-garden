@@ -32,10 +32,10 @@ enum GuildSampleData {
     // MARK: Districts (framework §4, four, in sequence)
 
     static let districts: [DistrictRow] = [
-        DistrictRow(id: "d1", order: 1, name: "The Backbone District", unlockRuleKey: "backbone"),
-        DistrictRow(id: "d2", order: 2, name: "The Keystones",          unlockRuleKey: "keystones"),
-        DistrictRow(id: "d3", order: 3, name: "The Scientists",         unlockRuleKey: "scientists"),
-        DistrictRow(id: "d4", order: 4, name: "The Hidden Gems",        unlockRuleKey: "hidden_gems"),
+        DistrictRow(id: "d1", order: 1, name: "The Backbone District", unlockRuleKey: "backbone", worldId: nil),
+        DistrictRow(id: "d2", order: 2, name: "The Keystones",          unlockRuleKey: "keystones", worldId: nil),
+        DistrictRow(id: "d3", order: 3, name: "The Scientists",         unlockRuleKey: "scientists", worldId: nil),
+        DistrictRow(id: "d4", order: 4, name: "The Hidden Gems",        unlockRuleKey: "hidden_gems", worldId: nil),
     ]
 
     // MARK: Guilds (framework §4 roster; claim_risk per Fence 2)
@@ -117,7 +117,7 @@ enum GuildSampleData {
                               claimRisk: Bool = false, substantiation: String? = nil) -> GuildRow {
         GuildRow(id: internalName, districtId: districtId, internalName: internalName,
                  displayName: display, functionCopy: fn, confidenceTag: confidence,
-                 feedsCopy: feeds, claimRisk: claimRisk, substantiation: substantiation)
+                 feedsCopy: feeds, introCopy: nil, claimRisk: claimRisk, substantiation: substantiation)
     }
 
     private static func state(_ guildId: String, _ score: Int, daysFed: Int) -> GuildStateRow {

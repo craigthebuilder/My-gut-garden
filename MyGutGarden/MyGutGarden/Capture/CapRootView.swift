@@ -16,11 +16,6 @@ import PhotosUI
 struct CapRootView: View {
     @Environment(\.theme) private var theme
     @Environment(\.mealInsightPresenter) private var insightPresenter
-    // Food-status seams (default no-ops in Seams.swift / CapModels.swift). The
-    // lead injects the real impls (Module E) in AppShell; Module B never imports E.
-    @Environment(\.suspectCheckService) private var suspectCheckService
-    @Environment(\.reintroFeelingAttacher) private var reintroFeelingAttacher
-    @Environment(\.capReintroFeelingRecorder) private var capReintroFeelingRecorder
 
     @State private var model: CapCaptureModel
     @State private var camera = CapCameraController()
@@ -35,11 +30,6 @@ struct CapRootView: View {
             content
         }
         .animation(.default, value: model.phase)
-        .onAppear {
-            model.configure(suspectCheck: suspectCheckService,
-                            reintroAttacher: reintroFeelingAttacher,
-                            reintroRecorder: capReintroFeelingRecorder)
-        }
     }
 
     @ViewBuilder
@@ -90,9 +80,7 @@ private struct CapCaptureScreen: View {
             Text("Snap a meal")
                 .font(theme.typography.display())
                 .foregroundStyle(theme.colors.textPrimary)
-            Text(model.mode == .thrive
-                 ? "See what you're feeding, plants, colours, and the crews they grow."
-                 : "Check a meal for FODMAP triggers before it's on your plate.")
+            Text("See what you're feeding, plants, colours, and the crews they grow.")
                 .font(theme.typography.body())
                 .foregroundStyle(theme.colors.textSecondary)
         }

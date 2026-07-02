@@ -1,0 +1,13 @@
+# recipes.csv — curated "try this" library (SPEC §14). Surfaced against gaps
+# (a missing rainbow colour, a hungry guild). featured food/plant ids are seeded
+# empty for v1; colour targeting drives the gap suggestions.
+# 🔒 FENCE 4 (RD-REVIEW-REQUIRED): rows implying a health benefit/mechanism carry
+#    claim_risk=true. Curated, never runtime-generated (rule #9). Source: curated.
+# ';' separates list cells (colors, steps).
+title|description|color_ids|fiber_highlights|steps|prep_minutes|source|claim_risk
+Rainbow crunch bowl|A quick bowl built to hit several colours at once.|red;orange;green;white_brown|A generous mix of gentle, varied fibres.|Cook a cup of quinoa;Shred red cabbage and carrot;Toss with baby spinach and chickpeas;Dress with lemon and olive oil|20|Curated|false
+Overnight oats with berries|Beta-glucan oats plus deeply coloured berries, ready when you wake.|blue_purple;white_brown|Oats bring beta-glucan, a well-studied prebiotic fibre.|Combine oats and milk of choice;Stir in chia;Top with mixed berries;Chill overnight|5|Curated|true
+Roasted roots medley|Caramelised roots for a sweet, colourful side.|orange;red;white_brown|Cooked-then-cooled potato adds resistant starch.|Chop carrots, beetroot and potato;Toss with olive oil;Roast at 200C for 30 minutes;Cool slightly before serving|40|Curated|false
+Green herb lentils|Earthy lentils brightened with green herbs.|green|Lentils are rich in GOS, a top bacterial fuel.|Simmer lentils until tender;Fold through parsley and spinach;Finish with lemon and a little garlic|30|Curated|true
+Chickpea and tomato stew|A cosy stew leaning on legumes and colour.|red;orange;green|Legumes bring GOS and resistant starch together.|Saute onion and garlic;Add tomato and chickpeas;Simmer 20 minutes;Stir through chard|35|Curated|true
+Purple slaw|A crunchy slaw in a striking colour.|blue_purple;white_brown|Cabbage adds gentle, varied fibre.|Shred red cabbage and apple;Whisk yoghurt and mustard;Toss and rest 10 minutes|15|Curated|true

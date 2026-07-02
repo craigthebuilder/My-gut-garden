@@ -18,14 +18,14 @@ final class RecognitionService {
     private(set) var isBusy = false
     var errorMessage: String?
 
-    func recognize(mode: AppMode, auth: AuthService, imageBase64: String? = nil) async {
+    func recognize(auth: AuthService, imageBase64: String? = nil) async {
         isBusy = true
         errorMessage = nil
         defer { isBusy = false }
         do {
             if SupabaseConfig.isConfigured, let token = auth.session?.accessToken {
                 let client = SupabaseClient(baseURL: SupabaseConfig.baseURL, anonKey: SupabaseConfig.anonKey)
-                var body: [String: Any] = ["mode": mode.rawValue]
+                var body: [String: Any] = [:]
                 if let imageBase64 {
                     body["image_base64"] = imageBase64        // real photo → server picks vision when keyed
                 } else {
@@ -51,7 +51,6 @@ final class RecognitionService {
     private nonisolated static let fixtureJSON = """
     {
       "provider": "fixture",
-      "mode": "thrive",
       "vision": {
         "foods": [
           { "name": "Garlic", "portion_tier": "serving", "confidence": 0.82, "dish_type": "stir_fry" },
@@ -67,15 +66,14 @@ final class RecognitionService {
           "attributes": {
             "food_id": "demo-garlic", "canonical_name": "Garlic", "is_plant": true,
             "plant": { "name": "Garlic", "rarity_tier": "common" },
-            "is_fermented": false, "histamine_level": "low",
+            "is_fermented": false,
             "fibers": [
-              { "name": "inulin", "relative_amount": "primary", "is_fodmap_trigger": true, "est_grams_per_serving": 2.0 },
-              { "name": "fos", "relative_amount": "moderate", "is_fodmap_trigger": true, "est_grams_per_serving": 1.0 }
+              { "name": "inulin", "relative_amount": "primary", "fermentability": "high", "est_grams_per_serving": 2.0 },
+              { "name": "fos", "relative_amount": "moderate", "fermentability": "high", "est_grams_per_serving": 1.0 }
             ],
             "colors": ["white_brown"],
             "phytochemicals": [{ "name": "allicin", "class": "organosulfur" }],
-            "guild_feeds": [{ "internal_name": "base_layer", "display_name": "The Base Layer", "relevance": "primary", "claim_risk": false }],
-            "fodmap": { "safety": "red", "fructan_level": "high", "gos_level": "none", "lactose_level": "none", "fructose_level": "none", "polyol_level": "none", "serving_size_desc": "3 cloves" }
+            "guild_feeds": [{ "internal_name": "base_layer", "display_name": "The Base Layer", "relevance": "primary", "claim_risk": false }]
           }
         },
         {
@@ -83,18 +81,17 @@ final class RecognitionService {
           "attributes": {
             "food_id": "demo-oats", "canonical_name": "Oats", "is_plant": true,
             "plant": { "name": "Oats", "rarity_tier": "common" },
-            "is_fermented": false, "histamine_level": "low",
+            "is_fermented": false,
             "fibers": [
-              { "name": "beta_glucan", "relative_amount": "primary", "is_fodmap_trigger": false, "est_grams_per_serving": 3.0 },
-              { "name": "arabinoxylan", "relative_amount": "minor", "is_fodmap_trigger": false, "est_grams_per_serving": 0.8 }
+              { "name": "beta_glucan", "relative_amount": "primary", "fermentability": "moderate", "est_grams_per_serving": 3.0 },
+              { "name": "arabinoxylan", "relative_amount": "minor", "fermentability": "moderate", "est_grams_per_serving": 0.8 }
             ],
             "colors": ["white_brown"],
             "phytochemicals": [],
             "guild_feeds": [
               { "internal_name": "appetite_crew", "display_name": "The Appetite Crew", "relevance": "primary", "claim_risk": false },
               { "internal_name": "anti_inflammatory_arsenal", "display_name": "The Anti-inflammatory Arsenal", "relevance": "moderate", "claim_risk": false }
-            ],
-            "fodmap": { "safety": "green", "fructan_level": "low", "gos_level": "none", "lactose_level": "none", "fructose_level": "none", "polyol_level": "none", "serving_size_desc": "1/2 cup dry" }
+            ]
           }
         },
         {
@@ -102,12 +99,11 @@ final class RecognitionService {
           "attributes": {
             "food_id": "demo-spinach", "canonical_name": "Spinach", "is_plant": true,
             "plant": { "name": "Spinach", "rarity_tier": "common" },
-            "is_fermented": false, "histamine_level": "moderate",
-            "fibers": [{ "name": "pectin", "relative_amount": "minor", "is_fodmap_trigger": false, "est_grams_per_serving": 0.6 }],
+            "is_fermented": false,
+            "fibers": [{ "name": "pectin", "relative_amount": "minor", "fermentability": "moderate", "est_grams_per_serving": 0.6 }],
             "colors": ["green"],
             "phytochemicals": [{ "name": "lutein", "class": "carotenoid" }, { "name": "chlorophyll", "class": "chlorophyll" }],
-            "guild_feeds": [{ "internal_name": "vitamin_lab", "display_name": "The Vitamin Lab", "relevance": "moderate", "claim_risk": false }],
-            "fodmap": { "safety": "green", "fructan_level": "none", "gos_level": "none", "lactose_level": "none", "fructose_level": "none", "polyol_level": "none", "serving_size_desc": "1 cup" }
+            "guild_feeds": [{ "internal_name": "vitamin_lab", "display_name": "The Vitamin Lab", "relevance": "moderate", "claim_risk": false }]
           }
         },
         {
@@ -115,12 +111,11 @@ final class RecognitionService {
           "attributes": {
             "food_id": "demo-blueberry", "canonical_name": "Blueberry", "is_plant": true,
             "plant": { "name": "Blueberry", "rarity_tier": "uncommon" },
-            "is_fermented": false, "histamine_level": "low",
-            "fibers": [{ "name": "pectin", "relative_amount": "minor", "is_fodmap_trigger": false, "est_grams_per_serving": 0.5 }],
+            "is_fermented": false,
+            "fibers": [{ "name": "pectin", "relative_amount": "minor", "fermentability": "moderate", "est_grams_per_serving": 0.5 }],
             "colors": ["blue_purple"],
             "phytochemicals": [{ "name": "anthocyanin", "class": "polyphenol" }],
-            "guild_feeds": [{ "internal_name": "knights_of_the_wall", "display_name": "The Knights of the Wall", "relevance": "primary", "claim_risk": false }],
-            "fodmap": { "safety": "green", "fructan_level": "none", "gos_level": "none", "lactose_level": "none", "fructose_level": "low", "polyol_level": "none", "serving_size_desc": "20 berries" }
+            "guild_feeds": [{ "internal_name": "knights_of_the_wall", "display_name": "The Knights of the Wall", "relevance": "primary", "claim_risk": false }]
           }
         }
       ],
@@ -129,6 +124,7 @@ final class RecognitionService {
         { "food_name": "Carrot", "dish_type": "stir_fry", "prompt": "This stir fry often contains carrot, was it?" }
       ],
       "allergy_alerts": [],
+      "sensitivity_flags": [],
       "thrive": {
         "unique_plants": ["Garlic", "Oats", "Spinach", "Blueberry"],
         "colors_hit": ["white_brown", "green", "blue_purple"],
@@ -140,8 +136,7 @@ final class RecognitionService {
           { "display_name": "The Knights of the Wall", "claim_risk": false }
         ],
         "fermented_count": 0
-      },
-      "survive": null
+      }
     }
     """
 }

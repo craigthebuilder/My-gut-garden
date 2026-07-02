@@ -1,17 +1,17 @@
 //
 //  Seams.swift
-//  MyGutGarden, the inter-module contracts, fixed BEFORE fan-out so the
-//  orchestrator can wire modules at consolidation without editing any of them.
-//  Modules conform to these; the MealIngestion coordinator + AppShell consume
-//  them. (Red-team mitigation: removes the shared-write-path collisions.)
+//  MyGutGarden — the inter-module contracts. Modules conform to these; the
+//  MealIngestion coordinator + AppShell consume them, so modules never import
+//  each other. Single-mode: one insight presenter, food restrictions surface
+//  server-side via the three-tier flag model (no client suspect seams).
 //
 
 import SwiftUI
 
 // MARK: - Meal context (input to the ingestion seam)
 
-/// One confirmed, surfaced meal item (preference_intolerance items are already
-/// dropped per §9). Portion drives feeding weight; attributes drive everything.
+/// One confirmed, surfaced meal item. Portion drives feeding weight; attributes
+/// drive everything. (Sensitivity foods are still ingested + counted, SPEC §9.)
 struct IngestedItem: Sendable {
     let attributes: FoodAttributes
     let portion: PortionTier
@@ -22,10 +22,10 @@ struct MealContext: Sendable {
     let loggedAt: Date
     let items: [IngestedItem]
 
-    /// Build from a recognize response, keeping only surfaced (non-omitted) items.
+    /// Build from a recognize response — every resolved item is surfaced.
     static func from(_ response: RecognitionResponse, loggedAt: Date) -> MealContext {
         let items = response.items.compactMap { item -> IngestedItem? in
-            guard item.silentlyOmitted != true, let attrs = item.attributes else { return nil }
+            guard let attrs = item.attributes else { return nil }
             return IngestedItem(attributes: attrs, portion: item.vision.portionTier)
         }
         return MealContext(loggedAt: loggedAt, items: items)
@@ -42,7 +42,7 @@ struct GuildBloomSnapshot: Sendable {
 }
 
 /// D provides PURE functions; the coordinator owns the `guild_state` writes
-/// (decay from `last_fed_at`, then add) and the `user_districts` writes.
+/// (decay from `last_fed_at`, then add) and the `user_districts` / `user_worlds` writes.
 protocol GuildIngesting: Sendable {
     /// internal_name → feeding points for this meal (GameConfig.feedingPoints).
     func guildFeedingPoints(for context: MealContext) -> [String: Int]
@@ -51,9 +51,9 @@ protocol GuildIngesting: Sendable {
     func unlockedDistrictOrders(snapshots: [GuildBloomSnapshot], cumulativeTier2Days: Int) -> Set<Int>
 }
 
-// MARK: - Thrive collection/streak ingestion (Module C owns; coordinator writes)
+// MARK: - Collection/streak ingestion (Module C owns; coordinator writes)
 
-/// Thrive streak counters (positive outcomes only, §14 / rule #7).
+/// Streak counters (positive outcomes only, rule #7).
 struct ThriveStreaks: Sendable, Equatable {
     var weekly30Streak: Int = 0      // consecutive weeks hitting 30 plants
     var dailyThreePStreak: Int = 0   // consecutive days with all 3 P's
@@ -67,23 +67,18 @@ protocol ThriveIngesting: Sendable {
     func updatedStreaks(_ current: ThriveStreaks, weekHit30: Bool, threePsToday: ThreePs) -> ThriveStreaks
 }
 
-// MARK: - Per-photo insight injection (Module B hands off → C/E render)
+// MARK: - Per-photo insight injection (Module B hands off → C renders)
 
-/// What B persists + passes to the mode-specific insight view. The food-status
-/// fields are filled by the injected SuspectCheckService BEFORE auto-log (Module B
-/// reads them; Module E supplies the real impl). Defaulted so B's construction
-/// sites and previews stay source-compatible.
+/// What B persists + passes to the insight view. The three food-flag tiers are
+/// carried by `response` (allergyAlerts + sensitivityFlags, server-computed);
+/// Module B no longer computes them client-side.
 struct ConfirmedMeal: Sendable, Identifiable {
     let id: UUID
     let response: RecognitionResponse
     let capturedAt: Date
-    var suspectFoodIds: [String] = []   // status='suspect', avoid=false, not reintroducing
-    var avoidFoodIds: [String] = []     // avoid=true
-    var reintroFoodId: String? = nil    // a food in the user's active food_suspect challenge present here
 }
 
-/// C and E each supply a presenter; the AppShell injects the one matching the
-/// current mode, so B never imports C/E.
+/// C supplies the presenter; AppShell injects it so B never imports C.
 @MainActor
 protocol MealInsightPresenting {
     func insightView(for meal: ConfirmedMeal) -> AnyView
@@ -99,14 +94,14 @@ extension EnvironmentValues {
     }
 }
 
-// MARK: - Celebration channel (anyone emits; AppShell presents, Thrive only)
+// MARK: - Celebration channel (anyone emits; AppShell presents)
 
 enum CelebrationEvent: Sendable, Identifiable {
     case rareFind(plant: String, rarity: RarityTier)
     case guildBloom(displayName: String)
     case guildUnlock(displayName: String)
     case districtUnlock(name: String)
-    case graduation
+    case worldUnlock(name: String)
 
     var id: String {
         switch self {
@@ -114,7 +109,29 @@ enum CelebrationEvent: Sendable, Identifiable {
         case let .guildBloom(n): "bloom-\(n)"
         case let .guildUnlock(n): "unlock-\(n)"
         case let .districtUnlock(n): "district-\(n)"
-        case .graduation: "graduation"
+        case let .worldUnlock(n): "world-\(n)"
+        }
+    }
+}
+
+// MARK: - Guardian prompt channel (SPEC §11)
+//
+// A SEPARATE channel from CelebrationEvent. The guardian is quiet: it SUGGESTS,
+// the user CONFIRMS every move into a stricter tier (rule #8). None of these are
+// "juice for restriction" — they are calm, dismissible questions/offers.
+
+enum GuardianPrompt: Sendable, Identifiable, Equatable {
+    case fiberGoalIncrease(currentG: Int, proposedG: Int)         // Accept/Decline (+ water reminder)
+    case suggestWatching(foodName: String, foodId: String)       // "keep an eye on [food]?"
+    case couldBeAllergy(foodName: String, foodId: String)        // care prompt, NEVER a diagnosis
+    case overcameSensitivity(foodName: String, foodId: String)   // celebrated demote back into the diet
+
+    var id: String {
+        switch self {
+        case let .fiberGoalIncrease(c, p): "fiber-\(c)-\(p)"
+        case let .suggestWatching(_, f): "watch-\(f)"
+        case let .couldBeAllergy(_, f): "allergy-\(f)"
+        case let .overcameSensitivity(_, f): "overcame-\(f)"
         }
     }
 }
@@ -123,68 +140,7 @@ enum CelebrationEvent: Sendable, Identifiable {
 
 struct ProgressionState: Sendable, Equatable {
     var isTier2Unlocked: Bool = false
+    var unlockedWorldOrders: Set<Int> = []
     var unlockedDistrictOrders: Set<Int> = []
     var cumulativeTier2Days: Int = 0
-}
-
-// MARK: - Survive care-prompt channel (Batch E)
-//
-// Deliberately SEPARATE from CelebrationEvent: restriction is never juice (rule #7).
-// Unlike `AppState.celebrate(_:)` this fires in EITHER mode, it is a care prompt,
-// not a reward, and is presented as a calm, dismissible question, never confetti.
-
-enum SurvivePromptEvent: Sendable, Identifiable {
-    case switchToSurvivePrompt(avoidCount: Int)   // offered when ≥ N foods are set aside
-    case graduateToThrive                          // offered when the reset is complete
-    case offerSurvive                              // offered right after onboarding (R5 #4)
-
-    var id: String {
-        switch self {
-        case let .switchToSurvivePrompt(n): "switch-survive-\(n)"
-        case .graduateToThrive: "graduate-thrive"
-        case .offerSurvive: "offer-survive"
-        }
-    }
-}
-
-// MARK: - Food-status read seam (Module E owns the store; B/C read through this)
-//
-// Keeps Capture (Module B) and Thrive Today (Module C) ignorant of Module E types.
-// The default is a no-op so the spine + any module compiles without E wired in.
-
-protocol SuspectCheckService: Sendable {
-    func suspectFoodIds(for userId: String) async -> Set<String>   // suspect, NOT reintroducing
-    func avoidFoodIds(for userId: String) async -> Set<String>     // avoid = true
-    func reintroFoodIds(for userId: String) async -> Set<String>   // active food_suspect challenge
-}
-
-struct NoopSuspectCheckService: SuspectCheckService {
-    func suspectFoodIds(for userId: String) async -> Set<String> { [] }
-    func avoidFoodIds(for userId: String) async -> Set<String> { [] }
-    func reintroFoodIds(for userId: String) async -> Set<String> { [] }
-}
-
-private struct SuspectCheckServiceKey: EnvironmentKey {
-    static let defaultValue: any SuspectCheckService = NoopSuspectCheckService()
-}
-extension EnvironmentValues {
-    var suspectCheckService: any SuspectCheckService {
-        get { self[SuspectCheckServiceKey.self] }
-        set { self[SuspectCheckServiceKey.self] = newValue }
-    }
-}
-
-/// Module E injects the real write; default is a no-op. Called by Module B after a
-/// meal containing the active reintro food is auto-logged, to attach the
-/// "How did the [food] feel?" card whose answer writes back via CheckInWriter.
-typealias ReintroFeelingAttacher = @Sendable (_ reintroFoodId: String, _ mealId: String) async -> Void
-
-private struct ReintroFeelingAttacherKey: EnvironmentKey {
-    static let defaultValue: ReintroFeelingAttacher = { _, _ in }
-}
-extension EnvironmentValues {
-    var reintroFeelingAttacher: ReintroFeelingAttacher {
-        get { self[ReintroFeelingAttacherKey.self] }
-        set { self[ReintroFeelingAttacherKey.self] = newValue }
-    }
 }
