@@ -122,10 +122,13 @@ struct ThrFoodNameRow: Decodable, Sendable, Identifiable {
 
 /// One curated curiosity fact (`curiosity_facts`), variable reward (§11a).
 /// Curated content only; never generated at request time (CLAUDE.md rule #9).
+/// `topicTags` carry lowercase food/plant names so the post-snap fact can be
+/// limited to what's actually on the plate (owner, 2026-07-02 round 2).
 struct ThrCuriosityFactRow: Decodable, Sendable {
     let id: String
     let factText: String
     let confidenceTag: String
+    var topicTags: [String]? = nil
 }
 
 /// A phytochemical reference row (`phytochemicals`). `class` is a SQL/Swift

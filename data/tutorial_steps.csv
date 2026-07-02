@@ -1,22 +1,28 @@
 # tutorial_steps.csv — curated coach-mark copy (SPEC §7, DESIGN §4). One replayable
 # set per section_key; shown as dim-page SPOTLIGHT call-outs anchored to the view
-# registered with .coachTarget(target_hint). The intro tour WALKS the app: the
-# shell switches to the tab each hint lives on (home/dashboard/trythis/fiber/
-# checkin → Today; snap → Snap; fieldguide → Field Guide; garden → Garden).
+# registered with .coachTarget(target_hint). The intro tour WALKS the app (the
+# shell switches to each hint's tab) and Today AUTO-SCROLLS its target into view.
+# Section tours start on first entry: garden (Garden tab), rainbow + phytochemicals
+# (their field-guide pages), plants/fermented/trends stay available for replay.
 # 🔒 FENCE 4/8 (RD-REVIEW-REQUIRED): steps that state a benefit/mechanism carry
 #    claim_risk=true. Curated, never runtime-generated (rule #9).
 section_key|order|title|body|target_hint|claim_risk
-intro|0|Grow a garden by feeding your gut|Snap your meals and we turn them into a living garden — the more variety you feed it, the more it grows.|home|false
-intro|1|Your dashboard|Plants this week, the rainbow, and the 3 P's live here — with callouts for exactly what to eat today to fill the gaps. Tap in for the full picture.|dashboard|false
-intro|2|We'll help you build meals|Try this serves curated recipes. The ↻ deals a fresh idea; the target picks the meal that best fills today's gaps, so you keep hitting everything you need — fiber, plant variety, the rainbow, phytonutrients — without running low on any of them.|trythis|true
-intro|3|Snap your meals|Point the camera at your plate and we identify the plants and feed your garden. No weighing, no typing — a note like "extra onion" helps when something's hidden.|snap|false
-intro|4|Your field guide|Every plant you eat joins a lifetime collection — plants, colors, phytochemicals, fermented finds. Rarer finds are a bigger deal.|fieldguide|false
-intro|5|We'll pace your fibre|No fiber goal in week one — we learn your baseline first. Then it unlocks and rises gently as you're ready, with water reminders along the way.|home|true
-intro|6|You teach us, we teach you|Eat freely — a quiet guardian notices what doesn't sit well and asks before flagging anything. Over time we steer you toward foods that make you feel good and around the ones that don't. Your personalized nutrition, learned together.|checkin|true
-garden|0|Your microbiome garden|These are the bacterial crews you're feeding. Feed one steadily and it blooms.|garden|true
-garden|1|Worlds to explore|Your garden grows in worlds. Bloom the Core and the next world opens up.|garden|false
-rainbow|0|Eat the rainbow|Tap any colour to learn what it does for you and which foods bring it.|rainbow|true
-plants|0|Your plant field guide|Every new plant you eat joins your collection — rarer finds are a bigger deal.|plants|false
-fermented|0|Fermented finds|Fermented foods add live cultures; a little each day is a lovely habit.|fermented|true
-phytochemicals|0|Phytochemicals|The compounds behind the colours. Collect classes as you eat a wider range.|phytochemicals|true
-trends|0|Your trends|Customise your daily check-in and watch how you feel over time.|trends|false
+intro|0|Grow a garden by feeding your gut|Your gut hosts trillions of microbes, and variety is what they thrive on. Snap your meals and we turn them into a living garden — the more different plants you feed it, the more it grows, and the better it looks after you.|home|true
+intro|1|Your dashboard|The week's plant count, the rainbow, and the 3 P's live here, with callouts for exactly what to eat today to fill the gaps. Thirty different plants a week is the goal — diversity, never restriction.|dashboard|true
+intro|2|Meet the 3 P's|Prebiotic — fiber your microbes eat. Probiotic — live cultures from fermented foods. Polyphenol — the deep-colored plant compounds. One of each a day is a beautifully fed garden; tap the pill any time for your two-week trend.|threeps|true
+intro|3|We'll help you build meals|Try this serves curated recipes with serving sizes. The ↻ deals a fresh idea; the target picks the meal that best fills today's gaps — fiber, plant variety, colors, phytonutrients — so you never quietly run low on any of them.|trythis|true
+intro|4|Snap your meals|Point the camera at your plate — we identify the plants and feed your garden. No weighing, no typing. A note like "extra onion" catches what the camera can't see.|snap|false
+intro|5|Your field guide|Every plant you eat joins a lifetime collection — plants, colors, phytochemicals, fermented finds. Rarer finds are a bigger deal.|fieldguide|false
+intro|6|Your fiber goal is coming|No number in week one — we watch how you actually eat first. Explore 30 plants and the goal unlocks at a level that's comfortable for you, then rises gently as you're ready, water reminders included.|fiber|true
+intro|7|You teach us, we teach you|Eat freely. The optional check-in plus a quiet guardian notice what sits well and what doesn't — and always ask before flagging anything. Over time we steer you toward foods that make you feel good, and around the ones that don't.|checkin|true
+intro|8|Make the check-in yours|Track as much or as little as you like — customize exactly what the check-in asks, right here in You. Your picks shape your trends too.|customize|false
+garden|0|Your microbiome garden|These crews stand for the microbes you're feeding. Each one runs on different plants — feed a crew steadily for a few days and it blooms.|garden|true
+garden|1|Worlds to explore|The garden grows in worlds: bloom the Core's crews and new districts open up. It's a living map of your gut's diversity, drawn from what you actually eat.|garden|true
+garden|2|Rhythm beats feasts|Nourishment fades a little each day, so steady feeding beats one big plate. Every crew's page tells you exactly what it runs on.|garden|true
+rainbow|0|Eat the rainbow|Six color groups, each carrying its own phytochemicals. Any amount counts toward the week's six — a ring closes fully when you eat a lot of that color, and the outline shows how much is left to fill.|rainbow|true
+rainbow|1|Tap a color|Each color's page shows its week, example foods, and what it does for you — the fastest way to answer "what should I add today?"|rainbow|true
+plants|0|Your plant field guide|Every new plant you eat joins your collection for life — rarer finds are a bigger deal. Tap any plant to read its story.|plants|false
+fermented|0|Fermented finds|Fermented foods bring live cultures — the probiotic P. A little each day is a lovely habit, and each find is collected here.|fermented|true
+phytochemicals|0|Phytochemicals|The compounds behind the colors — your microbes turn them into useful things. The coverage bars show how much of the catalogue you've eaten this week, fortnight, and month.|phytochemicals|true
+phytochemicals|1|Chase the gaps|Tap a coverage bar to see exactly which compounds you haven't had lately — each one lists the foods that carry it.|phytochemicals|false
+trends|0|Your trends|Customise your daily check-in and watch mood, energy, and clarity move against your starting baseline.|trends|false

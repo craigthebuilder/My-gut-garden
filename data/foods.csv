@@ -119,18 +119,18 @@ Oyster mushroom|oyster mushrooms|true|Oyster mushroom|false|moderate|stir_fry;so
 Nori|seaweed sheet;laver|true|Nori|false|moderate|sushi;snack;garnish|seaweed
 Wakame|seaweed salad;wakame|true|Wakame|false|moderate|miso_soup;salad|seaweed
 Kombu|kelp;dashi kelp|true|Kombu|false|moderate|dashi;broth;bean_cooking|seaweed
-Tofu|bean curd;firm tofu;silken tofu|true||false|moderate|stir_fry;curry;soup;scramble|soy;legume
+Tofu|bean curd;firm tofu;silken tofu|true|Soybean|false|moderate|stir_fry;curry;soup;scramble|soy;legume
 Green tea|matcha;sencha;green tea leaves|true||false|moderate|latte;smoothie|beverage;polyphenol_rich
 Yogurt|plain yogurt;greek yogurt;curd|false||true|moderate|smoothie;dressing;dip;marinade|dairy;fermented
 Kefir|milk kefir;kefir drink|false||true|high|smoothie|dairy;fermented;high_histamine
 Aged cheese|cheddar;parmesan;hard cheese|false||true|high|pasta;pizza;sauce;gratin|dairy;fermented;high_histamine
-Sauerkraut|fermented cabbage;kraut|true||true|high|hot_dog_topping;salad|fermented;cruciferous;high_histamine;fodmap
-Kimchi|fermented kimchi;baechu|true||true|high|stir_fry;rice_bowl;stew|fermented;cruciferous;allium;high_histamine;fodmap
-Miso|miso paste;red miso;white miso|true||true|high|soup;marinade;dressing|fermented;soy;high_histamine;fodmap
-Tempeh|fermented soy cake|true||true|moderate|stir_fry;sandwich|fermented;soy
-Natto|fermented soybeans|true||true|high|rice_bowl|fermented;soy;high_histamine
-Sourdough bread|sourdough;levain|true||true|low|sandwich;toast|fermented;grain;gluten;wheat
-Kombucha|fermented tea;booch|true||true|moderate||fermented;beverage;polyphenol_rich
+Sauerkraut|fermented cabbage;kraut|true|Sauerkraut|true|high|hot_dog_topping;salad|fermented;cruciferous;high_histamine;fodmap
+Kimchi|fermented kimchi;baechu|true|Kimchi|true|high|stir_fry;rice_bowl;stew|fermented;cruciferous;allium;high_histamine;fodmap
+Miso|miso paste;red miso;white miso|true|Miso|true|high|soup;marinade;dressing|fermented;soy;high_histamine;fodmap
+Tempeh|fermented soy cake|true|Tempeh|true|moderate|stir_fry;sandwich|fermented;soy
+Natto|fermented soybeans|true|Natto|true|high|rice_bowl|fermented;soy;high_histamine
+Sourdough bread|sourdough;levain|true|Whole wheat|true|low|sandwich;toast|fermented;grain;gluten;wheat
+Kombucha|fermented tea;booch|true|Kombucha|true|moderate||fermented;beverage;polyphenol_rich
 # ---- Everyday non-plant + pantry foods (owner request 2026-07-02) -------------
 # So "anything you react to" search covers what people actually eat: meats, fish,
 # eggs, dairy, oils, vinegars, condiments, sweeteners, drinks. None of these count

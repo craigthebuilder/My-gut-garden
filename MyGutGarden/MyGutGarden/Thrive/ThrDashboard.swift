@@ -32,10 +32,12 @@ struct ThrTodayCallout: Identifiable {
 enum ThrDashboardGaps {
     /// Up to `limit` prioritized callouts: missing rainbow colors first (they
     /// carry the phytochemicals), then a missing fermented food, then the
-    /// phytochemical explore (once Tier 2 is open). Empty when today is covered.
+    /// SPECIFIC phytochemical gap (once Tier 2 is open). Empty when today is
+    /// covered.
     static func callouts(threePs: ThrThreePAmounts,
                          rainbow: ThrRainbowAmounts,
                          exampleFoods: (ThrRainbowGroup) -> [String],
+                         phytoGap: ThrHomeModel.PhytoGap? = nil,
                          tier2Unlocked: Bool,
                          limit: Int = 3) -> [ThrTodayCallout] {
         var out: [ThrTodayCallout] = []
@@ -66,12 +68,22 @@ enum ThrDashboardGaps {
             ))
         }
         if tier2Unlocked {
-            out.append(ThrTodayCallout(
-                id: "phytos",
-                icon: "atom",
-                title: "Round out your phytochemicals",
-                target: .phytos
-            ))
+            // The actual insight, not a generic nudge (owner, round 2).
+            if let gap = phytoGap {
+                out.append(ThrTodayCallout(
+                    id: "phytos",
+                    icon: "atom",
+                    title: "No \(gap.compoundName.lowercased()) in a while — \(gap.exampleFood.lowercased()) brings it back",
+                    target: .phytos
+                ))
+            } else {
+                out.append(ThrTodayCallout(
+                    id: "phytos",
+                    icon: "atom",
+                    title: "Round out your phytochemicals",
+                    target: .phytos
+                ))
+            }
         }
         return Array(out.prefix(limit))
     }
@@ -90,6 +102,7 @@ struct ThrDashboardCallouts: View {
         ThrDashboardGaps.callouts(threePs: model.todayThreePs,
                                   rainbow: model.rainbowAmounts,
                                   exampleFoods: model.exampleFoods(for:),
+                                  phytoGap: model.phytoGap,
                                   tier2Unlocked: appState.progression.isTier2Unlocked)
     }
 
@@ -252,6 +265,7 @@ enum ThrThreePsCopy {
 struct ThrThreePsDetailView: View {
     @Environment(\.theme) private var theme
     let model: ThrHomeModel
+    var appState: AppState? = nil
 
     // Curated explainer copy (rule #11). Directional, never a measured claim.
     private static let explainers: [(title: String, body: String, icon: String)] = [
@@ -271,6 +285,9 @@ struct ThrThreePsDetailView: View {
                             .font(theme.typography.caption())
                             .foregroundStyle(theme.colors.textSecondary)
                     }
+                }
+                if let appState {
+                    ThrThreePsTrendCard(appState: appState)
                 }
                 ForEach(Self.explainers, id: \.title) { item in
                     Card {

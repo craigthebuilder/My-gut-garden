@@ -28,7 +28,6 @@ struct CapEditMealView: View {
                         photoAndNote
                         ingredients
                         addIngredient
-                        hiddenPrompts
                         if let error = model.errorText { errorNote(error) }
                     }
                     .padding(theme.metrics.space5)
@@ -145,51 +144,9 @@ struct CapEditMealView: View {
         CapAddIngredientRow(model: model)
     }
 
-    // MARK: Deferred hidden-ingredient prompts (reappear here, §4)
-
-    @ViewBuilder
-    private var hiddenPrompts: some View {
-        if !model.hiddenAnswers.isEmpty {
-            VStack(alignment: .leading, spacing: theme.metrics.space3) {
-                SectionHeader(title: "Worth a check")
-                Text("These often hide in dishes like yours. Add any that were there.")
-                    .font(theme.typography.caption())
-                    .foregroundStyle(theme.colors.textSecondary)
-                ForEach(model.hiddenAnswers) { answer in
-                    Card {
-                        VStack(alignment: .leading, spacing: theme.metrics.space3) {
-                            Text(answer.prompt.prompt)
-                                .font(theme.typography.body())
-                                .foregroundStyle(theme.colors.textPrimary)
-                            HStack(spacing: theme.metrics.space3) {
-                                hiddenChoice("Yes", value: true, answer: answer)
-                                hiddenChoice("No", value: false, answer: answer)
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private func hiddenChoice(_ title: String, value: Bool, answer: CapHiddenIngredientAnswer) -> some View {
-        let selected = answer.wasPresent == value
-        return Button { model.setHiddenAnswer(answer, wasPresent: value) } label: {
-            Text(title)
-                .font(theme.typography.body(weight: .medium))
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, theme.metrics.space2)
-        }
-        .foregroundStyle(selected ? theme.colors.surface : theme.colors.primary)
-        .background(selected ? theme.colors.primary : theme.colors.surface)
-        .clipShape(RoundedRectangle(cornerRadius: theme.metrics.radiusSmall, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: theme.metrics.radiusSmall, style: .continuous)
-                .strokeBorder(theme.colors.primary.opacity(0.4), lineWidth: 1)
-        )
-        .accessibilityLabel("\(title), \(answer.prompt.foodName)")
-        .accessibilityAddTraits(selected ? .isSelected : [])
-    }
+    // Owner (2026-07-02 round 2): the always-ask hidden-ingredient wall is gone.
+    // The one or two KEY questions now live on the Recent-Meals pop-up
+    // (ThrMealQuestions) as a small ⚠︎ — never a prompt pile here.
 
     private func errorNote(_ text: String) -> some View {
         Text(text)

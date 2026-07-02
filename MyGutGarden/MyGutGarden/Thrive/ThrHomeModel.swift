@@ -28,6 +28,17 @@ final class ThrHomeModel {
     // Recent meals (last 5 days) + this week's per-color amounts (weekly chart).
     var recentMeals: [MealRow] = []
     var weeklyColorAmounts: [WeeklyColorAmountRow] = []
+    /// The one-or-two KEY hidden-ingredient questions per meal id (⚠︎ badge on
+    /// the rail; answered in the meal pop-up). Owner rework, 2026-07-02 round 2.
+    var keyQuestions: [String: [ThrMealKeyQuestion]] = [:]
+
+    /// A SPECIFIC phytochemical gap for the dashboard callout ("No lycopene in
+    /// a while — tomato brings it back"), not a generic nudge. Owner, round 2.
+    struct PhytoGap: Sendable, Equatable {
+        let compoundName: String
+        let exampleFood: String
+    }
+    var phytoGap: PhytoGap?
 
     // Variable reward + rainbow education content.
     var curiosity: ThrCuriosityFactRow?
@@ -80,10 +91,53 @@ final class ThrHomeModel {
         await loadTodayCheckin(repo, userId: profile?.id)
         await loadTodayMealItems(repo)
         await loadRecentMeals(repo)
+        await computeKeyQuestions(repo)
+        await loadPhytoGap(repo)
         await loadWeeklyColors(repo, userId: profile?.id)
         await loadRecipeSuggestion(repo)
 
         isLoaded = true
+    }
+
+    /// The dashboard's specific phytochemical callout: the first (shuffled)
+    /// compound not eaten within the gap window, with one food that carries it.
+    /// Mirrors ThrPhytoDepthModel's gap logic in miniature.
+    private func loadPhytoGap(_ repo: Repository) async {
+        struct PhytoRow: Decodable { let id: String; let name: String }
+        struct ItemFoodRow: Decodable { let foodId: String }
+        let phytos: [PhytoRow] = (try? await repo.select("phytochemicals", columns: "id,name")) ?? []
+        guard !phytos.isEmpty else { return }
+        let junctions: [ThrFoodPhytoRow] = (try? await repo.select(
+            "food_phytochemicals", columns: "food_id,phytochemical_id")) ?? []
+
+        let since = ThrDates.timestampString(
+            Calendar.current.date(byAdding: .day, value: -GameConfig.shared.phytoGapInsightDays,
+                                  to: ThrDates.startOfToday()) ?? ThrDates.startOfToday())
+        var recentFoodIds: Set<String> = []
+        if let meals: [MealRow] = try? await repo.select(
+            "meals", columns: "id,photo_url,captured_at,confirmed,user_annotation",
+            filters: ["captured_at": "gte.\(since)", "confirmed": "eq.true"]), !meals.isEmpty {
+            let mealList = "(" + meals.map(\.id).joined(separator: ",") + ")"
+            let items: [ItemFoodRow] = (try? await repo.select(
+                "meal_items", columns: "food_id", filters: ["meal_id": "in.\(mealList)"])) ?? []
+            recentFoodIds = Set(items.map(\.foodId))
+        }
+        let eatenPhytoIds = Set(junctions.filter { recentFoodIds.contains($0.foodId) }
+            .map(\.phytochemicalId))
+
+        var foodsByPhyto: [String: [String]] = [:]
+        for junction in junctions { foodsByPhyto[junction.phytochemicalId, default: []].append(junction.foodId) }
+        guard let pick = phytos.filter({ !eatenPhytoIds.contains($0.id) }).shuffled().first(where: {
+            !(foodsByPhyto[$0.id] ?? []).isEmpty
+        }) else { phytoGap = nil; return }
+
+        let foodIds = foodsByPhyto[pick.id] ?? []
+        let list = "(" + foodIds.prefix(10).joined(separator: ",") + ")"
+        let names: [ThrFoodNameRow] = (try? await repo.select(
+            "foods", columns: "id,canonical_name", filters: ["id": "in.\(list)"])) ?? []
+        guard let food = names.first?.canonicalName else { phytoGap = nil; return }
+        phytoGap = PhytoGap(compoundName: pick.name.replacingOccurrences(of: "_", with: " "),
+                            exampleFood: food)
     }
 
     /// Recent weeks of one color's max amount (oldest → newest) for the tap-in
@@ -292,17 +346,74 @@ final class ThrHomeModel {
 
     /// Last 5 days of confirmed meals for the Recent-Meals rail. A nil photo_url
     /// (e.g. a never-photographed manual meal) renders a neutral placeholder.
+    /// vision_raw_json + hidden_ingredient_answers ride along (jsonb-as-string)
+    /// to drive the key-question ⚠︎.
     private func loadRecentMeals(_ repo: Repository) async {
         let since = ThrDates.timestampString(
             Calendar.current.date(byAdding: .day, value: -5, to: ThrDates.startOfToday()) ?? ThrDates.startOfToday()
         )
         if let meals: [MealRow] = try? await repo.select(
-            "meals", columns: "id,photo_url,captured_at,confirmed,user_annotation",
+            "meals",
+            columns: "id,photo_url,captured_at,confirmed,user_annotation,vision_raw_json,hidden_ingredient_answers",
             filters: ["captured_at": "gte.\(since)", "confirmed": "eq.true"],
             order: "captured_at.desc", limit: 20
         ) {
             recentMeals = meals
         }
+    }
+
+    // MARK: - Key hidden-ingredient questions (⚠︎ on the rail; ThrMealQuestions)
+
+    private struct ThrHiddenFoodRow: Decodable, Sendable {
+        let id: String
+        let canonicalName: String
+        let commonHiddenIn: [String]?
+        let categories: [String]?
+    }
+    private struct ThrMealItemRefRow: Decodable, Sendable {
+        let mealId: String
+        let foodId: String
+    }
+
+    private func computeKeyQuestions(_ repo: Repository) async {
+        guard !recentMeals.isEmpty else { keyQuestions = [:]; return }
+        let foods: [ThrHiddenFoodRow] = (try? await repo.select(
+            "foods", columns: "id,canonical_name,common_hidden_in,categories")) ?? []
+        let refs = foods
+            .filter { !($0.commonHiddenIn ?? []).isEmpty }
+            .map { ThrMealQuestions.HiddenFoodRef(id: $0.id, name: $0.canonicalName,
+                                                  commonHiddenIn: $0.commonHiddenIn ?? [],
+                                                  categories: $0.categories ?? []) }
+        let flagRows = (try? await repo.fetchFoodFlags()) ?? []
+        let flags = flagRows.map { ThrMealQuestions.FlagRef(foodId: $0.foodId, category: $0.category) }
+
+        let mealList = "(" + recentMeals.map(\.id).joined(separator: ",") + ")"
+        let items: [ThrMealItemRefRow] = (try? await repo.select(
+            "meal_items", columns: "meal_id,food_id", filters: ["meal_id": "in.\(mealList)"])) ?? []
+        var loggedByMeal: [String: Set<String>] = [:]
+        for item in items { loggedByMeal[item.mealId, default: []].insert(item.foodId) }
+
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        var out: [String: [ThrMealKeyQuestion]] = [:]
+        for meal in recentMeals {
+            var dishTypes: Set<String> = []
+            if let raw = meal.visionRawJson,
+               let vision = try? decoder.decode(VisionResult.self, from: Data(raw.utf8)) {
+                dishTypes = Set(vision.foods.compactMap(\.dishType))
+            }
+            var answered: Set<String> = []
+            if let raw = meal.hiddenIngredientAnswers,
+               let arr = try? JSONSerialization.jsonObject(with: Data(raw.utf8)) as? [[String: Any]] {
+                answered = Set(arr.compactMap { $0["food_name"] as? String })
+            }
+            let questions = ThrMealQuestions.pending(dishTypes: dishTypes,
+                                                     loggedFoodIds: loggedByMeal[meal.id] ?? [],
+                                                     answeredFoodNames: answered,
+                                                     foods: refs, flags: flags)
+            if !questions.isEmpty { out[meal.id] = questions }
+        }
+        keyQuestions = out
     }
 
     /// This + recent weeks of per-color amounts for the rainbow tap-in chart.

@@ -20,6 +20,9 @@ struct ThrRecentMealsSection: View {
     @Environment(\.theme) private var theme
     let appState: AppState
     let meals: [MealRow]
+    /// The one-or-two KEY hidden-ingredient questions per meal id (⚠︎ badge;
+    /// answered in the pop-up). Owner rework, 2026-07-02 round 2.
+    var questions: [String: [ThrMealKeyQuestion]] = [:]
 
     @State private var selected: ThrSelectedMeal?
 
@@ -29,8 +32,10 @@ struct ThrRecentMealsSection: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: theme.metrics.space3) {
                     ForEach(meals, id: \.id) { meal in
-                        Button { selected = ThrSelectedMeal(meal: meal) } label: {
-                            ThrMealThumbCard(meal: meal)
+                        Button {
+                            selected = ThrSelectedMeal(meal: meal, questions: questions[meal.id] ?? [])
+                        } label: {
+                            ThrMealThumbCard(meal: meal, hasQuestion: !(questions[meal.id] ?? []).isEmpty)
                         }
                         .buttonStyle(.plain)
                     }
@@ -39,7 +44,7 @@ struct ThrRecentMealsSection: View {
             }
         }
         .sheet(item: $selected) { wrapper in
-            ThrMealDetailSheet(appState: appState, meal: wrapper.meal)
+            ThrMealDetailSheet(appState: appState, meal: wrapper.meal, questions: wrapper.questions)
         }
     }
 }
@@ -48,6 +53,7 @@ struct ThrRecentMealsSection: View {
 /// without retroactively conforming a type Module C doesn't own.
 private struct ThrSelectedMeal: Identifiable {
     let meal: MealRow
+    var questions: [ThrMealKeyQuestion] = []
     var id: String { meal.id }
 }
 
@@ -56,18 +62,30 @@ private struct ThrSelectedMeal: Identifiable {
 struct ThrMealThumbCard: View {
     @Environment(\.theme) private var theme
     let meal: MealRow
+    var hasQuestion = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: theme.metrics.space1) {
             ThrMealPhoto(photoUrl: meal.photoUrl)
                 .frame(width: 116, height: 116)
                 .clipShape(RoundedRectangle(cornerRadius: theme.metrics.radiusMedium, style: .continuous))
+                .overlay(alignment: .topTrailing) {
+                    if hasQuestion {
+                        Image(systemName: "exclamationmark.circle.fill")
+                            .font(.system(size: 18, weight: .semibold))
+                            .symbolRenderingMode(.palette)
+                            .foregroundStyle(theme.colors.surface, theme.colors.warning)
+                            .padding(theme.metrics.space1)
+                    }
+                }
             Text(ThrMealDates.shortLabel(meal.capturedAt))
                 .font(theme.typography.caption(weight: .medium))
                 .foregroundStyle(theme.colors.textSecondary)
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("Meal from \(ThrMealDates.shortLabel(meal.capturedAt)). Tap to see ingredients.")
+        .accessibilityLabel("Meal from \(ThrMealDates.shortLabel(meal.capturedAt))."
+                            + (hasQuestion ? " Has a quick question." : "")
+                            + " Tap to see ingredients.")
     }
 }
 
@@ -112,6 +130,7 @@ struct ThrMealDetailSheet: View {
     @Environment(\.dismiss) private var dismiss
     let appState: AppState
     let meal: MealRow
+    var questions: [ThrMealKeyQuestion] = []
 
     @State private var model: ThrMealDetailModel?
 
@@ -131,6 +150,7 @@ struct ThrMealDetailSheet: View {
                     }
 
                     if let model {
+                        quickCheck(model)
                         ingredients(model)
                         hypotheses(model)
                     } else {
@@ -150,11 +170,61 @@ struct ThrMealDetailSheet: View {
         }
         .task {
             if model == nil {
-                let m = ThrMealDetailModel(appState: appState, meal: meal)
+                let m = ThrMealDetailModel(appState: appState, meal: meal, questions: questions)
                 await m.load()
                 model = m
             }
         }
+    }
+
+    // MARK: The one-or-two key questions (the ⚠︎'s payoff; ThrMealQuestions)
+
+    @ViewBuilder private func quickCheck(_ model: ThrMealDetailModel) -> some View {
+        if !model.pendingQuestions.isEmpty {
+            Card {
+                VStack(alignment: .leading, spacing: theme.metrics.space3) {
+                    HStack(spacing: theme.metrics.space2) {
+                        Image(systemName: "exclamationmark.circle.fill")
+                            .foregroundStyle(theme.colors.warning)
+                        SectionHeader(title: "Quick check")
+                    }
+                    ForEach(model.pendingQuestions) { question in
+                        VStack(alignment: .leading, spacing: theme.metrics.space2) {
+                            Text(question.prompt)
+                                .font(theme.typography.body())
+                                .foregroundStyle(theme.colors.textPrimary)
+                                .fixedSize(horizontal: false, vertical: true)
+                            HStack(spacing: theme.metrics.space3) {
+                                quickAnswer("Yes, it was", question: question, wasPresent: true)
+                                quickAnswer("No", question: question, wasPresent: false)
+                            }
+                        }
+                        if question.id != model.pendingQuestions.last?.id {
+                            Divider().overlay(theme.colors.divider)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private func quickAnswer(_ title: String, question: ThrMealKeyQuestion, wasPresent: Bool) -> some View {
+        Button {
+            Task { await model?.answer(question, wasPresent: wasPresent) }
+        } label: {
+            Text(title)
+                .font(theme.typography.body(weight: .medium))
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, theme.metrics.space2)
+        }
+        .foregroundStyle(theme.colors.primary)
+        .background(theme.colors.surface)
+        .clipShape(RoundedRectangle(cornerRadius: theme.metrics.radiusSmall, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: theme.metrics.radiusSmall, style: .continuous)
+                .strokeBorder(theme.colors.primary.opacity(0.4), lineWidth: 1)
+        )
+        .accessibilityLabel("\(title): \(question.foodName)")
     }
 
     // MARK: Ingredients (editable coarse amounts)
@@ -290,11 +360,44 @@ final class ThrMealDetailModel {
     let meal: MealRow
 
     var items: [ThrMealItemRow] = []
+    var pendingQuestions: [ThrMealKeyQuestion] = []
+    private var answers: [[String: Any]] = []       // meals.hidden_ingredient_answers, appended per answer
     private var nameByFood: [String: String] = [:]
 
-    init(appState: AppState, meal: MealRow) {
+    init(appState: AppState, meal: MealRow, questions: [ThrMealKeyQuestion] = []) {
         self.appState = appState
         self.meal = meal
+        self.pendingQuestions = questions
+        if let raw = meal.hiddenIngredientAnswers,
+           let existing = try? JSONSerialization.jsonObject(with: Data(raw.utf8)) as? [[String: Any]] {
+            answers = existing
+        }
+    }
+
+    /// Answer a key question: record it on the meal (so the ⚠︎ clears for good)
+    /// and, on "yes", log the food as a hidden_confirmed item — the DB trigger
+    /// derives its fiber, and the garden picks it up on the next ingest pass.
+    func answer(_ question: ThrMealKeyQuestion, wasPresent: Bool) async {
+        guard let repo = appState.repository else { return }
+        answers.append(["food_name": question.foodName,
+                        "dish_type": question.dishType,
+                        "was_present": wasPresent])
+        if let data = try? JSONSerialization.data(withJSONObject: answers),
+           let json = String(data: data, encoding: .utf8) {
+            try? await repo.update("meals",
+                                   set: ["hidden_ingredient_answers": .string(json)],
+                                   filters: ["id": "eq.\(meal.id)"])
+        }
+        if wasPresent {
+            try? await repo.insertVoid("meal_items", [
+                "meal_id": .string(meal.id),
+                "food_id": .string(question.foodId),
+                "portion_tier": .string(PortionTier.serving.rawValue),
+                "source": .string("hidden_confirmed"),
+            ])
+            await load()
+        }
+        pendingQuestions.removeAll { $0.id == question.id }
     }
 
     func name(for item: ThrMealItemRow) -> String {

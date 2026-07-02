@@ -212,18 +212,13 @@ final class CapCaptureModel {
     /// True once a meal is persisted (offline meals can't be edited).
     var canEditMeal: Bool { persistedMealId != nil && appState.repository != nil }
 
-    /// Build the editor for the just-logged meal, carrying the deferred
-    /// hidden-ingredient prompts so they reappear there (SPEC §4).
+    /// Build the editor for the just-logged meal. Hidden-ingredient prompts no
+    /// longer resurface there — the key questions live on Recent Meals instead.
     func makeEditModel() -> CapEditMealModel? {
         guard let repo = appState.repository,
               let userId = appState.auth.session?.user?.id,
               let mealId = persistedMealId else { return nil }
-        return CapEditMealModel(
-            repository: repo,
-            userId: userId,
-            mealId: mealId,
-            deferredHiddenPrompts: response?.hiddenIngredientPrompts ?? []
-        )
+        return CapEditMealModel(repository: repo, userId: userId, mealId: mealId)
     }
 
     // MARK: - Review/edit interactions (retained for the edit flow)

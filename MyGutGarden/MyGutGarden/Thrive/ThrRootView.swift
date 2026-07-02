@@ -32,22 +32,34 @@ struct ThrRootView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: theme.metrics.space5) {
-                    header
-                        .coachTarget("home")
-                    if let latestMeal { ThrAllergyBanner(alerts: latestMeal.response.allergyAlerts) }
-                    dashboardSection
-                        .coachTarget("dashboard")
-                    recipeSection
-                        .coachTarget("trythis")
-                    if let fact = model.curiosity {
-                        ThrCuriosityCard(fact: fact.factText)
+            ScrollViewReader { proxy in
+                ScrollView {
+                    VStack(alignment: .leading, spacing: theme.metrics.space5) {
+                        header
+                            .coachTarget("home")
+                            .id("home")
+                        if let latestMeal { ThrAllergyBanner(alerts: latestMeal.response.allergyAlerts) }
+                        dashboardSection
+                            .coachTarget("dashboard")
+                            .id("dashboard")
+                        recipeSection
+                            .coachTarget("trythis")
+                            .id("trythis")
+                        if let fact = model.curiosity {
+                            ThrCuriosityCard(fact: fact.factText)
+                        }
+                        recentMealsSection
+                        exploreSection
                     }
-                    recentMealsSection
-                    exploreSection
+                    .padding(theme.metrics.space5)
                 }
-                .padding(theme.metrics.space5)
+                // The tour auto-scrolls its spotlight into view — replaying it
+                // from the bottom of the page must not strand the highlights
+                // off-screen (owner, round 2).
+                .onChange(of: appState.coach.current?.targetHint) { _, hint in
+                    scrollToCoachTarget(hint, proxy: proxy)
+                }
+                .onAppear { scrollToCoachTarget(appState.coach.current?.targetHint, proxy: proxy) }
             }
             .background(theme.colors.background.ignoresSafeArea())
             .navigationTitle("Garden")
@@ -79,7 +91,8 @@ struct ThrRootView: View {
         .onAppear { Task { await model.load(appState: appState, latestMeal: latestMeal) } }
     }
 
-    // MARK: - Header (greeting; the fiber line appears only once unlocked, §10)
+    // MARK: - Header (greeting; the fiber line appears only once unlocked, §10 —
+    // pre-unlock a LOCKED line shows what's coming, and the intro tour points at it)
 
     private var header: some View {
         VStack(alignment: .leading, spacing: theme.metrics.space2) {
@@ -94,14 +107,50 @@ struct ThrRootView: View {
                 .foregroundStyle(theme.colors.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)
                 .frame(maxWidth: .infinity, alignment: .leading)
-            if model.fiberGoalG != nil {
-                ThrFiberLine(consumedG: model.fiberConsumedTodayG,
-                             goalG: model.fiberGoalG,
-                             fraction: model.fiberFraction)
-                    .padding(.top, theme.metrics.space1)
+            Group {
+                if model.fiberGoalG != nil {
+                    ThrFiberLine(consumedG: model.fiberConsumedTodayG,
+                                 goalG: model.fiberGoalG,
+                                 fraction: model.fiberFraction)
+                } else if model.isLoaded {
+                    lockedFiberLine
+                }
             }
+            .padding(.top, theme.metrics.space1)
+            .coachTarget("fiber")
+            .id("fiber")
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    /// The pre-unlock state, visible so the goal's arrival means something. No
+    /// number shows before the unlock (SPEC §10 / Fence 5) — just the promise.
+    private var lockedFiberLine: some View {
+        HStack(spacing: theme.metrics.space2) {
+            Image(systemName: "lock.fill")
+                .font(.system(size: 11))
+                .foregroundStyle(theme.colors.textSecondary)
+            Text("Fiber goal — unlocks after your first 30-plant week")
+                .font(theme.typography.caption())
+                .foregroundStyle(theme.colors.textSecondary)
+            Spacer(minLength: 0)
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Fiber goal locked. It unlocks after your first thirty-plant week.")
+    }
+
+    private func scrollToCoachTarget(_ hint: String?, proxy: ScrollViewProxy) {
+        let scrollable: Set<String> = ["home", "fiber", "dashboard", "threeps", "trythis", "checkin"]
+        guard let hint, scrollable.contains(hint) else { return }
+        let target = (hint == "threeps") ? "dashboard" : hint
+        let anchor: UnitPoint = switch target {
+        case "home", "fiber": .top
+        case "checkin": .bottom
+        default: .center
+        }
+        withAnimation(.easeInOut(duration: 0.35)) {
+            proxy.scrollTo(target, anchor: anchor)
+        }
     }
 
     // MARK: - Your dashboard (the hero: plants arc + compact progress + callouts)
@@ -130,11 +179,24 @@ struct ThrRootView: View {
                         : "\(model.plantsRemaining) to go",
                     accent: theme.colors.primary
                 )
-                // Compact 3 P's + rainbow progress, right on the dashboard.
+                // Compact 3 P's + rainbow progress; each pill taps through to a
+                // 14-day trend chart (owner, round 2). The intro tour spotlights
+                // this row when it introduces the 3 P's.
                 HStack(spacing: theme.metrics.space2) {
-                    StatPill(value: "\(model.todayThreePs.count)/3", label: "3 P's today")
-                    StatPill(value: "\(model.rainbowAmounts.hitCount)/6", label: "Rainbow today")
+                    NavigationLink {
+                        ThrThreePsDetailView(model: model, appState: appState)
+                    } label: {
+                        StatPill(value: "\(model.todayThreePs.count)/3", label: "3 P's today")
+                    }
+                    .buttonStyle(.plain)
+                    NavigationLink {
+                        ThrRainbowTrendView(appState: appState, latestMeal: latestMeal)
+                    } label: {
+                        StatPill(value: "\(model.rainbowAmounts.hitCount)/6", label: "Rainbow today")
+                    }
+                    .buttonStyle(.plain)
                 }
+                .coachTarget("threeps")
                 ThrDashboardCallouts(appState: appState, model: model, latestMeal: latestMeal) { group in
                     educatingColor = group
                 }
@@ -152,7 +214,8 @@ struct ThrRootView: View {
 
     @ViewBuilder private var recentMealsSection: some View {
         if !model.recentMeals.isEmpty {
-            ThrRecentMealsSection(appState: appState, meals: model.recentMeals)
+            ThrRecentMealsSection(appState: appState, meals: model.recentMeals,
+                                  questions: model.keyQuestions)
         }
     }
 
@@ -203,6 +266,7 @@ struct ThrRootView: View {
                 showDailyCheckin = true
             }
             .coachTarget("checkin")
+            .id("checkin")
             Card {
                 VStack(spacing: theme.metrics.space2) {
                     // Tab routes: these go straight to the tab, never a pushed copy.
@@ -235,7 +299,7 @@ struct ThrRootView: View {
                     }
                     Divider().overlay(theme.colors.divider)
                     NavigationLink {
-                        ThrThreePsDetailView(model: model)
+                        ThrThreePsDetailView(model: model, appState: appState)
                     } label: {
                         ThrNavRow(icon: "checkmark.seal", title: "The 3 P's",
                                   subtitle: "Prebiotic, probiotic, polyphenol — today's trio")
@@ -305,6 +369,28 @@ struct ThrRecipeSheet: View {
                     Text(f).font(theme.typography.body())
                         .foregroundStyle(theme.colors.secondary)
                         .fixedSize(horizontal: false, vertical: true)
+                }
+                if let ingredients = recipe.ingredients, !ingredients.isEmpty {
+                    VStack(alignment: .leading, spacing: theme.metrics.space2) {
+                        Text("You'll need")
+                            .font(theme.typography.title(18))
+                            .foregroundStyle(theme.colors.textPrimary)
+                        ForEach(Array(ingredients.enumerated()), id: \.offset) { _, item in
+                            HStack(alignment: .top, spacing: theme.metrics.space2) {
+                                Image(systemName: "circle.fill")
+                                    .font(.system(size: 5))
+                                    .foregroundStyle(theme.colors.secondary)
+                                    .padding(.top, 7)
+                                Text(item)
+                                    .font(theme.typography.body())
+                                    .foregroundStyle(theme.colors.textPrimary)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                        }
+                    }
+                    Text("Steps")
+                        .font(theme.typography.title(18))
+                        .foregroundStyle(theme.colors.textPrimary)
                 }
                 if !recipe.steps.isEmpty {
                     VStack(alignment: .leading, spacing: theme.metrics.space2) {

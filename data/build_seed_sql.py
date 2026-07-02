@@ -336,14 +336,15 @@ w("  substantiation = excluded.substantiation;")
 w()
 
 # ---- plants -------------------------------------------------------------------
-w("-- ---- plants — ON CONFLICT (name) ------------------------------------")
-w("insert into plants (name, scientific_name, plant_family, rarity_tier) values")
-vals = [f"  ({s(r['name'])}, {s(r['scientific_name'])}, {s(r['plant_family'])}, {s(r['rarity_tier'])})" for r in plants]
+w("-- ---- plants — ON CONFLICT (name); description = field-guide blurb ----")
+w("insert into plants (name, scientific_name, plant_family, rarity_tier, description) values")
+vals = [f"  ({s(r['name'])}, {s(r['scientific_name'])}, {s(r['plant_family'])}, {s(r['rarity_tier'])}, {s(r['description'])})" for r in plants]
 w(",\n".join(vals))
 w("on conflict (name) do update set")
 w("  scientific_name = excluded.scientific_name,")
 w("  plant_family = excluded.plant_family,")
-w("  rarity_tier = excluded.rarity_tier;")
+w("  rarity_tier = excluded.rarity_tier,")
+w("  description = excluded.description;")
 w()
 
 # ---- foods (FK -> plants; histamine_level column was dropped in single-mode) ---
@@ -478,12 +479,13 @@ w2()
 
 w2("-- ---- recipes — no natural key; delete+insert (idempotent) -----------")
 w2("delete from recipes;")
-w2("insert into recipes (title, description, color_ids, fiber_highlights, steps, prep_minutes, source, claim_risk, suggest_protein) values")
+w2("insert into recipes (title, description, color_ids, fiber_highlights, ingredients, steps, prep_minutes, source, claim_risk, suggest_protein) values")
 vals = []
 for r in recipes:
     vals.append("  (" + ", ".join([
         s(r["title"]), s(r["description"]), arr(split_list(r["color_ids"])),
-        s(r["fiber_highlights"]), arr(split_list(r["steps"])), num(r["prep_minutes"]),
+        s(r["fiber_highlights"]), arr(split_list(r["ingredients"])),
+        arr(split_list(r["steps"])), num(r["prep_minutes"]),
         s(r["source"]), b(r["claim_risk"]), b(r["suggest_protein"]),
     ]) + ")")
 w2(",\n".join(vals) + ";")

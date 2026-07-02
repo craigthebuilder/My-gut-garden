@@ -63,22 +63,21 @@ struct ThrInsightView: View {
         return status
     }
 
+    // NOT its own ScrollView: CapResultScreen already scrolls + pads, and the
+    // nested scroll double-padded this content so it rendered NARROWER than the
+    // "Edit this meal"/"Snap another" buttons below it (owner width fix,
+    // 2026-07-02 round 2). This view is content-only.
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: theme.metrics.space4) {
-                ThrAllergyBanner(alerts: meal.response.allergyAlerts)
-                headline
-                if !newDiscoveries.isEmpty { discoveriesCard }
-                threePsCard
-                rainbowCard
-                fiberCard
-                if let curiosity { ThrCuriosityCard(fact: curiosity.factText) }
-                hiddenPrompts
-            }
-            .padding(theme.metrics.space5)
+        VStack(alignment: .leading, spacing: theme.metrics.space4) {
+            ThrAllergyBanner(alerts: meal.response.allergyAlerts)
+            headline
+            if !newDiscoveries.isEmpty { discoveriesCard }
+            threePsCard
+            rainbowCard
+            fiberCard
+            if let curiosity { ThrCuriosityCard(fact: curiosity.factText) }
+            hiddenPrompts
         }
-        .background(theme.colors.background.ignoresSafeArea())
-        .navigationTitle("This meal")
         .task { await load() }
     }
 
@@ -249,11 +248,22 @@ struct ThrInsightView: View {
 
     private func loadCuriosity() async {
         guard let repo = appState.repository else { return }
-        // Variable reward: a random curated fact (CLAUDE.md rule #9).
-        if let facts: [ThrCuriosityFactRow] = try? await repo.select("curiosity_facts", limit: 50),
-           let pick = facts.randomElement() {
-            curiosity = pick
+        // Variable reward, but ONLY when the fact ties to a food actually on
+        // the plate (owner, 2026-07-02 round 2): match the fact's topic_tags
+        // against this meal's food + plant names. No match → no fact here
+        // (Today's "Did you know?" stays the general-interest slot).
+        guard let facts: [ThrCuriosityFactRow] = try? await repo.select("curiosity_facts", limit: 100)
+        else { return }
+        let mealFoods = Set(
+            (insights.plantNames + attrs.map(\.canonicalName)).map { $0.lowercased() }
+        )
+        let tied = facts.filter { fact in
+            (fact.topicTags ?? []).contains { tag in
+                let t = tag.lowercased()
+                return mealFoods.contains(t) || mealFoods.contains { $0.contains(t) }
+            }
         }
+        curiosity = tied.randomElement()
     }
 
     /// Celebrate the *rarest* new rare/legendary plant (one overlay, not a burst).

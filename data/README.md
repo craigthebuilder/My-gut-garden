@@ -38,13 +38,14 @@ Natural keys: `colors.id` · `fibers/plants/phytochemicals.name` · `districts.o
 | phytochemicals | 32 |
 | districts | **4** ✅ |
 | guilds | **12** ✅ (full framework §4 roster) |
-| plants | **110** ✅ (≥30; broad enough to reach 30/week easily) |
-| foods | 185 (110 plant foods + fermented + the 2026-07-02 everyday set: meats, fish, eggs, dairy, oils, vinegars, condiments, sweeteners, drinks — so reaction search covers what people actually eat) |
+| plants | **116** ✅ (110 + 6 fermented-plant entries, round 2; each carries a field-guide `description`) |
+| foods | 185 (plant foods + fermented + the 2026-07-02 everyday set: meats, fish, eggs, dairy, oils, vinegars, condiments, sweeteners, drinks — so reaction search covers what people actually eat) |
 | food_fibers | 45 |
 | food_colors | 123 |
 | food_phytochemicals | 84 |
 | food_guild_feeds | 79 (every one of the 12 guilds has ≥1 feeder) |
-| curiosity_facts | 22 |
+| curiosity_facts | 35 (food-tagged; the post-snap fact only fires on a matching plate) |
+| recipes | 10 (each with an `ingredients` list incl. serving sizes) |
 | success_stories | 6 |
 
 > **Single-mode schema drift (2026-07-02):** `fodmap_profiles` and

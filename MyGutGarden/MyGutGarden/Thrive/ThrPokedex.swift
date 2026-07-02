@@ -24,6 +24,7 @@ final class ThrPokedexModel {
         let name: String
         let rarity: RarityTier
         let collected: Bool
+        var description: String? = nil
     }
 
     var plants: [PlantEntry] = []
@@ -52,10 +53,32 @@ final class ThrPokedexModel {
 
         let ownedIds = Set(owned.map(\.plantId))
         plants = allPlants.map {
-            PlantEntry(id: $0.id, name: $0.name, rarity: $0.rarityTier, collected: ownedIds.contains($0.id))
+            PlantEntry(id: $0.id, name: $0.name, rarity: $0.rarityTier,
+                       collected: ownedIds.contains($0.id), description: $0.description)
         }
         collectedPlantCount = plants.filter(\.collected).count
         phytochemicals = phytos
+
+        // Lifetime fermented finds + phytochemical collection from LOGGED MEALS.
+        // These previously seeded only from the just-snapped meal, so opening
+        // the Field Guide tab always showed them empty (owner bug, 2026-07-02
+        // round 2). RLS scopes meal_items to the caller.
+        struct FoodIdRow: Decodable { let foodId: String }
+        let itemRows: [FoodIdRow] = (try? await repo.select("meal_items", columns: "food_id")) ?? []
+        let loggedFoodIds = Set(itemRows.map(\.foodId))
+        if !loggedFoodIds.isEmpty {
+            let list = "(" + loggedFoodIds.joined(separator: ",") + ")"
+            let fermented: [ThrFoodNameRow] = (try? await repo.select(
+                "foods", columns: "id,canonical_name",
+                filters: ["id": "in.\(list)", "is_fermented": "eq.true"])) ?? []
+            fermentedFinds = Array(Set(fermentedFinds).union(fermented.map(\.canonicalName))).sorted()
+
+            let junctions: [ThrFoodPhytoRow] = (try? await repo.select(
+                "food_phytochemicals", columns: "food_id,phytochemical_id",
+                filters: ["food_id": "in.\(list)"])) ?? []
+            let eatenPhytoIds = Set(junctions.map(\.phytochemicalId))
+            collectedPhytoNames.formUnion(phytos.filter { eatenPhytoIds.contains($0.id) }.map(\.name))
+        }
         isLoaded = true
     }
 }
@@ -77,7 +100,7 @@ struct ThrPokedexView: View {
                 Card {
                     VStack(spacing: theme.metrics.space2) {
                         NavigationLink {
-                            ThrPlantGardenView(model: model)
+                            ThrPlantGardenView(model: model, appState: appState)
                         } label: {
                             ThrNavRow(icon: "leaf.fill", title: "Plant Garden",
                                       subtitle: collectedSubtitle)
@@ -135,8 +158,10 @@ struct ThrPokedexView: View {
 struct ThrPlantGardenView: View {
     @Environment(\.theme) private var theme
     let model: ThrPokedexModel
+    var appState: AppState? = nil
 
     @State private var suggestion: ThrPokedexModel.PlantEntry?
+    @State private var detail: ThrPokedexModel.PlantEntry?
 
     private let columns = [GridItem(.adaptive(minimum: 96), spacing: 12)]
 
@@ -160,11 +185,14 @@ struct ThrPlantGardenView: View {
                 } else {
                     LazyVGrid(columns: columns, spacing: theme.metrics.space3) {
                         ForEach(collected) { plant in
-                            CollectibleTile(name: plant.name, rarity: plant.rarity, collected: true) {
-                                IllustrationPlaceholder(systemImage: "leaf.fill",
-                                                        tint: plant.rarity.accent(theme),
-                                                        imageName: ThrPlantArt.assetName(plant.name))
+                            Button { detail = plant } label: {
+                                CollectibleTile(name: plant.name, rarity: plant.rarity, collected: true) {
+                                    IllustrationPlaceholder(systemImage: "leaf.fill",
+                                                            tint: plant.rarity.accent(theme),
+                                                            imageName: ThrPlantArt.assetName(plant.name))
+                                }
                             }
+                            .buttonStyle(.plain)
                         }
                     }
                 }
@@ -173,9 +201,39 @@ struct ThrPlantGardenView: View {
         }
         .background(theme.colors.background.ignoresSafeArea())
         .navigationTitle("Plant Garden")
+        .task { if let appState { await appState.coach.startIfNeeded("plants", appState: appState) } }
         .sheet(item: $suggestion) { plant in
             ThrPlantSuggestionSheet(plant: plant)
         }
+        .sheet(item: $detail) { plant in
+            ThrPlantDetailSheet(plant: plant).presentationDetents([.medium, .large])
+        }
+    }
+}
+
+/// The collected-plant reveal: its blurb, rarity, and family. Tap a tile.
+struct ThrPlantDetailSheet: View {
+    @Environment(\.theme) private var theme
+    @Environment(\.dismiss) private var dismiss
+    let plant: ThrPokedexModel.PlantEntry
+
+    var body: some View {
+        VStack(spacing: theme.metrics.space4) {
+            FieldGuideCard(
+                eyebrow: "In your collection",
+                title: plant.name,
+                subtitle: nil,
+                bodyText: plant.description ?? "One of the plants you've fed your garden.",
+                rarity: plant.rarity
+            ) {
+                IllustrationPlaceholder(systemImage: "leaf.fill", tint: plant.rarity.accent(theme),
+                                        imageName: ThrPlantArt.assetName(plant.name))
+            }
+            PrimaryButton(title: "Lovely", action: { dismiss() })
+        }
+        .padding(theme.metrics.space5)
+        .frame(maxWidth: .infinity)
+        .background(theme.colors.background.ignoresSafeArea())
     }
 }
 

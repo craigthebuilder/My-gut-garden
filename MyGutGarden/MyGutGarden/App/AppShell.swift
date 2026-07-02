@@ -105,17 +105,24 @@ private struct ShellHome: View {
             await appState.coach.loadCompleted(appState)
             await appState.coach.startIfNeeded("intro", appState: appState)
         }
+        // First visit to the Garden tab starts its own tour (owner, round 2 —
+        // rainbow + phytochemicals start theirs from inside their views).
+        .onChange(of: tab) { _, newTab in
+            if newTab == .garden {
+                Task { await appState.coach.startIfNeeded("garden", appState: appState) }
+            }
+        }
     }
 
     /// Which tab a tutorial step's `target_hint` lives on, so the intro tour
     /// walks the real app. nil → stay put (the card centers if no target).
     static func tab(forCoachHint hint: String, gardenUnlocked: Bool) -> AppTab? {
         switch hint {
-        case "home", "dashboard", "trythis", "fiber", "plants", "rainbow", "checkin": .today
+        case "home", "dashboard", "threeps", "trythis", "fiber", "plants", "rainbow", "checkin": .today
         case "snap": .snap
         case "fieldguide", "fermented", "phytochemicals": .fieldGuide
         case "garden": gardenUnlocked ? .garden : nil
-        case "you": .you
+        case "you", "customize": .you
         default: nil
         }
     }
@@ -344,6 +351,7 @@ private struct ShellSettings: View {
                         SecondaryButton(title: "Customize check-in", systemImage: "slider.horizontal.3") {
                             showCustomize = true
                         }
+                        .coachTarget("customize")
                         SecondaryButton(title: "Badges", systemImage: "rosette") {
                             showBadges = true
                         }

@@ -35,7 +35,6 @@ final class CapEditMealModel: Identifiable {
     private(set) var photoURL: String?
     private(set) var photoRemoved = false      // photos are permanent; photo_url is nil only if the user deleted it
     private(set) var userAnnotation: String?   // shown read-only
-    var hiddenAnswers: [CapHiddenIngredientAnswer] = []
 
     private(set) var isLoading = true
     private(set) var isSaving = false
@@ -45,17 +44,14 @@ final class CapEditMealModel: Identifiable {
     private let repository: Repository
     private let userId: String
     let mealId: String
-    private let deferredHiddenPrompts: [HiddenIngredientPrompt]
 
-    init(repository: Repository, userId: String, mealId: String,
-         deferredHiddenPrompts: [HiddenIngredientPrompt] = []) {
+    // Owner (2026-07-02 round 2): the deferred hidden-ingredient prompts no
+    // longer resurface here — the one or two KEY questions live on the
+    // Recent-Meals pop-up instead (ThrMealQuestions).
+    init(repository: Repository, userId: String, mealId: String) {
         self.repository = repository
         self.userId = userId
         self.mealId = mealId
-        self.deferredHiddenPrompts = deferredHiddenPrompts
-        self.hiddenAnswers = deferredHiddenPrompts.map {
-            CapHiddenIngredientAnswer(prompt: $0, wasPresent: nil)
-        }
     }
 
     // MARK: - Load
@@ -111,11 +107,6 @@ final class CapEditMealModel: Identifiable {
                         portion: .serving, source: .manual))
     }
 
-    func setHiddenAnswer(_ answer: CapHiddenIngredientAnswer, wasPresent: Bool) {
-        guard let idx = hiddenAnswers.firstIndex(where: { $0.id == answer.id }) else { return }
-        hiddenAnswers[idx].wasPresent = wasPresent
-    }
-
     func searchFoods(_ term: String) async -> [CapFoodSearchResult] {
         (try? await CapFoodSearchService(repository: repository).search(term)) ?? []
     }
@@ -138,16 +129,8 @@ final class CapEditMealModel: Identifiable {
         isSaving = true
         defer { isSaving = false }
 
-        // Resolve any newly-confirmed hidden ingredients to real foods.
-        let search = CapFoodSearchService(repository: repository)
-        var items: [CapMealItem] = rows.map {
+        let items: [CapMealItem] = rows.map {
             CapMealItem(foodId: $0.foodId, portion: $0.portion, source: $0.source)
-        }
-        var seen = Set(items.map(\.foodId))
-        for name in CapHiddenIngredients.confirmedPresentFoodNames(hiddenAnswers) {
-            if let match = try? await search.bestMatch(for: name), seen.insert(match.id).inserted {
-                items.append(CapMealItem(foodId: match.id, portion: .serving, source: .hiddenConfirmed))
-            }
         }
 
         do {

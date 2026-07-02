@@ -147,6 +147,7 @@ struct ThrRainbowPokedexView: View {
                         ThrRainbowRings(amounts: model.amounts) { detailColor = $0 }
                     }
                 }
+                .coachTarget("rainbow")
                 if let gap = model.gapSuggestion { gapCard(gap) }
                 ForEach(ThrRainbowGroup.allCases) { group in
                     let edu = model.education[group.rawValue] ?? ThrColorEducation(meaning: "", whatItDoes: "")
@@ -158,7 +159,10 @@ struct ThrRainbowPokedexView: View {
         }
         .background(theme.colors.background.ignoresSafeArea())
         .navigationTitle("Rainbow")
-        .task { await model.load(appState: appState, latestMeal: latestMeal) }
+        .task {
+            await model.load(appState: appState, latestMeal: latestMeal)
+            await appState.coach.startIfNeeded("rainbow", appState: appState)
+        }
         .sheet(item: $detailColor) { group in
             ThrColorDetailSheet(
                 group: group,
@@ -232,9 +236,27 @@ struct ThrPhytoGap: Identifiable, Sendable {
 @MainActor
 @Observable
 final class ThrPhytoDepthModel {
+    /// The three coverage windows (owner spec, round 2): this week, the last
+    /// two weeks, the last month.
+    enum CoverageWindow: Int, CaseIterable, Identifiable {
+        case week = 7, fortnight = 14, month = 30
+        var id: Int { rawValue }
+        var label: String {
+            switch self {
+            case .week: "Eaten this week"
+            case .fortnight: "Eaten last 2 weeks"
+            case .month: "Eaten this month"
+            }
+        }
+    }
+
     var classes: [ThrPhytoClassRow] = []
     var compounds: [ThrPhytochemicalRow] = []
     var recentPhytoIds: Set<String> = []      // eaten within the gap window
+    /// Compound ids eaten within each coverage window.
+    var eatenByWindow: [CoverageWindow: Set<String>] = [:]
+    /// Curated example foods per compound id ("where to find it").
+    private(set) var foodNamesByPhyto: [String: [String]] = [:]
     var isLoaded = false
 
     private var gapCandidates: [ThrPhytoGap] = []
@@ -250,6 +272,25 @@ final class ThrPhytoDepthModel {
         compounds.filter { $0.phytoClass == klass.id }.sorted { $0.name < $1.name }
     }
 
+    func coverage(_ window: CoverageWindow) -> Double {
+        guard !compounds.isEmpty else { return 0 }
+        return Double((eatenByWindow[window] ?? []).count) / Double(compounds.count)
+    }
+
+    /// Compounds NOT eaten within the window, in the database-list format.
+    func missing(in window: CoverageWindow) -> [ThrPhytochemicalRow] {
+        let eaten = eatenByWindow[window] ?? []
+        return compounds.filter { !eaten.contains($0.id) }.sorted { $0.name < $1.name }
+    }
+
+    func exampleFoods(for compoundId: String, limit: Int = 4) -> [String] {
+        Array((foodNamesByPhyto[compoundId] ?? []).prefix(limit))
+    }
+
+    func klass(for compound: ThrPhytochemicalRow) -> ThrPhytoClassRow? {
+        classes.first { $0.id == compound.phytoClass }
+    }
+
     func load(appState: AppState) async {
         guard let repo = appState.repository else { isLoaded = true; return }
         async let cl: [ThrPhytoClassRow]      = (try? await repo.select("phyto_classes", order: "title")) ?? []
@@ -263,27 +304,49 @@ final class ThrPhytoDepthModel {
         let nameByFood = Dictionary(foods.map { ($0.id, $0.canonicalName) }, uniquingKeysWith: { a, _ in a })
         var foodsByPhyto: [String: [String]] = [:]
         for r in foodPhytos { foodsByPhyto[r.phytochemicalId, default: []].append(r.foodId) }
+        foodNamesByPhyto = foodsByPhyto.mapValues { ids in
+            ids.compactMap { nameByFood[$0] }.sorted()
+        }
 
         await computeRecent(repo, userId: appState.profile?.id, foodPhytos: foodPhytos)
         computeGapCandidates(foodsByPhyto: foodsByPhyto, nameByFood: nameByFood)
         isLoaded = true
     }
 
-    /// Phytochemicals consumed within the gap window (default 30 days), via the
-    /// user's recent meals -> meal_items -> food_phytochemicals.
+    /// Phytochemicals consumed per coverage window (7/14/30 days), via the
+    /// user's recent meals -> meal_items -> food_phytochemicals. The month
+    /// window doubles as the gap window.
     private func computeRecent(_ repo: Repository, userId: String?, foodPhytos: [ThrFoodPhytoRow]) async {
-        let days = GameConfig.shared.phytoGapInsightDays
+        let days = CoverageWindow.month.rawValue
         let since = ThrDates.timestampString(
             Calendar.current.date(byAdding: .day, value: -days, to: ThrDates.startOfToday()) ?? ThrDates.startOfToday())
         guard let meals: [MealRow] = try? await repo.select(
             "meals", columns: mealColumns, filters: ["captured_at": "gte.\(since)", "confirmed": "eq.true"]
         ), !meals.isEmpty else { return }
         let mealList = "(" + meals.map(\.id).joined(separator: ",") + ")"
-        guard let items: [ThrMealItemTierRow] = try? await repo.select(
-            "meal_items", columns: "food_id,portion_tier,est_fiber_g", filters: ["meal_id": "in.\(mealList)"]
+        struct ItemRow: Decodable { let mealId: String; let foodId: String }
+        guard let items: [ItemRow] = try? await repo.select(
+            "meal_items", columns: "meal_id,food_id", filters: ["meal_id": "in.\(mealList)"]
         ) else { return }
-        let recentFoods = Set(items.map(\.foodId))
-        recentPhytoIds = Set(foodPhytos.filter { recentFoods.contains($0.foodId) }.map(\.phytochemicalId))
+
+        let dayByMeal = Dictionary(meals.map { ($0.id, String($0.capturedAt.prefix(10))) },
+                                   uniquingKeysWith: { a, _ in a })
+        var phytosByFood: [String: [String]] = [:]
+        for r in foodPhytos { phytosByFood[r.foodId, default: []].append(r.phytochemicalId) }
+
+        let calendar = Calendar.current
+        for window in CoverageWindow.allCases {
+            guard let cutoff = calendar.date(byAdding: .day, value: -window.rawValue,
+                                             to: ThrDates.startOfToday()) else { continue }
+            let cutoffDay = ThrDates.dateString(cutoff)
+            var eaten: Set<String> = []
+            for item in items {
+                guard let day = dayByMeal[item.mealId], day >= cutoffDay else { continue }
+                eaten.formUnion(phytosByFood[item.foodId] ?? [])
+            }
+            eatenByWindow[window] = eaten
+        }
+        recentPhytoIds = eatenByWindow[.month] ?? []
     }
 
     private func computeGapCandidates(foodsByPhyto: [String: [String]], nameByFood: [String: String]) {
@@ -320,6 +383,8 @@ struct ThrPhytochemicalPokedexView: View {
                                   message: "As you log colorful plants, the phytochemicals they carry land here.")
                 } else {
                     if let gap = model.gapSuggestion { gapCard(gap) }
+                    coverageCard
+                        .coachTarget("phytochemicals")
                     Text("Tap a category to see its compounds, then tap a compound to learn what it does.")
                         .font(theme.typography.caption())
                         .foregroundStyle(theme.colors.textSecondary)
@@ -335,7 +400,64 @@ struct ThrPhytochemicalPokedexView: View {
         }
         .background(theme.colors.background.ignoresSafeArea())
         .navigationTitle("Phytochemicals")
-        .task { await model.load(appState: appState) }
+        .task {
+            await model.load(appState: appState)
+            await appState.coach.startIfNeeded("phytochemicals", appState: appState)
+        }
+    }
+
+    // MARK: Coverage bars (owner spec, round 2): % of all compounds eaten per
+    // window; tap a bar to see exactly which compounds you HAVEN'T had.
+
+    private var coverageCard: some View {
+        Card {
+            VStack(alignment: .leading, spacing: theme.metrics.space3) {
+                SectionHeader(title: "Your coverage")
+                Text("How much of the catalogue you've eaten. Tap a bar to see what's still out there.")
+                    .font(theme.typography.caption())
+                    .foregroundStyle(theme.colors.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                ForEach(ThrPhytoDepthModel.CoverageWindow.allCases) { window in
+                    NavigationLink {
+                        ThrPhytoMissingListView(window: window, model: model)
+                    } label: {
+                        coverageRow(window)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+    }
+
+    private func coverageRow(_ window: ThrPhytoDepthModel.CoverageWindow) -> some View {
+        let fraction = model.coverage(window)
+        let eaten = (model.eatenByWindow[window] ?? []).count
+        return VStack(alignment: .leading, spacing: theme.metrics.space1) {
+            HStack {
+                Text(window.label)
+                    .font(theme.typography.caption(weight: .semibold))
+                    .foregroundStyle(theme.colors.textPrimary)
+                Spacer()
+                Text("\(eaten) of \(model.compounds.count)")
+                    .font(theme.typography.caption())
+                    .foregroundStyle(theme.colors.textSecondary)
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(theme.colors.textSecondary)
+            }
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    Capsule().strokeBorder(theme.colors.secondary.opacity(0.35), lineWidth: 1)
+                    Capsule().fill(theme.colors.secondary.opacity(0.85))
+                        .frame(width: max(4, geo.size.width * CGFloat(fraction)))
+                }
+            }
+            .frame(height: 10)
+        }
+        .padding(.vertical, theme.metrics.space1)
+        .contentShape(Rectangle())
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(window.label): \(eaten) of \(model.compounds.count) compounds. Tap for what's missing.")
     }
 
     private func gapCard(_ gap: ThrPhytoGap) -> some View {
@@ -417,7 +539,8 @@ struct ThrPhytoClassDetailView: View {
                 ForEach(model.compoundList(in: klass), id: \.id) { compound in
                     NavigationLink {
                         ThrPhytoCompoundDetailView(compound: compound, klass: klass,
-                                                   recent: model.recentPhytoIds.contains(compound.id))
+                                                   recent: model.recentPhytoIds.contains(compound.id),
+                                                   exampleFoods: model.exampleFoods(for: compound.id))
                     } label: { compoundRow(compound) }
                         .buttonStyle(.plain)
                 }
@@ -450,6 +573,9 @@ struct ThrPhytoCompoundDetailView: View {
     let compound: ThrPhytochemicalRow
     let klass: ThrPhytoClassRow
     let recent: Bool
+    /// Curated foods that carry this compound ("what to eat to get more of it",
+    /// owner request, round 2). From the food_phytochemicals junction.
+    var exampleFoods: [String] = []
 
     var body: some View {
         ScrollView {
@@ -481,11 +607,87 @@ struct ThrPhytoCompoundDetailView: View {
                             .fixedSize(horizontal: false, vertical: true)
                     }
                 }
+                if !exampleFoods.isEmpty {
+                    Card {
+                        VStack(alignment: .leading, spacing: theme.metrics.space2) {
+                            SectionHeader(title: "Find it in")
+                            FlowRows(items: exampleFoods) { food in
+                                Badge(text: food, tint: theme.colors.secondary)
+                            }
+                        }
+                    }
+                }
             }
             .padding(theme.metrics.space5)
         }
         .background(theme.colors.background.ignoresSafeArea())
         .navigationTitle(compound.name.replacingOccurrences(of: "_", with: " ").capitalized)
         .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+// MARK: - Missing-compound list (tap-through from a coverage bar)
+
+struct ThrPhytoMissingListView: View {
+    @Environment(\.theme) private var theme
+    let window: ThrPhytoDepthModel.CoverageWindow
+    let model: ThrPhytoDepthModel
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: theme.metrics.space4) {
+                let missing = model.missing(in: window)
+                if missing.isEmpty {
+                    ThrEmptyState(icon: "checkmark.seal.fill",
+                                  title: "Full coverage",
+                                  message: "Every catalogued compound crossed your plate in this window. Remarkable eating.")
+                } else {
+                    Text("Compounds that haven't crossed your plate in this window — each one lists the foods that carry it.")
+                        .font(theme.typography.caption())
+                        .foregroundStyle(theme.colors.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    ForEach(missing, id: \.id) { compound in
+                        if let klass = model.klass(for: compound) {
+                            NavigationLink {
+                                ThrPhytoCompoundDetailView(
+                                    compound: compound, klass: klass,
+                                    recent: model.recentPhytoIds.contains(compound.id),
+                                    exampleFoods: model.exampleFoods(for: compound.id))
+                            } label: { missingRow(compound) }
+                                .buttonStyle(.plain)
+                        }
+                    }
+                }
+            }
+            .padding(theme.metrics.space5)
+        }
+        .background(theme.colors.background.ignoresSafeArea())
+        .navigationTitle(window.label)
+        .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private func missingRow(_ compound: ThrPhytochemicalRow) -> some View {
+        Card {
+            HStack(spacing: theme.metrics.space3) {
+                Image(systemName: "circle.dotted")
+                    .foregroundStyle(theme.colors.textSecondary)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(compound.name.replacingOccurrences(of: "_", with: " ").capitalized)
+                        .font(theme.typography.body(weight: .medium))
+                        .foregroundStyle(theme.colors.textPrimary)
+                    let foods = model.exampleFoods(for: compound.id, limit: 3)
+                    if !foods.isEmpty {
+                        Text("In \(foods.joined(separator: ", ").lowercased())")
+                            .font(theme.typography.caption())
+                            .foregroundStyle(theme.colors.textSecondary)
+                            .lineLimit(1)
+                    }
+                }
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(theme.colors.textSecondary)
+            }
+        }
     }
 }

@@ -139,12 +139,17 @@ final class MggFlowScreenshots: XCTestCase {
             tapIfExists(app.buttons["Skip"], timeout: 3, settle: 2)
         }
 
-        // Fresh user: no fiber goal may show anywhere on Today (SPEC §10).
+        // Fresh user: the LOCKED fiber line shows (owner round 2), but NO fiber
+        // NUMBER may leak before the unlock (SPEC §10 / Fence 5).
         tapIfExists(app.tabBars.buttons["Today"], timeout: 5, settle: 2)
         clearOverlays(app)
-        let fiberTexts = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH 'Fiber'"))
-        XCTAssertEqual(fiberTexts.count, 0, "a fiber readout leaked onto Today before the unlock")
-        snap(app, "A15-today-fresh-no-fiber")
+        let numericFiber = app.staticTexts.matching(
+            NSPredicate(format: "label MATCHES %@", ".*[0-9]+ */ *[0-9]+ *g.*"))
+        XCTAssertEqual(numericFiber.count, 0, "a fiber NUMBER leaked onto Today before the unlock")
+        XCTAssertTrue(app.staticTexts.matching(
+            NSPredicate(format: "label CONTAINS[c] 'unlocks after'")).count > 0,
+            "the locked fiber line should show pre-unlock")
+        snap(app, "A15-today-fresh-locked-fiber")
     }
 
     // MARK: B — sample-meal snap end-to-end + the revamped Today

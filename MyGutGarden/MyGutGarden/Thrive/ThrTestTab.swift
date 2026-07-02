@@ -32,10 +32,7 @@ extension MealRow {
 struct ThrTestTabView: View {
     @Environment(\.theme) private var theme
     let appState: AppState
-    /// Shared by both modes (R4). Thrive shows the light-check-in picker; Survive
-    /// passes showsLight=false and an onSaved hook to refresh its store.
     var context: CheckInContext = .thriveCheckin
-    var showsLight: Bool = true
     var onSaved: (() async -> Void)? = nil
 
     @State private var model = ThrCheckInHistoryModel()
@@ -48,7 +45,9 @@ struct ThrTestTabView: View {
                     PrimaryButton(title: "Log a new check-in", systemImage: "square.and.pencil") {
                         presenting = .new
                     }
-                    if showsLight { ThrLightCheckInPicker(appState: appState) }
+                    // Owner (round 2): ONE place to customize the check-in — the
+                    // You section's "Customize check-in" sheet. The session-only
+                    // light-pick card that lived here is retired.
                     history
                 }
                 .padding(theme.metrics.space4)
@@ -128,60 +127,8 @@ struct ThrTestTabView: View {
     }
 }
 
-// MARK: - Persisted light-check-in picker
-
-struct ThrLightCheckInPicker: View {
-    @Environment(\.theme) private var theme
-    let appState: AppState
-
-    @State private var selection: CheckInCategory?   // nil = full check-in
-
-    var body: some View {
-        Card {
-            VStack(alignment: .leading, spacing: theme.metrics.space2) {
-                Text("Light check-in")
-                    .font(theme.typography.body(weight: .semibold))
-                    .foregroundStyle(theme.colors.textPrimary)
-                Text("Pick one thing to track each day, or the full check-in. This sticks until you change it.")
-                    .font(theme.typography.caption())
-                    .foregroundStyle(theme.colors.textSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                Menu {
-                    Button { set(nil) } label: { pickRow("Full check-in", on: selection == nil) }
-                    ForEach(CheckInCategory.allCases) { cat in
-                        Button { set(cat) } label: { pickRow("\(cat.title) only", on: selection == cat) }
-                    }
-                } label: {
-                    HStack(spacing: theme.metrics.space1) {
-                        Image(systemName: "slider.horizontal.3")
-                        Text(selection.map { "\($0.title) only" } ?? "Full check-in")
-                        Image(systemName: "chevron.up.chevron.down").font(.system(size: 11))
-                    }
-                    .font(theme.typography.caption(weight: .semibold))
-                    .foregroundStyle(theme.colors.surface)
-                    .padding(.vertical, theme.metrics.space2)
-                    .padding(.horizontal, theme.metrics.space3)
-                    .background(theme.colors.primary)
-                    .clipShape(Capsule())
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-        }
-        // TODO(Phase 1E): re-hydrate the persisted light-check-in pick once the
-        // profile/prefs model resurfaces it (dropped from the frozen UserProfile).
-        .onAppear { selection = nil }
-    }
-
-    @ViewBuilder private func pickRow(_ title: String, on: Bool) -> some View {
-        if on { Label(title, systemImage: "checkmark") } else { Text(title) }
-    }
-
-    private func set(_ cat: CheckInCategory?) {
-        selection = cat
-        // TODO(Phase 1E): persist to check_in_prefs.enabled_sections (users.light_checkin_category
-        // was dropped in the single-mode migration). For now the pick is session-only.
-    }
-}
+// (The session-only "Light check-in" picker was retired — owner, 2026-07-02
+// round 2. Customization lives solely in You → "Customize check-in".)
 
 // MARK: - The single multi-entry check-in form (new + edit)
 

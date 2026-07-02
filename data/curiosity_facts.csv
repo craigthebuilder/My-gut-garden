@@ -1,29 +1,43 @@
-# curiosity_facts.csv, curated variable-reward facts (SPEC §5, §11a; CLAUDE.md #9 "curated, not runtime-generated"). Natural key (idempotency): fact_text.
-# confidence_tag enum: solid|maturing|frontier|emerging|associational. Anything beyond 'solid' is framed as
-#   emerging/associational, never a health claim. topic_tags = semicolon-separated list.
-# Curated to be truthful and representative; no diagnosis, no cure language (SPEC §1, §2).
-# Source: general nutrition science consensus; framework §0/§5; flagged confidence reflects strength of evidence.
+# curiosity_facts.csv — the per-snap variable-reward fun fact + Today's "Did you know?"
+# (SPEC §5, §14). Curated, truthful, representative; never runtime-generated (rule #9).
+# topic_tags = lowercase food/plant names (plus a few themes). The POST-SNAP fact only
+#   shows when a tag matches a food on the plate (owner, 2026-07-02 round 2); Today's
+#   slot picks freely. confidence_tag: solid | emerging (RD ledger; no visible badge).
+# 🔒 FENCE 4 (RD-REVIEW-REQUIRED): benefit/mechanism phrasing needs the RD pass.
 # Format: pipe-delimited. fact_text|topic_tags|confidence_tag
 fact_text|topic_tags|confidence_tag
-Cooling cooked rice or potatoes turns some of their starch into RS3, a resistant starch your butyrate-producing crews love.|resistant_starch;rs3;butyrate|solid
-The same fructans that feed your Base Layer bifidobacteria are also classic IBS triggers. One molecule, two lenses.|inulin;fructan;fodmap|solid
-Your gut bacteria make most of your body's butyrate, the short-chain fatty acid that fuels the cells lining your colon.|butyrate;short_chain_fatty_acids|solid
-Aiming for 30 different plants a week is linked with a more diverse gut microbiome than counting servings alone.|diversity;30_plants|maturing
-Chicory root is one of the richest natural sources of inulin, which is why it is often added to foods as a prebiotic fiber.|inulin;chicory;prebiotic|solid
-Mushrooms are not plants but they still count toward your weekly diversity, and they carry beta-glucan fiber that feeds the Appetite Crew.|beta_glucan;mushrooms;diversity|solid
-Oats and barley share a soluble fiber called beta-glucan that is well studied for helping lower cholesterol.|beta_glucan;oats;cholesterol|solid
-Anthocyanins, the deep blue-purple pigments in blueberries and blackberries, reach your colon largely intact and feed barrier-keeping microbes.|anthocyanin;polyphenol;blue_purple|maturing
-Only about one in three people carry the gut bacteria that turn soy isoflavones into equol, a trait you can only confirm with a urine test.|equol;soy;metabotype|emerging
-Whether your microbes make urolithin A from pomegranates and walnuts depends on your personal microbiome, sorted into metabotypes A, B, and 0.|urolithin;pomegranate;metabotype|emerging
-Arabinoxylan, the main fiber in whole wheat and rye, is one of the most overlooked prebiotics in a typical diet.|arabinoxylan;whole_grains;prebiotic|solid
-Ruminococcus bromii, nicknamed the keystone for resistant starch, cracks open starch granules so other microbes can feed too.|resistant_starch;keystone;locksmith|solid
-Sulfur-rich gas has a distinct rotten-egg smell, which is why odor is one of the most useful clues your gut gives you.|gas_odor;sulfur;survive|maturing
-Akkermansia muciniphila lives in your gut's mucus layer and tends to be more abundant in people eating lots of polyphenol-rich foods.|akkermansia;polyphenol;mucus_barrier|maturing
-Flax and sesame are top sources of plant lignans, which gut bacteria convert into enterolignans.|lignan;flax;sesame|associational
-Green bananas are rich in resistant starch, but as they ripen that starch turns to sugar, which is the classic resistant-starch trade-off.|resistant_starch;green_banana;ripening|solid
-Fermented foods like kimchi and sauerkraut add live microbes, while prebiotic fibers feed the microbes you already have.|fermented;probiotic;prebiotic|solid
-Eating across more color groups is a simple proxy for eating a wider range of polyphenols and carotenoids.|rainbow;polyphenol;carotenoid|maturing
-Garlic loses much of its allicin when cooked, so crushing it and resting it for ten minutes before heating helps preserve more.|allicin;garlic;organosulfur|maturing
-Psyllium husk is barely fermented, so it bulks and softens stool mechanically rather than feeding your microbes much.|psyllium;mechanical_fiber|solid
-Lentils and beans carry GOS, a fiber that is a top prebiotic and, for some people, a top source of gas.|gos;legumes;fodmap|solid
-Your weekly plant count resets, but every unique plant you have ever logged stays in your lifetime collection.|gamification;plant_pokedex;diversity|solid
+Your gut hosts roughly as many microbial cells as you have human ones — you are, charitably, half you.|gut;microbiome|solid
+People who eat 30 or more different plants a week host measurably more diverse gut microbes than people who eat 10, no matter how "healthy" those 10 are.|gut;variety|solid
+Your microbes make most of your body's serotonin down in the gut — the plants you feed them are part of that supply chain.|gut;microbiome|emerging
+Fibre isn't one thing — there are dozens of types, and different microbes specialise in different ones. Variety literally feeds a wider crew.|gut;variety;fiber|solid
+Garlic's inulin survives cooking — roasted whole heads are still a feast for your fibre-fermenting crews.|garlic|solid
+Onions keep most of their quercetin in the outer layers — peel gently and you keep the good part.|onion|solid
+A leek's white base is where the fructans hide — the part people trim off is the prebiotic part.|leek|solid
+Cooking tomatoes doesn't destroy lycopene — it concentrates it. Sauce is a feature, not a compromise.|tomato|solid
+Cooled potatoes grow resistant starch as they chill — potato salad genuinely feeds different microbes than hot mash.|potato;resistant starch|solid
+The same trick works with rice: cook it, cool it overnight, and some starch re-crystallises into microbe food.|brown rice;rice|solid
+A green banana and a ripe banana are almost different foods to your gut — the greener one carries far more resistant starch.|green banana;banana|solid
+Chewing broccoli is what activates its most-studied compound — the enzyme only meets its target when you break the cells.|broccoli|emerging
+Kale, cabbage, and Brussels sprouts are all the same species — Brassica oleracea, bred into wildly different shapes.|kale;cabbage;brussels sprouts;broccoli;cauliflower|solid
+Beetroot's colour is betalain, and it's doing more than staining your fingers — that pigment is the point.|beet|emerging
+Half an avocado has more fibre than two slices of wholemeal bread — a fruit that eats like a fat.|avocado|solid
+Raspberries carry around eight grams of fibre per cup — one of the highest of any fruit you can buy.|raspberry|solid
+Pomegranate feeds a compound called urolithin A that only certain people's microbes can make — eat it and find out if you're one.|pomegranate|emerging
+The ellagitannins in walnuts get converted by gut bacteria into the same urolithins as pomegranate — nuts and fruit, same pathway.|walnut|emerging
+Oats owe their reputation to beta-glucan, a soluble fibre your microbes ferment into compounds that talk to the rest of your body.|oats;barley|emerging
+Chicory root is where most supplement-bottle inulin actually comes from — the plant version is the original.|chicory root|solid
+Jerusalem artichokes are so rich in inulin they're nicknamed "fartichokes" — start with a small amount and let your microbes adjust.|jerusalem artichoke|solid
+Turmeric's curcumin is poorly absorbed on its own, but a crack of black pepper can help it along.|turmeric;black pepper|emerging
+Herbs punch far above their weight — oregano and thyme carry some of the densest polyphenol loads in the kitchen.|oregano;thyme;basil;rosemary|solid
+A handful of fresh herbs counts as a plant toward your 30 — parsley isn't just a garnish.|parsley;cilantro;basil;mint|solid
+Fermented foods can carry billions of live microbes per serving — kimchi and kefir are crews you can eat.|kimchi;sauerkraut;kefir;yogurt;miso|emerging
+Miso goes in after the heat is off — boiling water kills the very cultures you added it for.|miso|solid
+Real sourdough is fermented dough — the long rise is bacteria and wild yeast pre-digesting the flour for you.|sourdough bread|emerging
+Flaxseeds pass straight through you whole — grind them first, or their lignans stay locked inside.|flaxseed|solid
+Chia's magic is mucilage, the gel it forms in water — a soluble fibre your butyrate-makers love.|chia seed|solid
+Berries get their deep blues and purples from anthocyanins, the same pigments that feed your gut's barrier-guarding crews.|blueberry;blackberry;raspberry|emerging
+Eating an orange beats drinking it — the fibre and much of the hesperidin live in the segments and pith.|orange|solid
+Mushrooms aren't plants, but their beta-glucans still count toward the diversity your microbes crave.|white mushroom;shiitake mushroom;oyster mushroom|solid
+Seaweed carries fibres — like fucoidan — that simply don't exist in land plants. A different feed entirely.|nori;wakame;kombu|emerging
+Lentils cook in 25 minutes with no soaking and deliver GOS, one of the top bacterial fuels going.|lentil;chickpea|solid
+The skin is where a lot of the action is — apples, grapes, and aubergines keep their best compounds just under the peel.|apple;grape;eggplant|solid

@@ -290,15 +290,17 @@ struct ThrColorRingMark: View {
             ZStack {
                 ForEach(0..<3, id: \.self) { ring in
                     // ring 0 = outer (trace+), 1 = middle (serving+), 2 = inner (lots).
+                    // Unfilled rings render as a faint OUTLINE in the color's own
+                    // hue, so full capacity is always visible and "how much is
+                    // filled" reads at a glance (owner, 2026-07-02 round 2).
                     let filled = amount.ringsFilled >= (ring + 1)
                     let inset = CGFloat(ring) * (side * 0.16)
                     Circle()
                         .trim(from: 0, to: 0.75)
-                        .stroke(filled ? group.swatch : theme.colors.divider,
+                        .stroke(group.swatch.opacity(filled ? 0.95 : 0.22),
                                 style: .init(lineWidth: max(2, side * 0.08), lineCap: .round))
                         .rotationEffect(.degrees(135))
                         .padding(inset)
-                        .opacity(filled ? 0.95 : 0.4)
                 }
                 Image(systemName: amount.isFull ? "checkmark" : (amount.countsTowardSix ? "leaf.fill" : "circle.dotted"))
                     .font(.system(size: side * 0.22, weight: .bold))
@@ -334,6 +336,12 @@ struct ThrColorWeeklyChart: View {
                 ZStack(alignment: .bottomLeading) {
                     ForEach(Array(weekly.enumerated()), id: \.offset) { idx, amount in
                         let h = geo.size.height * CGFloat(Double(amount.ringsFilled) / maxRings)
+                        // Full-capacity outline behind every bar so "how much of
+                        // the bar is filled" reads at a glance (owner, round 2).
+                        RoundedRectangle(cornerRadius: theme.metrics.radiusSmall, style: .continuous)
+                            .strokeBorder(group.swatch.opacity(0.3), lineWidth: 1)
+                            .frame(width: barWidth, height: geo.size.height)
+                            .position(x: slot * (CGFloat(idx) + 0.5), y: geo.size.height / 2)
                         RoundedRectangle(cornerRadius: theme.metrics.radiusSmall, style: .continuous)
                             .fill(amount == .none ? theme.colors.divider : group.swatch.opacity(0.85))
                             .frame(width: barWidth, height: max(3, h))

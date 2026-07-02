@@ -190,6 +190,10 @@ struct MealRow: Decodable, Sendable {
     let capturedAt: String
     let confirmed: Bool
     let userAnnotation: String?          // snapchat-style note (feeds the re-prompt)
+    // Optional extras (selected only where needed — jsonb stored as string
+    // scalars, see CapServices header). Drive the key-question ⚠︎ on Recent Meals.
+    var visionRawJson: String? = nil
+    var hiddenIngredientAnswers: String? = nil
 }
 
 struct GuildStateRow: Decodable, Sendable {
@@ -294,6 +298,7 @@ struct PlantRow: Decodable, Sendable {
     let id: String
     let name: String
     let rarityTier: RarityTier
+    var description: String? = nil        // field-guide blurb (owner content pass)
 }
 
 struct GuildRow: Decodable, Sendable {
@@ -334,6 +339,9 @@ struct RecipeRow: Decodable, Sendable, Identifiable {
     /// A base/side that pairs with "add your protein of choice" (owner request).
     /// Optional-decoded so a pre-migration backend can't break the whole select.
     var suggestProtein: Bool? = nil
+    /// Ingredient list WITH serving sizes ("1 cup rolled oats"). Optional-decoded
+    /// for pre-migration safety (owner content pass, round 2).
+    var ingredients: [String]? = nil
 }
 
 /// Curated coach-mark step (SPEC §7). [seed]
