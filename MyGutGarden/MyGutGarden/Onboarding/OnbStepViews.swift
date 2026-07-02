@@ -235,29 +235,17 @@ struct OnbBodyStep: View {
 
                     Divider().overlay(theme.colors.divider)
 
-                    // Biological sex: menu Picker
-                    twoColumnRow(label: "Biological sex") {
-                        Picker("Biological sex", selection: $vm.sex) {
-                            ForEach(OnbSex.allCases, id: \.self) {
-                                Text($0.displayName).tag($0)
-                            }
-                        }
-                        .pickerStyle(.menu)
-                        .tint(theme.colors.primary)
-                    }
+                    // Biological sex: full-width menu row (value right-aligned).
+                    menuRow(label: "Biological sex", selection: $vm.sex,
+                            options: OnbSex.allCases, display: \.displayName)
 
                     Divider().overlay(theme.colors.divider)
 
-                    // Activity level: menu Picker
-                    twoColumnRow(label: "Activity level") {
-                        Picker("Activity level", selection: $vm.activity) {
-                            ForEach(OnbActivityLevel.allCases, id: \.self) {
-                                Text($0.displayName).tag($0)
-                            }
-                        }
-                        .pickerStyle(.menu)
-                        .tint(theme.colors.primary)
-                    }
+                    // Activity level: same row style, so "Moderately active" sits
+                    // on one line beside its label instead of wrapping + centering
+                    // the label (owner fix, 2026-07-02).
+                    menuRow(label: "Activity level", selection: $vm.activity,
+                            options: OnbActivityLevel.allCases, display: \.displayName)
                 }
             }
 
@@ -339,21 +327,41 @@ struct OnbBodyStep: View {
         }
     }
 
-    // MARK: 2-column helper: fixed 130pt left label, right content fills remaining width
+    // MARK: Menu row: label left, selected value right, whole row tappable.
+    // The value gets the row's full remaining width so long options ("Moderately
+    // active") stay on one line; if one ever wraps, the first-baseline alignment
+    // keeps the label anchored to the top instead of floating mid-row.
 
-    @ViewBuilder
-    private func twoColumnRow<Content: View>(
+    private func menuRow<Value: Hashable>(
         label: String,
-        @ViewBuilder content: () -> Content
+        selection: Binding<Value>,
+        options: [Value],
+        display: KeyPath<Value, String>
     ) -> some View {
-        HStack(alignment: .center, spacing: theme.metrics.space3) {
-            Text(label)
-                .font(theme.typography.body())
-                .foregroundStyle(theme.colors.textPrimary)
-                .frame(width: 130, alignment: .leading)
-            content()
-            Spacer(minLength: 0)
+        Menu {
+            Picker(label, selection: selection) {
+                ForEach(options, id: \.self) { option in
+                    Text(option[keyPath: display]).tag(option)
+                }
+            }
+        } label: {
+            HStack(alignment: .firstTextBaseline, spacing: theme.metrics.space3) {
+                Text(label)
+                    .font(theme.typography.body())
+                    .foregroundStyle(theme.colors.textPrimary)
+                Spacer(minLength: theme.metrics.space3)
+                Text(selection.wrappedValue[keyPath: display])
+                    .font(theme.typography.body(weight: .medium))
+                    .foregroundStyle(theme.colors.primary)
+                    .multilineTextAlignment(.trailing)
+                Image(systemName: "chevron.up.chevron.down")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(theme.colors.textSecondary)
+            }
+            .contentShape(Rectangle())
         }
+        .accessibilityLabel(label)
+        .accessibilityValue(selection.wrappedValue[keyPath: display])
     }
 }
 

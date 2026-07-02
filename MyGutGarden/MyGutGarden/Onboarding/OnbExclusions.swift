@@ -101,16 +101,17 @@ struct OnbFlagCategory: Identifiable, Sendable, Hashable {
 
     // RD-REVIEW-REQUIRED: the category list + allergen flags are an opinionated
     // starter set; a dietitian should confirm coverage/labels before launch.
+    // Owner (2026-07-02): one concept per chip — Gluten and Lactose stand alone;
+    // allium and fish come off the quick list (searchable instead). Lactose
+    // leans `sensitivity` (intolerance, not an allergy); the user can escalate.
     static let curated: [OnbFlagCategory] = [
-        .init(key: "gluten",    label: "Gluten / wheat",  commonAllergen: true),
-        .init(key: "dairy",     label: "Dairy / lactose", commonAllergen: true),
-        .init(key: "allium",    label: "Onion & garlic",  commonAllergen: false),
-        .init(key: "soy",       label: "Soy",             commonAllergen: true),
-        .init(key: "egg",       label: "Egg",             commonAllergen: true),
-        .init(key: "peanut",    label: "Peanut",          commonAllergen: true),
-        .init(key: "tree_nut",  label: "Tree nuts",       commonAllergen: true),
-        .init(key: "shellfish", label: "Shellfish",       commonAllergen: true),
-        .init(key: "fish",      label: "Fish",            commonAllergen: true),
-        .init(key: "sesame",    label: "Sesame",          commonAllergen: true),
+        .init(key: "gluten",    label: "Gluten",    commonAllergen: true),
+        .init(key: "lactose",   label: "Lactose",   commonAllergen: false),
+        .init(key: "soy",       label: "Soy",       commonAllergen: true),
+        .init(key: "egg",       label: "Egg",       commonAllergen: true),
+        .init(key: "peanut",    label: "Peanut",    commonAllergen: true),
+        .init(key: "tree_nut",  label: "Tree nuts", commonAllergen: true),
+        .init(key: "shellfish", label: "Shellfish", commonAllergen: true),
+        .init(key: "sesame",    label: "Sesame",    commonAllergen: true),
     ]
 }

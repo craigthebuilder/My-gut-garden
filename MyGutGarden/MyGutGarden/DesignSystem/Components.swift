@@ -48,6 +48,9 @@ struct PrimaryButton: View {
                 Text(title).font(theme.typography.body(weight: .semibold))
             }
             .frame(maxWidth: .infinity)
+            // Horizontal padding so a `.fixedSize()` (compact) use never hugs
+            // its label — the coach-mark "Next" squish fix (owner, 2026-07-02).
+            .padding(.horizontal, theme.metrics.space4)
             .padding(.vertical, theme.metrics.space3)
         }
         .background(theme.colors.primary)
@@ -69,6 +72,7 @@ struct SecondaryButton: View {
                 Text(title).font(theme.typography.body(weight: .medium))
             }
             .frame(maxWidth: .infinity)
+            .padding(.horizontal, theme.metrics.space4)
             .padding(.vertical, theme.metrics.space3)
         }
         .foregroundStyle(theme.colors.primary)
@@ -143,25 +147,9 @@ struct StatPill: View {
     }
 }
 
-/// Fence 2, render on any guild whose `claim_risk == true` so an associational/
-/// emerging claim never reads as established. Never ship the bare name.
-struct EmergingScienceTag: View {
-    @Environment(\.theme) private var theme
-
-    var body: some View {
-        HStack(spacing: theme.metrics.space1) {
-            Image(systemName: "sparkles")
-            Text("emerging science")
-        }
-        .font(theme.typography.caption(weight: .medium))
-        .padding(.horizontal, theme.metrics.space2)
-        .padding(.vertical, 2)
-        .background(theme.colors.warning.opacity(0.18))
-        .foregroundStyle(theme.colors.warning)
-        .clipShape(Capsule())
-        .accessibilityLabel("Emerging science, not an established claim")
-    }
-}
+// Owner (2026-07-02): the visible "emerging science" tag was retired app-wide.
+// `claim_risk` + `substantiation` remain in the data model as the RD-review
+// ledger — see FENCES.md (Fences 1/4) for what still needs sign-off.
 
 /// Radial progress (the dashboard arc from the reference; e.g. fiber goal).
 struct ProgressArc: View {

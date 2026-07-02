@@ -6,7 +6,7 @@
 //
 //  Respects reduced motion (DESIGN.md §3/§5): when reduced,
 //  it presents the fully-bloomed state instantly with no burst. Fence 2: a
-//  claim_risk guild still shows the EmergingScienceTag even mid-celebration.
+//  claim_risk stays data-only (RD-review ledger); no visible tag renders.
 //
 //  The coordinator detects the crossing (GuildFeedingOutcome.crossedIntoBlooming)
 //  and emits `celebrate(.guildBloom)`; the shell can present this view for it.
@@ -45,7 +45,6 @@ struct GuildBloomCelebrationView: View {
                     Text("is blooming")
                         .font(theme.typography.title(20))
                         .foregroundStyle(theme.colors.textSecondary)
-                    if claimRisk { EmergingScienceTag() } // Fence 2, even mid-celebration
                     Text("Sustained feeding paid off. Keep the rhythm going.")
                         .font(theme.typography.body())
                         .foregroundStyle(theme.colors.textSecondary)
@@ -68,8 +67,7 @@ struct GuildBloomCelebrationView: View {
         }
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(.isModal)
-        .accessibilityLabel("\(guildDisplayName) is blooming. Sustained feeding paid off."
-                            + (claimRisk ? " Emerging science, not an established claim." : ""))
+        .accessibilityLabel("\(guildDisplayName) is blooming. Sustained feeding paid off.")
     }
 
     // The petal burst: leaves unfurl from the center mascot.

@@ -1,13 +1,18 @@
 # tutorial_steps.csv — curated coach-mark copy (SPEC §7, DESIGN §4). One replayable
-# set per section_key; shown as dim-page spotlight call-outs.
+# set per section_key; shown as dim-page SPOTLIGHT call-outs anchored to the view
+# registered with .coachTarget(target_hint). The intro tour WALKS the app: the
+# shell switches to the tab each hint lives on (home/dashboard/trythis/fiber/
+# checkin → Today; snap → Snap; fieldguide → Field Guide; garden → Garden).
 # 🔒 FENCE 4/8 (RD-REVIEW-REQUIRED): steps that state a benefit/mechanism carry
 #    claim_risk=true. Curated, never runtime-generated (rule #9).
 section_key|order|title|body|target_hint|claim_risk
 intro|0|Grow a garden by feeding your gut|Snap your meals and we turn them into a living garden — the more variety you feed it, the more it grows.|home|false
-intro|1|Aim for 30 plants a week|Different plant foods feed different microbes, so thirty a week keeps your garden diverse and resilient.|plants|true
-intro|2|Eat the rainbow|Each colour brings its own phytochemicals; collecting all six keeps your garden well-rounded.|rainbow|true
-intro|3|We'll pace your fibre|More fibre is great, but ramping too fast can feel rough — we raise your goal gently as you're ready, and nudge you to drink more water.|fiber|true
-intro|4|A quiet guardian has your back|If a food doesn't sit well, we help you spot it — no tracking chores. You just eat; we watch quietly.|home|false
+intro|1|Your dashboard|Plants this week, the rainbow, and the 3 P's live here — with callouts for exactly what to eat today to fill the gaps. Tap in for the full picture.|dashboard|false
+intro|2|We'll help you build meals|Try this serves curated recipes. The ↻ deals a fresh idea; the target picks the meal that best fills today's gaps, so you keep hitting everything you need — fiber, plant variety, the rainbow, phytonutrients — without running low on any of them.|trythis|true
+intro|3|Snap your meals|Point the camera at your plate and we identify the plants and feed your garden. No weighing, no typing — a note like "extra onion" helps when something's hidden.|snap|false
+intro|4|Your field guide|Every plant you eat joins a lifetime collection — plants, colors, phytochemicals, fermented finds. Rarer finds are a bigger deal.|fieldguide|false
+intro|5|We'll pace your fibre|No fiber goal in week one — we learn your baseline first. Then it unlocks and rises gently as you're ready, with water reminders along the way.|home|true
+intro|6|You teach us, we teach you|Eat freely — a quiet guardian notices what doesn't sit well and asks before flagging anything. Over time we steer you toward foods that make you feel good and around the ones that don't. Your personalized nutrition, learned together.|checkin|true
 garden|0|Your microbiome garden|These are the bacterial crews you're feeding. Feed one steadily and it blooms.|garden|true
 garden|1|Worlds to explore|Your garden grows in worlds. Bloom the Core and the next world opens up.|garden|false
 rainbow|0|Eat the rainbow|Tap any colour to learn what it does for you and which foods bring it.|rainbow|true

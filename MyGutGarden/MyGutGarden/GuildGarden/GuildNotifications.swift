@@ -5,8 +5,8 @@
 //  Content only, scheduling is the NotificationScheduler's job. Everything is
 //  GAIN-framed (DESIGN.md §6: "feed your Anti-inflammatory Arsenal", never
 //  loss/shame) and 🔒 Fence-2-safe: a `claim_risk` guild (Mood/Estrogen/
-//  Mitochondria/Tumor) can't render the `EmergingScienceTag` in a push, so the
-//  qualifier is woven into the text, its name never ships as a bare health claim.
+//  Mitochondria/Tumor) keeps claim_risk as an RD-review ledger hook only — no
+//  qualifier is appended to user copy (owner, 2026-07-02; see FENCES.md).
 //
 
 import Foundation
@@ -19,12 +19,12 @@ struct GuildNotificationContent: Sendable, Equatable {
 
 enum GuildNotifications {
 
-    /// Inline emerging-science qualifier for claim-risk guilds (Fence 2). A push
-    /// has no room for the visual tag, so the body carries the disclaimer itself.
-    private static let emergingSuffix = " Emerging science, one to watch, not an established claim."
-
+    /// Owner (2026-07-02): the emerging-science disclaimer no longer renders in
+    /// user-facing surfaces, pushes included. `claimRisk` stays in the signatures
+    /// as the RD-review ledger hook (FENCES.md) but adds nothing to the copy.
     private static func qualified(_ body: String, claimRisk: Bool) -> String {
-        claimRisk ? body + emergingSuffix : body
+        _ = claimRisk
+        return body
     }
 
     /// "Your Anti-inflammatory Arsenal is hungry, feed it some resistant starch."

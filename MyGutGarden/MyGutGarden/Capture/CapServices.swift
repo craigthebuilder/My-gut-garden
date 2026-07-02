@@ -159,17 +159,26 @@ struct CapRecognizer: Sendable {
 struct CapFoodSearchService: Sendable {
     let repository: Repository
 
-    /// Case-insensitive substring match (`ilike.*term*`). Trimmed; empty → [].
+    private struct CapFoodSearchRow: Decodable, Sendable {
+        let id: String
+        let canonicalName: String
+        let aliases: [String]
+    }
+
+    /// Case-insensitive substring match over canonical names AND aliases (so
+    /// "meat", "acv", or "prawns" resolve). The catalog is small enough to
+    /// filter in memory. Trimmed; empty → [].
     func search(_ term: String, limit: Int = 20) async throws -> [CapFoodSearchResult] {
-        let trimmed = term.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmed = term.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         guard !trimmed.isEmpty else { return [] }
-        return try await repository.select(
-            "foods",
-            columns: "id,canonical_name",
-            filters: ["canonical_name": "ilike.*\(trimmed)*"],
-            order: "canonical_name",
-            limit: limit
-        )
+        let rows: [CapFoodSearchRow] = try await repository.select(
+            "foods", columns: "id,canonical_name,aliases", order: "canonical_name")
+        return rows.filter { row in
+            row.canonicalName.lowercased().contains(trimmed)
+                || row.aliases.contains { $0.lowercased().contains(trimmed) }
+        }
+        .prefix(limit)
+        .map { CapFoodSearchResult(id: $0.id, canonicalName: $0.canonicalName) }
     }
 
     /// Best single match for a name (used to resolve a confirmed hidden

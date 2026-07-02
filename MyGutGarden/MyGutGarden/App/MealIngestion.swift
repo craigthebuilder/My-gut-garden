@@ -98,6 +98,14 @@ struct MealIngestion {
     /// Recompute and publish progression. Safe to call standalone (e.g. on app
     /// launch) as well as after a meal.
     func recomputeProgression(userId: String) async {
+        // Maintain this week's `weekly_summaries` row first (nothing else writes
+        // it — streaks, hit-30 history, and the Tier-2 gate all read it), then
+        // run the week-one fiber unlock off the same snapshot.
+        let goal = await goalRow()
+        if let snapshot = await currentWeekSnapshot() {
+            await refreshWeeklySummary(userId: userId, snapshot: snapshot, goalG: goal?.fiberGoalG)
+            await maybeUnlockFiberGoal(userId: userId, goal: goal, snapshot: snapshot)
+        }
         let guilds = (try? await repository.fetchGuilds()) ?? []
         let districts = (try? await repository.fetchDistricts()) ?? []
         let orderByDistrictId = Dictionary(districts.map { ($0.id, $0.order) }, uniquingKeysWith: { a, _ in a })
@@ -149,7 +157,101 @@ struct MealIngestion {
         ))
         // Fiber-goal titration is owned by the guardian engine (SPEC §11, Phase 1F):
         // it reads check-ins + fiber load and OFFERS an increase (Accept/Decline),
-        // never auto-applies here.
+        // never auto-applies here. The one-time week-one UNLOCK runs above, off
+        // the same weekly snapshot that feeds `weekly_summaries`.
+    }
+
+    // MARK: - This week's snapshot (feeds weekly_summaries + the fiber unlock)
+
+    private struct GoalRow: Decodable {
+        let fiberGoalState: String
+        let fiberTargetG: Int?
+        let fiberGoalG: Int?
+    }
+
+    private struct WeekSnapshot {
+        let weekStart: String              // yyyy-MM-dd Monday (weekly_summaries.week_start)
+        let distinctPlantCount: Int
+        let fiberByDay: [String: Double]   // coarse/directional Σ est_fiber_g per logged day
+    }
+
+    private func goalRow() async -> GoalRow? {
+        let rows: [GoalRow] = (try? await repository.select(
+            "users", columns: "fiber_goal_state,fiber_target_g,fiber_goal_g")) ?? []
+        return rows.first
+    }
+
+    /// This weekly window's confirmed meals → distinct plant foods (mirrors the
+    /// Today hero count) + per-day directional fiber. nil when nothing is logged.
+    private func currentWeekSnapshot() async -> WeekSnapshot? {
+        let monday = ThrDates.currentMonday()
+        let since = ThrDates.timestampString(monday)
+        guard let meals: [MealRow] = try? await repository.select(
+            "meals", columns: "id,photo_url,captured_at,confirmed,user_annotation",
+            filters: ["captured_at": "gte.\(since)", "confirmed": "eq.true"]
+        ), !meals.isEmpty else { return nil }
+        let mealList = "(" + meals.map(\.id).joined(separator: ",") + ")"
+        guard let items: [GuardianMealItemRow] = try? await repository.select(
+            "meal_items", filters: ["meal_id": "in.\(mealList)"]), !items.isEmpty else { return nil }
+        let foodList = "(" + Set(items.map(\.foodId)).joined(separator: ",") + ")"
+        let foods: [ThrFoodNameRow] = (try? await repository.select(
+            "foods", columns: "id,canonical_name", filters: ["id": "in.\(foodList)"])) ?? []
+        let plantNames = Set(((try? await repository.fetchPlants()) ?? []).map { $0.name.lowercased() })
+        let plantFoodIds = Set(foods.filter { plantNames.contains($0.canonicalName.lowercased()) }.map(\.id))
+        let distinctPlantNames = Set(foods.filter { plantFoodIds.contains($0.id) }
+            .map { $0.canonicalName.lowercased() })
+
+        let dayByMeal = Dictionary(meals.map { ($0.id, String($0.capturedAt.prefix(10))) },
+                                   uniquingKeysWith: { a, _ in a })
+        var fiberByDay: [String: Double] = [:]
+        for item in items {
+            guard let day = dayByMeal[item.mealId] else { continue }
+            fiberByDay[day, default: 0] += item.estFiberG ?? 0
+        }
+
+        return WeekSnapshot(weekStart: ThrDates.dateString(monday),
+                            distinctPlantCount: distinctPlantNames.count,
+                            fiberByDay: fiberByDay)
+    }
+
+    /// The SOLE writer of `weekly_summaries` (streaks, best week, hit-30 history,
+    /// and the Tier-2 gate all read it; before this nothing populated it).
+    private func refreshWeeklySummary(userId: String, snapshot: WeekSnapshot, goalG: Int?) async {
+        let hit30 = snapshot.distinctPlantCount >= GameConfig.shared.weeklyPlantTarget
+        let fiberDaysMet = goalG.map { g in
+            snapshot.fiberByDay.values.filter { $0 >= Double(g) }.count
+        } ?? 0
+        try? await repository.upsert("weekly_summaries", [
+            "user_id": .string(userId),
+            "week_start": .string(snapshot.weekStart),
+            "unique_plant_count": .int(snapshot.distinctPlantCount),
+            "hit_30": .bool(hit30),
+            "fiber_days_met": .int(fiberDaysMet),
+        ], onConflict: "user_id,week_start")
+    }
+
+    // MARK: - Week-one fiber-goal unlock (SPEC §10; Fence 2)
+
+    /// Completing the baseline quest (30 distinct plant foods within the weekly
+    /// window, `GameConfig.fiberBaselineQuestPlants`) sets
+    /// `fiber_goal_state = 'unlocked'` and surfaces the FIRST `fiber_goal_g` — a
+    /// comfortable starting point informed by the observed baseline, never the
+    /// full target on day one (SPEC §10). Idempotent: only fires while the state
+    /// is still 'baseline_pending'.
+    private func maybeUnlockFiberGoal(userId: String, goal: GoalRow?, snapshot: WeekSnapshot) async {
+        guard goal?.fiberGoalState == "baseline_pending",
+              snapshot.distinctPlantCount >= GameConfig.shared.fiberBaselineQuestPlants else { return }
+
+        let startingGoal = GuardianEngine.initialFiberGoal(
+            observedDailyFiberG: Array(snapshot.fiberByDay.values),
+            targetG: goal?.fiberTargetG)
+        try? await repository.update("users", set: [
+            "fiber_goal_g": .int(startingGoal),
+            "fiber_goal_state": .string("unlocked"),
+            "fiber_goal_unlocked_at": .date(Date()),
+        ], filters: ["id": "eq.\(userId)"])
+        await appState.refreshProfile()
+        appState.celebrate(.fiberGoalUnlocked(goalG: startingGoal))
     }
 }
 

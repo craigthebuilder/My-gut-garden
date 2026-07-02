@@ -235,7 +235,8 @@ struct ThrGoalArcCard: View {
 struct ThrCuriosityCard: View {
     @Environment(\.theme) private var theme
     let fact: String
-    var confidenceTag: String? = nil
+    // Owner (2026-07-02): the confidence badge ("emerging" etc.) no longer
+    // renders; confidence_tag stays in the data as the RD-review ledger.
 
     var body: some View {
         Card {
@@ -247,9 +248,6 @@ struct ThrCuriosityCard: View {
                         .font(theme.typography.caption(weight: .semibold))
                         .foregroundStyle(theme.colors.accent)
                     Spacer()
-                    if let confidenceTag, confidenceTag != "solid" {
-                        Badge(text: confidenceTag, tint: theme.colors.secondary)
-                    }
                 }
                 Text(fact)
                     .font(theme.typography.body())

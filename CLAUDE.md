@@ -65,7 +65,7 @@ The **coach-mark / tutorial layer** (`SPEC.md §7`, `DESIGN.md §4`) is a **shar
 
 Some content is clinical and must be reviewed by a registered dietitian (RD) before launch. **This does not block building.** Build the engine/UI/data structures fully; mark the *content* with `// RD-REVIEW-REQUIRED` and a `claim_risk` / `substantiation` field where relevant. Keep `FENCES.md` as the single index. The five fences (full detail in `SPEC.md §15` / `FENCES.md`):
 
-- **Fence 1 — Health-claim naming (guilds/worlds).** Emerging/associational names → `claim_risk = true`, inline `[emerging science]` tag, `substantiation` field.
+- **Fence 1 — Health-claim naming (guilds/worlds).** Emerging/associational names → `claim_risk = true` + `substantiation` field. **Owner decision (2026-07-02): no visible `[emerging science]` tag renders anywhere** — the flags are a review ledger only, and claim-risky names must pass RD/legal review as unqualified claims or be renamed.
 - **Fence 2 — Fiber-titration safety.** Ramp rate, step size, day thresholds, caps, water guidance → placeholder constants, marked.
 - **Fence 3 — Food-sensitivity engine + care prompts.** Suggestion thresholds, the maladjustment-vs-missing-bacteria education, the "could this be an allergy?" care prompt → fenced; wellness-only, user-confirmed, never a diagnosis.
 - **Fence 4 — Education & recipe claims.** Phytochemical/fiber/recipe benefit copy → RD + legal pass; `[emerging science]` tags; curated only.
@@ -105,7 +105,7 @@ The `[seed]` tables in `SPEC.md §5` are **assembled as part of the build** and 
 - Don't start Phase 1 before Phase 0's exit criteria are met.
 - Don't let two agents touch the same files; isolate via worktrees.
 - Don't improvise clinical logic — fiber-ramp rates, sensitivity thresholds, health-claim copy — as if final (fences).
-- Don't ship the claim-risky guild names as bare health claims.
+- Don't ship the claim-risky guild names without their RD/legal sign-off — with the visible `[emerging science]` tag retired (owner, 2026-07-02), names that can't stand unqualified must be renamed before launch, not re-tagged.
 - Don't hardcode design values, use inconsistent modal widths, or generate at runtime content that should be seed data.
 - Don't collapse the food-flag model or let the **allergy** tier lose its LOUD, pre-overview behavior. (The single most important UI-safety invariant.)
 - Don't let the guardian call a live LLM, produce a number, assert a diagnosis, or promote a food to `sensitivity`/`allergy` without a user tap.

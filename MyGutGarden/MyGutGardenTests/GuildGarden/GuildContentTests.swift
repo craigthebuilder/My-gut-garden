@@ -65,19 +65,20 @@ struct GuildContentTests {
                                           feedSuggestion: "resistant starch", claimRisk: false)
         #expect(n.body.contains("hungry"))
         #expect(n.body.contains("resistant starch"))
-        #expect(!n.body.lowercased().contains("emerging science")) // not claim-risk → no qualifier
+        #expect(!n.body.lowercased().contains("emerging science"))
     }
 
-    @Test func claimRiskNotificationsCarryEmergingScienceQualifier() {
-        // Every claim-risk notification path must inline the qualifier (Fence 2:
-        // the name never ships as a bare health claim, including in push copy).
+    @Test func noNotificationCarriesTheRetiredEmergingScienceQualifier() {
+        // Owner (2026-07-02): the visible emerging-science disclaimer is retired
+        // app-wide, pushes included. claim_risk stays in the data as the
+        // RD-review ledger (FENCES.md Fence 1) but must not alter user copy.
         let hungry = GuildNotifications.hungry(displayName: "The Mood Regulators",
                                                feedSuggestion: "oats and seeds", claimRisk: true)
         let bloomed = GuildNotifications.bloomed(displayName: "The Estrogen Regulators", claimRisk: true)
         let wellFed = GuildNotifications.wellFed(displayName: "The Tumor Preventors", claimRisk: true)
         let unlocked = GuildNotifications.guildUnlocked(displayName: "The Mitochondria Boosters", claimRisk: true)
         for n in [hungry, bloomed, wellFed, unlocked] {
-            #expect(n.body.lowercased().contains("emerging science"), "claim-risk copy must qualify: \(n.body)")
+            #expect(!n.body.lowercased().contains("emerging science"), "retired qualifier resurfaced: \(n.body)")
         }
     }
 

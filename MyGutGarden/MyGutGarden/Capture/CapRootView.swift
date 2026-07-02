@@ -62,6 +62,7 @@ private struct CapCaptureScreen: View {
             VStack(alignment: .leading, spacing: theme.metrics.space5) {
                 header
                 cameraSurface
+                    .coachTarget("snap")
                 fallbacks
                 if let error = model.errorText { errorNote(error) }
             }

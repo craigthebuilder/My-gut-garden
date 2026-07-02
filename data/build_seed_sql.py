@@ -105,7 +105,9 @@ _, food_fibers = read_csv("food_fibers.csv")
 _, food_colors = read_csv("food_colors.csv")
 _, food_phytos = read_csv("food_phytochemicals.csv")
 _, food_guilds = read_csv("food_guild_feeds.csv")
-_, fodmaps = read_csv("fodmap_profiles.csv")
+# Single-mode: fodmap_profiles + foods.histamine_level were DROPPED
+# (20260701000004_drop_two_mode.sql). The generator no longer reads or emits
+# them; foods.csv keeps its histamine column as documentation only.
 _, facts = read_csv("curiosity_facts.csv")
 _, stories = read_csv("success_stories.csv")
 # Single-mode additions (SPEC §8 worlds, §14 recipes, §7 tutorials).
@@ -131,6 +133,8 @@ for r in colors:
 
 for r in fibers:
     b(r["is_fodmap_trigger"])
+    if r["fermentability"] not in {"low", "moderate", "high"}:
+        err(f"fibers: illegal fermentability {r['fermentability']} for {r['name']}")
 
 for r in phytos:
     if r["class"] not in PHYTO_CLASS:
@@ -192,15 +196,6 @@ for r in food_guilds:
     if r["relevance"] not in AMOUNT:
         err(f"food_guild_feeds: illegal relevance {r['relevance']} ({r['food']}/{r['guild']})")
 
-for r in fodmaps:
-    if r["food"] not in food_names:
-        err(f"fodmap_profiles: missing food {r['food']}")
-    for col in ("fructan_level", "gos_level", "lactose_level", "fructose_level", "polyol_level"):
-        if r[col] not in FODMAP_LEVEL:
-            err(f"fodmap_profiles: illegal {col}={r[col]} for {r['food']}")
-    if r["safety"] not in FODMAP_SAFETY:
-        err(f"fodmap_profiles: illegal safety {r['safety']} for {r['food']}")
-
 # every guild must have at least one feeder (roster completeness)
 fed = {r["guild"] for r in food_guilds}
 for g in guild_names:
@@ -216,6 +211,7 @@ for r in recipes:
         if c not in COLORS:
             err(f"recipes: illegal color {c!r} in {r['title']!r}")
     b(r["claim_risk"])
+    b(r["suggest_protein"])
 _tutorial_keys = set()
 for r in tutorials:
     if not r["order"].isdigit():
@@ -248,13 +244,12 @@ w("-- Idempotent + supersedes the Phase-0 demo seed (...000003) via")
 w("-- INSERT ... ON CONFLICT (<natural key>) DO UPDATE. Safe to re-run.")
 w("-- Natural keys: colors.id | fibers/plants/phytochemicals.name |")
 w("--   districts.order | guilds.internal_name | foods.canonical_name |")
-w("--   junctions composite PK | fodmap_profiles.food_id.")
+w("--   junctions composite PK.")
 w("--")
 w("-- 🔒 FENCE 2 (SPEC §14): guilds.claim_risk=true on Mood/Estrogen/Mitochondria/")
 w("--   Tumor names; substantiation is RD-REVIEW-REQUIRED placeholder copy.")
-w("-- 🔒 FENCE 4 (SPEC §14): fodmap_profiles + food_fibers.est_grams_per_serving are")
-w("--   REVERSE-ENGINEERED / COARSE placeholders. OWNER: validate FODMAP source")
-w("--   LICENSING (e.g. Monash) before launch. Never surface as measured grams.")
+w("-- 🔒 FENCE 4 (SPEC §14): food_fibers.est_grams_per_serving values are COARSE")
+w("--   placeholders. Never surface as measured grams.")
 w("-- Sources cited per-file in /data/*.csv (USDA FoodData Central; USDA flavonoid")
 w("--   tables; Phenol-Explorer; framework §4-5).")
 w("-- Supabase applies each migration file inside its own transaction, so this")
@@ -274,11 +269,12 @@ w()
 
 # ---- fibers -------------------------------------------------------------------
 w("-- ---- fibers — ON CONFLICT (name) -------------------------------------")
-w("insert into fibers (name, is_fodmap_trigger, notes) values")
-vals = [f"  ({s(r['name'])}, {b(r['is_fodmap_trigger'])}, {s(r['notes'])})" for r in fibers]
+w("insert into fibers (name, is_fodmap_trigger, fermentability, notes) values")
+vals = [f"  ({s(r['name'])}, {b(r['is_fodmap_trigger'])}, {s(r['fermentability'])}, {s(r['notes'])})" for r in fibers]
 w(",\n".join(vals))
 w("on conflict (name) do update set")
 w("  is_fodmap_trigger = excluded.is_fodmap_trigger,")
+w("  fermentability = excluded.fermentability,")
 w("  notes = excluded.notes;")
 w()
 
@@ -296,13 +292,23 @@ w("  maps_to_color_id = excluded.maps_to_color_id;")
 w()
 
 # ---- districts ----------------------------------------------------------------
-w('-- ---- districts — ON CONFLICT ("order") ------------------------------')
-w('insert into districts ("order", name, unlock_rule_key) values')
-vals = [f"  ({r['order']}, {s(r['name'])}, {s(r['unlock_rule_key'])})" for r in districts]
-w(",\n".join(vals))
-w('on conflict ("order") do update set')
-w("  name = excluded.name,")
-w("  unlock_rule_key = excluded.unlock_rule_key;")
+# Single-mode made districts."order" unique PER WORLD (districts_world_order_idx),
+# so a plain ON CONFLICT ("order") no longer matches a constraint. Merge by the
+# logical key instead: update the rows that exist, insert the ones that don't.
+w("-- ---- districts — update-then-insert (order is unique per world now) --")
+district_values = ",\n".join(
+    f"  ({r['order']}, {s(r['name'])}, {s(r['unlock_rule_key'])})" for r in districts
+)
+w("update districts d set name = v.name, unlock_rule_key = v.unlock_rule_key")
+w("from (values")
+w(district_values)
+w(') as v("order", name, unlock_rule_key)')
+w('where d."order" = v."order";')
+w('insert into districts ("order", name, unlock_rule_key)')
+w("select * from (values")
+w(district_values)
+w(') as v("order", name, unlock_rule_key)')
+w('where not exists (select 1 from districts d where d."order" = v."order");')
 w()
 
 # ---- guilds (FK -> districts) -------------------------------------------------
@@ -340,27 +346,26 @@ w("  plant_family = excluded.plant_family,")
 w("  rarity_tier = excluded.rarity_tier;")
 w()
 
-# ---- foods (FK -> plants) -----------------------------------------------------
+# ---- foods (FK -> plants; histamine_level column was dropped in single-mode) ---
 w("-- ---- foods — ON CONFLICT (canonical_name); plant_id via plants join --")
-w("insert into foods (canonical_name, aliases, is_plant, plant_id, is_fermented, histamine_level, common_hidden_in, categories)")
-w("select v.canonical_name, v.aliases, v.is_plant, p.id, v.is_fermented, v.histamine_level::histamine_level, v.common_hidden_in, v.categories")
+w("insert into foods (canonical_name, aliases, is_plant, plant_id, is_fermented, common_hidden_in, categories)")
+w("select v.canonical_name, v.aliases, v.is_plant, p.id, v.is_fermented, v.common_hidden_in, v.categories")
 w("from (values")
 vals = []
 for r in foods:
     vals.append("  (" + ", ".join([
         s(r["canonical_name"]), arr(split_list(r["aliases"])), b(r["is_plant"]),
-        s(r["plant_name"]), b(r["is_fermented"]), s(r["histamine_level"]),
+        s(r["plant_name"]), b(r["is_fermented"]),
         arr(split_list(r["common_hidden_in"])), arr(split_list(r["categories"])),
     ]) + ")")
 w(",\n".join(vals))
-w(") as v(canonical_name, aliases, is_plant, plant_name, is_fermented, histamine_level, common_hidden_in, categories)")
+w(") as v(canonical_name, aliases, is_plant, plant_name, is_fermented, common_hidden_in, categories)")
 w("left join plants p on p.name = v.plant_name")
 w("on conflict (canonical_name) do update set")
 w("  aliases = excluded.aliases,")
 w("  is_plant = excluded.is_plant,")
 w("  plant_id = excluded.plant_id,")
 w("  is_fermented = excluded.is_fermented,")
-w("  histamine_level = excluded.histamine_level,")
 w("  common_hidden_in = excluded.common_hidden_in,")
 w("  categories = excluded.categories;")
 w()
@@ -418,30 +423,6 @@ w("join guilds g on g.internal_name = v.guild")
 w("on conflict (food_id, guild_id) do update set relevance = excluded.relevance;")
 w()
 
-# ---- fodmap_profiles ----------------------------------------------------------
-w("-- ---- fodmap_profiles — ON CONFLICT (food_id) do update; FENCE 4 ------")
-w("insert into fodmap_profiles (food_id, fructan_level, gos_level, lactose_level, fructose_level, polyol_level, serving_size_desc, safety)")
-w("select fo.id, v.fructan::fodmap_level, v.gos::fodmap_level, v.lactose::fodmap_level, v.fructose::fodmap_level, v.polyol::fodmap_level, v.serving, v.safety::fodmap_safety")
-w("from (values")
-vals = []
-for r in fodmaps:
-    vals.append("  (" + ", ".join([
-        s(r["food"]), s(r["fructan_level"]), s(r["gos_level"]), s(r["lactose_level"]),
-        s(r["fructose_level"]), s(r["polyol_level"]), s(r["serving_size_desc"]), s(r["safety"]),
-    ]) + ")")
-w(",\n".join(vals))
-w(") as v(food, fructan, gos, lactose, fructose, polyol, serving, safety)")
-w("join foods fo on fo.canonical_name = v.food")
-w("on conflict (food_id) do update set")
-w("  fructan_level = excluded.fructan_level,")
-w("  gos_level = excluded.gos_level,")
-w("  lactose_level = excluded.lactose_level,")
-w("  fructose_level = excluded.fructose_level,")
-w("  polyol_level = excluded.polyol_level,")
-w("  serving_size_desc = excluded.serving_size_desc,")
-w("  safety = excluded.safety;")
-w()
-
 # ---- curiosity_facts (no natural key in schema -> delete+insert, idempotent) --
 w("-- ---- curiosity_facts — no natural key in schema; delete+insert (idempotent,")
 w("--      supersedes demo rows). Curated, not runtime-generated (CLAUDE.md #9).")
@@ -497,13 +478,13 @@ w2()
 
 w2("-- ---- recipes — no natural key; delete+insert (idempotent) -----------")
 w2("delete from recipes;")
-w2("insert into recipes (title, description, color_ids, fiber_highlights, steps, prep_minutes, source, claim_risk) values")
+w2("insert into recipes (title, description, color_ids, fiber_highlights, steps, prep_minutes, source, claim_risk, suggest_protein) values")
 vals = []
 for r in recipes:
     vals.append("  (" + ", ".join([
         s(r["title"]), s(r["description"]), arr(split_list(r["color_ids"])),
         s(r["fiber_highlights"]), arr(split_list(r["steps"])), num(r["prep_minutes"]),
-        s(r["source"]), b(r["claim_risk"]),
+        s(r["source"]), b(r["claim_risk"]), b(r["suggest_protein"]),
     ]) + ")")
 w2(",\n".join(vals) + ";")
 w2()
@@ -528,7 +509,7 @@ counts = {
     "districts": len(districts), "guilds": len(guilds), "plants": len(plants),
     "foods": len(foods), "food_fibers": len(food_fibers), "food_colors": len(food_colors),
     "food_phytochemicals": len(food_phytos), "food_guild_feeds": len(food_guilds),
-    "fodmap_profiles": len(fodmaps), "curiosity_facts": len(facts), "success_stories": len(stories),
+    "curiosity_facts": len(facts), "success_stories": len(stories),
 }
 rarity_breakdown = {}
 for r in plants:

@@ -82,6 +82,34 @@ struct GuardianEngineTests {
         #expect(GuardianEngine.fiberTitration(goal: goal, days: days) == nil)
     }
 
+    // MARK: Week-one unlock — the first surfaced goal (SPEC §10, Fence 2)
+
+    @Test func initialGoalIsBaselineMeanPlusBuffer() {
+        let goal = GuardianEngine.initialFiberGoal(observedDailyFiberG: [18, 22, 20], targetG: 40)
+        #expect(goal == 20 + Self.cfg.fiberInitialGoalBufferG)
+    }
+
+    @Test func initialGoalIsFlooredWhenBaselineIsTiny() {
+        let goal = GuardianEngine.initialFiberGoal(observedDailyFiberG: [1, 2], targetG: 40)
+        #expect(goal == Self.cfg.fiberInitialGoalMinG)
+    }
+
+    @Test func initialGoalNeverExceedsThePersonalizedTarget() {
+        let goal = GuardianEngine.initialFiberGoal(observedDailyFiberG: [60, 60], targetG: 30)
+        #expect(goal == 30)
+    }
+
+    @Test func initialGoalNeverExceedsTheAbsoluteMax() {
+        let goal = GuardianEngine.initialFiberGoal(observedDailyFiberG: [90, 90], targetG: 200)
+        #expect(goal == Self.cfg.fiberGoalAbsoluteMaxG)
+    }
+
+    @Test func initialGoalCapWinsOverTheFloor() {
+        // A pathologically low target still caps the goal — safety beats the floor.
+        let goal = GuardianEngine.initialFiberGoal(observedDailyFiberG: [], targetG: 8)
+        #expect(goal == 8)
+    }
+
     // MARK: Job 2 — attribution
 
     @Test func silentOnASingleOffDay() {

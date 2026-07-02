@@ -58,7 +58,10 @@ final class YouFoodFlagsModel {
         foodNames = Dictionary(foods.map { ($0.id, $0.canonicalName) }, uniquingKeysWith: { a, _ in a })
         flags = flagRows.compactMap { r in
             guard let tier = FlagTier(rawValue: r.flagTier) else { return nil }
-            let name = r.foodId.flatMap { foodNames[$0] } ?? r.category ?? "Food"
+            // Category flags store a key like "tree_nut" — show a readable label.
+            let name = r.foodId.flatMap { foodNames[$0] }
+                ?? r.category.map { $0.replacingOccurrences(of: "_", with: " ").capitalized }
+                ?? "Food"
             return YouFlag(id: r.id, foodId: r.foodId, name: name, tier: tier,
                            engineSuggested: r.source == "engine" && !r.userConfirmed)
         }.sorted { $0.name < $1.name }

@@ -151,7 +151,7 @@ final class OnbViewModel {
     /// note the disclaimer only (no food flag, no persisted column).
     func acknowledgeSeriousConditions() {
         if seriousConditions.contains(OnbSeriousCondition.celiac.key) {
-            addCategoryFlag(key: "gluten", label: "Gluten / wheat", tier: .allergy)
+            addCategoryFlag(key: "gluten", label: "Gluten", tier: .allergy)
         }
     }
 
@@ -175,14 +175,29 @@ final class OnbViewModel {
         if let rows { successStories = rows }
     }
 
-    /// Food search uses ilike.%q% (PostgREST standard SQL wildcard).
+    /// One search row carrying aliases so "meat" finds Beef, "acv" finds apple
+    /// cider vinegar, etc. The catalog is small; fetch once, filter in memory.
+    private struct OnbFoodSearchRow: Decodable, Sendable {
+        let id: String
+        let canonicalName: String
+        let aliases: [String]
+    }
+    private var allFoodRows: [OnbFoodSearchRow] = []
+
+    /// Case-insensitive substring match over canonical names AND aliases.
     func searchFoods() async {
-        let q = foodQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+        let q = foodQuery.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         guard q.count >= 2, let repo = appState.repository else { foodHits = []; return }
-        let hits: [OnbFoodHit]? = try? await repo.select(
-            "foods", columns: "id,canonical_name",
-            filters: ["canonical_name": "ilike.%\(q)%"], limit: 8)
-        foodHits = hits ?? []
+        if allFoodRows.isEmpty {
+            allFoodRows = (try? await repo.select(
+                "foods", columns: "id,canonical_name,aliases", order: "canonical_name")) ?? []
+        }
+        foodHits = allFoodRows.filter { row in
+            row.canonicalName.lowercased().contains(q)
+                || row.aliases.contains { $0.lowercased().contains(q) }
+        }
+        .prefix(8)
+        .map { OnbFoodHit(id: $0.id, canonicalName: $0.canonicalName) }
     }
 
     /// Persist intake: PATCH the internal profile fields + stamp onboarded_at, then

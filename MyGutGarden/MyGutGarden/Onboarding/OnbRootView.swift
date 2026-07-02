@@ -106,12 +106,14 @@ struct OnbRootView: View {
         let hasAutoimmune = vm.seriousConditions.contains(OnbSeriousCondition.otherAutoimmune.key)
         let hasIbd = vm.seriousConditions.contains(OnbSeriousCondition.ibd.key)
 
+        // Medical/care copy ONLY — privacy reassurance lives on the checks step
+        // itself, never mixed into a "see your doctor" message (owner, 2026-07-02).
         var parts: [String] = [
             "Conditions like these are serious and belong with your medical team. This app supports you; it does not replace your doctors."
         ]
 
         if hasAutoimmune || hasIbd {
-            parts.append("If you have an autoimmune condition, your doctor is the right guide for dietary changes. We will keep your data private.")
+            parts.append("If you have an autoimmune condition, your doctor is the right guide for dietary changes.")
         }
 
         if celiac {
@@ -175,17 +177,30 @@ private struct ThemedShell: View {
         }
     }
 
-    // MARK: Welcome (lead with Thrive's fun, SPEC §6)
+    // MARK: Welcome (lead with the fun, SPEC §6)
+    //
+    // ── OWNER-EDITABLE ────────────────────────────────────────────────────
+    // • Title + subtitle: edit `OnbWelcomeCopy` just below.
+    // • The plant picture: add an image named "OnboardingHero" to
+    //   Assets.xcassets and it replaces the leaf placeholder automatically.
+    // • The quote cards ("From people like you"): rows in the
+    //   `success_stories` table — edit data/success_stories.csv, run
+    //   data/build_seed_sql.py, and apply a seed refresh migration.
+
+    private enum OnbWelcomeCopy {
+        static let title = "Grow a garden you can eat"
+        static let subtitle = "Snap your meals, fill a field guide of plants, and feed the invisible world that keeps you well. Two minutes to set up."
+    }
 
     private var welcomeStep: some View {
         VStack(alignment: .leading, spacing: theme.metrics.space5) {
-            IllustrationPlaceholder(systemImage: "leaf.fill")
+            IllustrationPlaceholder(systemImage: "leaf.fill", imageName: "OnboardingHero")
                 .frame(height: 160)
             VStack(alignment: .leading, spacing: theme.metrics.space3) {
-                Text("Grow a garden you can eat")
+                Text(OnbWelcomeCopy.title)
                     .font(theme.typography.display(34))
                     .foregroundStyle(theme.colors.textPrimary)
-                Text("Snap your meals, fill a field guide of plants, and feed the invisible world that keeps you well. Two minutes to set up.")
+                Text(OnbWelcomeCopy.subtitle)
                     .font(theme.typography.body())
                     .foregroundStyle(theme.colors.textSecondary)
             }

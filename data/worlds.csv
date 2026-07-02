@@ -1,8 +1,10 @@
 # worlds.csv — the top tier of the Microbiome Garden (SPEC §8, DESIGN §1).
 # The existing 4 districts all belong to World 1 (The Core); Worlds 2+ are fogged
 # teasers for v1. intro_copy is the coach-mark shown when a world unlocks.
-# Source: framework §4 (guild roster). claim-risky world names carry [emerging science] inline.
+# Source: framework §4 (guild roster). Owner (2026-07-02): the visible
+# "[emerging science]" tag is retired app-wide; claim-risk stays tracked in
+# guilds.csv substantiation + FENCES.md for RD review.
 order|name|unlock_rule_key|intro_copy
 1|The Core|core_default|The crews almost everyone hosts — your gut's backbone. Feed them a variety of plants and watch them bloom.
 2|The Keystone Reaches|world2_after_core|Small crews with outsized power: they crack open the tough fibers so everyone else can feed. Unlocks as your Core blooms.
-3|The Frontier|world3_after_keystones|The crews science is still charting — mood, hormones, and more. Emerging, personal, and yours to discover. [emerging science]
+3|The Frontier|world3_after_keystones|The crews science is still charting — mood, hormones, and more. Emerging, personal, and yours to discover.

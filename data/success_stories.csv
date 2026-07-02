@@ -2,11 +2,13 @@
 # ⚠️ SPEC §2/§6: truthful + REPRESENTATIVE only. No cherry-picked medical claims, no cure language, no named conditions.
 #    These are REPRESENTATIVE composite testimonials written for the build (verified=false), replace with
 #    real, consented user quotes before launch; only mark verified=true once a real attributable quote exists.
+# Single-mode (2026-07-02): the old "Thrive user"/"Survive user" attributions and reintro/symptom
+#    stories are retired with the two-mode design.
 # Format: pipe-delimited. text|attribution|verified
 text|attribution|verified
-Eating across more colors each week made hitting 30 plants feel like collecting, not a chore.|Thrive user (representative)|false
-Going back to basics for a couple of weeks and then adding foods back one at a time finally helped me see which ones actually bothered me.|Survive user (representative)|false
-I never knew how few different plants I was eating until the weekly count showed me. Now I hit thirty most weeks.|Thrive user (representative)|false
-Tracking the smell of my gas felt silly at first, but it turned out to be the clue that helped me spot my pattern.|Survive user (representative)|false
-The garden blooming when I kept feeding the same crews made the science click in a way a chart never did.|Thrive user (representative)|false
-Reintroducing onion and garlic slowly, instead of cutting them forever, took the fear out of eating again.|Survive user (representative)|false
+Eating across more colors each week made hitting 30 plants feel like collecting, not a chore.|Early tester (representative)|false
+I never knew how few different plants I was eating until the weekly count showed me. Now I hit thirty most weeks.|Early tester (representative)|false
+The garden blooming when I kept feeding the same crews made the science click in a way a chart never did.|Early tester (representative)|false
+The quiet heads-up that one food kept showing up on my rough days helped me spot a pattern I had missed for years.|Early tester (representative)|false
+Snapping a photo instead of weighing and typing meant I actually kept logging past week one.|Early tester (representative)|false
+Watching my energy trend up as my plant count grew was the nudge that kept me going.|Early tester (representative)|false

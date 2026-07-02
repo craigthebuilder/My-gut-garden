@@ -34,19 +34,27 @@ Natural keys: `colors.id` · `fibers/plants/phytochemicals.name` · `districts.o
 | table | rows |
 |---|---|
 | colors | 6 (the 6 rainbow groups) |
-| fibers | 10 |
+| fibers | 10 (now carry `fermentability`, the Fence-2 coarse tolerance hint) |
 | phytochemicals | 32 |
 | districts | **4** ✅ |
 | guilds | **12** ✅ (full framework §4 roster) |
 | plants | **110** ✅ (≥30; broad enough to reach 30/week easily) |
-| foods | 122 (110 plant foods + 12 fermented/non-plant) |
+| foods | 185 (110 plant foods + fermented + the 2026-07-02 everyday set: meats, fish, eggs, dairy, oils, vinegars, condiments, sweeteners, drinks — so reaction search covers what people actually eat) |
 | food_fibers | 45 |
 | food_colors | 123 |
 | food_phytochemicals | 84 |
 | food_guild_feeds | 79 (every one of the 12 guilds has ≥1 feeder) |
-| fodmap_profiles | 58 |
 | curiosity_facts | 22 |
 | success_stories | 6 |
+
+> **Single-mode schema drift (2026-07-02):** `fodmap_profiles` and
+> `foods.histamine_level` were DROPPED by `20260701000004_drop_two_mode.sql`;
+> the generator no longer reads or emits them (`fodmap_profiles.csv` is deleted;
+> foods.csv keeps its histamine column as documentation only). `districts` are
+> merged by logical `"order"` (its global unique became per-world). Content
+> changes reach the live DB via a fresh timestamped **seed-refresh migration**
+> (the two original seed migrations are already applied) — see
+> `supabase/migrations/20260702000005_seed_refresh.sql` for the pattern.
 
 Plants rarity breakdown (heuristic, by dietary commonness — SPEC §13, tunable):
 common 35 · uncommon 49 · rare 22 · legendary 4.

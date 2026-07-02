@@ -102,6 +102,9 @@ enum CelebrationEvent: Sendable, Identifiable {
     case guildUnlock(displayName: String)
     case districtUnlock(name: String)
     case worldUnlock(name: String)
+    /// The week-one baseline quest completed — the surfaced goal exists now
+    /// (SPEC §10). Positive outcome, so a celebration is legitimate (rule #7).
+    case fiberGoalUnlocked(goalG: Int)
 
     var id: String {
         switch self {
@@ -110,6 +113,7 @@ enum CelebrationEvent: Sendable, Identifiable {
         case let .guildUnlock(n): "unlock-\(n)"
         case let .districtUnlock(n): "district-\(n)"
         case let .worldUnlock(n): "world-\(n)"
+        case let .fiberGoalUnlocked(g): "fiber-goal-\(g)"
         }
     }
 }

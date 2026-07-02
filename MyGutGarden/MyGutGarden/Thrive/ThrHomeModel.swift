@@ -32,6 +32,7 @@ final class ThrHomeModel {
     // Variable reward + rainbow education content.
     var curiosity: ThrCuriosityFactRow?
     var recipeSuggestion: RecipeRow?
+    private var allRecipes: [RecipeRow] = []
     var colorEducation: [String: ThrColorEducation] = ThrRainbowContent.fallback
     var colorExampleFoods: [String: [String]] = [:]
 
@@ -46,6 +47,14 @@ final class ThrHomeModel {
         guard let goal = fiberGoalG, goal > 0 else { return 0 }
         return min(1, fiberConsumedTodayG / Double(goal))
     }
+
+    /// The goal surfaces ONLY once the week-one baseline quest unlocks it
+    /// (SPEC §10 / Fence 5) — a stale `fiber_goal_g` while the state is still
+    /// `baseline_pending` must never show.
+    static func surfacedGoal(_ profile: UserProfile?) -> Int? {
+        guard let profile, profile.fiberGoalState == "unlocked" else { return nil }
+        return profile.fiberGoalG
+    }
     var plantsRemaining: Int { max(0, target - uniquePlantsThisWeek) }
     var plantFraction: Double { min(1, Double(uniquePlantsThisWeek) / Double(target)) }
 
@@ -55,14 +64,14 @@ final class ThrHomeModel {
         applyLatestMeal(latestMeal)
 
         guard let repo = appState.repository else {
-            fiberGoalG = appState.profile?.fiberGoalG
+            fiberGoalG = Self.surfacedGoal(appState.profile)
             isLoaded = true
             return
         }
 
         var profile = appState.profile
         if profile == nil { profile = (try? await repo.fetchProfile()) ?? nil }
-        fiberGoalG = profile?.fiberGoalG
+        fiberGoalG = Self.surfacedGoal(profile)
 
         await loadWeeklyVariety(repo)
         await loadWeeklyPlantsLive(repo)        // live count so a fresh snap shows up now
@@ -179,10 +188,29 @@ final class ThrHomeModel {
     /// A curated "try this" recipe, preferring one that covers a rainbow colour the
     /// user is missing this week (gap-driven, SPEC §14). Curated data, never generated.
     private func loadRecipeSuggestion(_ repo: Repository) async {
-        let recipes: [RecipeRow] = (try? await repo.select("recipes")) ?? []
-        guard !recipes.isEmpty else { return }
+        allRecipes = (try? await repo.select("recipes")) ?? []
+        guard !allRecipes.isEmpty else { return }
         let missing = Set(rainbowAmounts.missing.map(\.rawValue))
-        recipeSuggestion = recipes.first { !Set($0.colorIds).isDisjoint(with: missing) } ?? recipes.randomElement()
+        recipeSuggestion = allRecipes.first { !Set($0.colorIds).isDisjoint(with: missing) } ?? allRecipes.randomElement()
+    }
+
+    /// "Refresh": a fresh random pick from the curated library (never the one
+    /// already showing when there's a choice).
+    func shuffleRecipe() {
+        let pool = allRecipes.filter { $0.id != recipeSuggestion?.id }
+        recipeSuggestion = (pool.isEmpty ? allRecipes : pool).randomElement() ?? recipeSuggestion
+    }
+
+    /// "Optimize": the curated recipe covering the MOST of today's rainbow gaps
+    /// (the deterministic proxy for diversity + phytonutrient coverage — colors
+    /// carry the phytochemicals). Random among the equally-best so it stays fresh.
+    func optimizeRecipe() {
+        guard !allRecipes.isEmpty else { return }
+        let missing = Set(rainbowAmounts.missing.map(\.rawValue))
+        guard !missing.isEmpty else { shuffleRecipe(); return }
+        let scored = allRecipes.map { ($0, Set($0.colorIds).intersection(missing).count) }
+        let best = scored.map(\.1).max() ?? 0
+        recipeSuggestion = scored.filter { $0.1 == best }.map(\.0).randomElement() ?? recipeSuggestion
     }
 
     private func loadTodayCheckin(_ repo: Repository, userId: String?) async {

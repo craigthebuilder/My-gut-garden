@@ -408,9 +408,6 @@ struct ThrPhytoClassDetailView: View {
                                 .font(theme.typography.body())
                                 .foregroundStyle(theme.colors.textSecondary)
                                 .fixedSize(horizontal: false, vertical: true)
-                            Text("[emerging science]")
-                                .font(theme.typography.caption(11))
-                                .foregroundStyle(theme.colors.textSecondary)
                         }
                     }
                 }
@@ -482,9 +479,6 @@ struct ThrPhytoCompoundDetailView: View {
                             .font(theme.typography.body())
                             .foregroundStyle(theme.colors.textSecondary)
                             .fixedSize(horizontal: false, vertical: true)
-                        Text("[emerging science]")
-                            .font(theme.typography.caption(11))
-                            .foregroundStyle(theme.colors.textSecondary)
                     }
                 }
             }

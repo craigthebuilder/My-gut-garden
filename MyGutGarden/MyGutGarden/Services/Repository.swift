@@ -331,6 +331,9 @@ struct RecipeRow: Decodable, Sendable, Identifiable {
     let featuredFoodIds: [String]; let featuredPlantIds: [String]; let colorIds: [String]
     let fiberHighlights: String?; let steps: [String]; let prepMinutes: Int?
     let source: String?; let claimRisk: Bool
+    /// A base/side that pairs with "add your protein of choice" (owner request).
+    /// Optional-decoded so a pre-migration backend can't break the whole select.
+    var suggestProtein: Bool? = nil
 }
 
 /// Curated coach-mark step (SPEC §7). [seed]

@@ -39,6 +39,20 @@ enum GuardianEngine {
         return .fiberGoalIncrease(currentG: current, proposedG: proposed)
     }
 
+    // MARK: Week-one unlock — the first surfaced goal (SPEC §10). 🔒 FENCE 2.
+
+    /// A comfortable starting point informed by the observed baseline, never the
+    /// full target on day one: mean observed daily fiber + a small buffer,
+    /// floored at `fiberInitialGoalMinG`, and always capped at the personalized
+    /// target and the absolute safety max (the cap wins over the floor).
+    static func initialFiberGoal(observedDailyFiberG: [Double], targetG: Int?) -> Int {
+        let cap = min(targetG ?? cfg.fiberGoalAbsoluteMaxG, cfg.fiberGoalAbsoluteMaxG)
+        let mean = observedDailyFiberG.isEmpty ? 0
+            : observedDailyFiberG.reduce(0, +) / Double(observedDailyFiberG.count)
+        let start = Int(mean.rounded()) + cfg.fiberInitialGoalBufferG
+        return min(max(start, cfg.fiberInitialGoalMinG), cap)
+    }
+
     // MARK: Job 2 — discomfort attribution (Fence 3). False-positive discernment.
 
     /// SUGGEST watching a food only when a not-yet-flagged food recurs (eaten in

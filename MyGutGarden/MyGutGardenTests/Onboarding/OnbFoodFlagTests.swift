@@ -65,8 +65,11 @@ struct OnbFoodFlagTests {
     @Test func nonAllergenCategoriesPreSelectSensitivity() {
         // The old pure-preference path is dropped; a non-allergen category leans
         // to the softer HEALTH tier (sensitivity), never a bare preference.
-        let allium = OnbFlagCategory.curated.first { $0.key == "allium" }
-        #expect(allium?.suggestedTier == .sensitivity)
+        // Lactose is the intolerance chip (owner 2026-07-02: one concept per
+        // chip; allium and fish left the quick list, searchable instead).
+        let lactose = OnbFlagCategory.curated.first { $0.key == "lactose" }
+        #expect(lactose?.suggestedTier == .sensitivity)
+        #expect(OnbFlagCategory.curated.allSatisfy { $0.key != "allium" && $0.key != "fish" })
     }
 }
 

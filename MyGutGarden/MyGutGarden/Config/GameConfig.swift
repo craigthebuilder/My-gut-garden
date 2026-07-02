@@ -53,6 +53,10 @@ struct GameConfig: Sendable {
     let fiberRampConsecutiveFineDaysToOffer = 3    // RD-REVIEW: fine days at/above goal before an offer
     let fiberRampStepG = 3                         // RD-REVIEW: grams per offered step
     let fiberGoalAbsoluteMaxG = 50                 // RD-REVIEW: hard safety cap (also capped at fiber_target_g)
+    // The first surfaced goal on unlock = observed baseline mean + buffer, floored
+    // so it reads as a real goal, always capped at the personalized target (§10).
+    let fiberInitialGoalBufferG = 2                // RD-REVIEW: grams above the observed baseline mean
+    let fiberInitialGoalMinG = 10                  // RD-REVIEW: floor for the first surfaced goal
 
     // MARK: Guardian discomfort-attribution gate (§11). 🔒 FENCE 3 — RD-REVIEW-REQUIRED.
     // False-positive discernment: NEVER flag on a single off day or a confounder-heavy

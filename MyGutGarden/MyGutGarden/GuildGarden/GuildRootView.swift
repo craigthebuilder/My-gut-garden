@@ -36,6 +36,7 @@ struct GuildRootView: View {
             ScrollView {
                 VStack(spacing: theme.metrics.space4) {
                     header
+                        .coachTarget("garden")
                     if !viewModel.isTier2Unlocked { tier2LockedBanner }
                     trail
                 }

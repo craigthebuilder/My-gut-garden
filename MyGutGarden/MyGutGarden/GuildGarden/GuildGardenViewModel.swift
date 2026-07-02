@@ -35,7 +35,7 @@ struct GuildDisplay: Identifiable, Sendable {
     let functionCopy: String?
     let feedsCopy: String?
     let confidenceTag: String
-    let claimRisk: Bool          // Fence 2 → render EmergingScienceTag everywhere
+    let claimRisk: Bool          // RD-review ledger only (FENCES.md); no visible tag (owner, 2026-07-02)
     let substantiation: String?
     let bloom: GuildBloomDisplay
 

@@ -10,7 +10,7 @@
 insert into worlds ("order", name, unlock_rule_key, intro_copy) values
   (1, 'The Core', 'core_default', 'The crews almost everyone hosts — your gut''s backbone. Feed them a variety of plants and watch them bloom.'),
   (2, 'The Keystone Reaches', 'world2_after_core', 'Small crews with outsized power: they crack open the tough fibers so everyone else can feed. Unlocks as your Core blooms.'),
-  (3, 'The Frontier', 'world3_after_keystones', 'The crews science is still charting — mood, hormones, and more. Emerging, personal, and yours to discover. [emerging science]')
+  (3, 'The Frontier', 'world3_after_keystones', 'The crews science is still charting — mood, hormones, and more. Emerging, personal, and yours to discover.')
 on conflict ("order") do update set
   name = excluded.name,
   unlock_rule_key = excluded.unlock_rule_key,
@@ -21,21 +21,23 @@ update districts set world_id = (select id from worlds where "order" = 1);
 
 -- ---- recipes — no natural key; delete+insert (idempotent) -----------
 delete from recipes;
-insert into recipes (title, description, color_ids, fiber_highlights, steps, prep_minutes, source, claim_risk) values
-  ('Rainbow crunch bowl', 'A quick bowl built to hit several colours at once.', array['red','orange','green','white_brown'], 'A generous mix of gentle, varied fibres.', array['Cook a cup of quinoa','Shred red cabbage and carrot','Toss with baby spinach and chickpeas','Dress with lemon and olive oil'], 20, 'Curated', false),
-  ('Overnight oats with berries', 'Beta-glucan oats plus deeply coloured berries, ready when you wake.', array['blue_purple','white_brown'], 'Oats bring beta-glucan, a well-studied prebiotic fibre.', array['Combine oats and milk of choice','Stir in chia','Top with mixed berries','Chill overnight'], 5, 'Curated', true),
-  ('Roasted roots medley', 'Caramelised roots for a sweet, colourful side.', array['orange','red','white_brown'], 'Cooked-then-cooled potato adds resistant starch.', array['Chop carrots, beetroot and potato','Toss with olive oil','Roast at 200C for 30 minutes','Cool slightly before serving'], 40, 'Curated', false),
-  ('Green herb lentils', 'Earthy lentils brightened with green herbs.', array['green'], 'Lentils are rich in GOS, a top bacterial fuel.', array['Simmer lentils until tender','Fold through parsley and spinach','Finish with lemon and a little garlic'], 30, 'Curated', true),
-  ('Chickpea and tomato stew', 'A cosy stew leaning on legumes and colour.', array['red','orange','green'], 'Legumes bring GOS and resistant starch together.', array['Saute onion and garlic','Add tomato and chickpeas','Simmer 20 minutes','Stir through chard'], 35, 'Curated', true),
-  ('Purple slaw', 'A crunchy slaw in a striking colour.', array['blue_purple','white_brown'], 'Cabbage adds gentle, varied fibre.', array['Shred red cabbage and apple','Whisk yoghurt and mustard','Toss and rest 10 minutes'], 15, 'Curated', true);
+insert into recipes (title, description, color_ids, fiber_highlights, steps, prep_minutes, source, claim_risk, suggest_protein) values
+  ('Rainbow crunch bowl', 'A quick bowl built to hit several colours at once.', array['red','orange','green','white_brown'], 'A generous mix of gentle, varied fibres.', array['Cook a cup of quinoa','Shred red cabbage and carrot','Toss with baby spinach and chickpeas','Dress with lemon and olive oil'], 20, 'Curated', false, true),
+  ('Overnight oats with berries', 'Beta-glucan oats plus deeply coloured berries, ready when you wake.', array['blue_purple','white_brown'], 'Oats bring beta-glucan, a well-studied prebiotic fibre.', array['Combine oats and milk of choice','Stir in chia','Top with mixed berries','Chill overnight'], 5, 'Curated', true, false),
+  ('Roasted roots medley', 'Caramelised roots for a sweet, colourful side.', array['orange','red','white_brown'], 'Cooked-then-cooled potato adds resistant starch.', array['Chop carrots, beetroot and potato','Toss with olive oil','Roast at 200C for 30 minutes','Cool slightly before serving'], 40, 'Curated', false, true),
+  ('Green herb lentils', 'Earthy lentils brightened with green herbs.', array['green'], 'Lentils are rich in GOS, a top bacterial fuel.', array['Simmer lentils until tender','Fold through parsley and spinach','Finish with lemon and a little garlic'], 30, 'Curated', true, false),
+  ('Chickpea and tomato stew', 'A cosy stew leaning on legumes and colour.', array['red','orange','green'], 'Legumes bring GOS and resistant starch together.', array['Saute onion and garlic','Add tomato and chickpeas','Simmer 20 minutes','Stir through chard'], 35, 'Curated', true, false),
+  ('Purple slaw', 'A crunchy slaw in a striking colour.', array['blue_purple','white_brown'], 'Cabbage adds gentle, varied fibre.', array['Shred red cabbage and apple','Whisk yoghurt and mustard','Toss and rest 10 minutes'], 15, 'Curated', true, true);
 
 -- ---- tutorial_steps — ON CONFLICT (section_key, "order") ------------
 insert into tutorial_steps (section_key, "order", title, body, target_hint, claim_risk) values
   ('intro', 0, 'Grow a garden by feeding your gut', 'Snap your meals and we turn them into a living garden — the more variety you feed it, the more it grows.', 'home', false),
-  ('intro', 1, 'Aim for 30 plants a week', 'Different plant foods feed different microbes, so thirty a week keeps your garden diverse and resilient.', 'plants', true),
-  ('intro', 2, 'Eat the rainbow', 'Each colour brings its own phytochemicals; collecting all six keeps your garden well-rounded.', 'rainbow', true),
-  ('intro', 3, 'We''ll pace your fibre', 'More fibre is great, but ramping too fast can feel rough — we raise your goal gently as you''re ready, and nudge you to drink more water.', 'fiber', true),
-  ('intro', 4, 'A quiet guardian has your back', 'If a food doesn''t sit well, we help you spot it — no tracking chores. You just eat; we watch quietly.', 'home', false),
+  ('intro', 1, 'Your dashboard', 'Plants this week, the rainbow, and the 3 P''s live here — with callouts for exactly what to eat today to fill the gaps. Tap in for the full picture.', 'dashboard', false),
+  ('intro', 2, 'We''ll help you build meals', 'Try this serves curated recipes. The ↻ deals a fresh idea; the target picks the meal that best fills today''s gaps, so you keep hitting everything you need — fiber, plant variety, the rainbow, phytonutrients — without running low on any of them.', 'trythis', true),
+  ('intro', 3, 'Snap your meals', 'Point the camera at your plate and we identify the plants and feed your garden. No weighing, no typing — a note like "extra onion" helps when something''s hidden.', 'snap', false),
+  ('intro', 4, 'Your field guide', 'Every plant you eat joins a lifetime collection — plants, colors, phytochemicals, fermented finds. Rarer finds are a bigger deal.', 'fieldguide', false),
+  ('intro', 5, 'We''ll pace your fibre', 'No fiber goal in week one — we learn your baseline first. Then it unlocks and rises gently as you''re ready, with water reminders along the way.', 'home', true),
+  ('intro', 6, 'You teach us, we teach you', 'Eat freely — a quiet guardian notices what doesn''t sit well and asks before flagging anything. Over time we steer you toward foods that make you feel good and around the ones that don''t. Your personalized nutrition, learned together.', 'checkin', true),
   ('garden', 0, 'Your microbiome garden', 'These are the bacterial crews you''re feeding. Feed one steadily and it blooms.', 'garden', true),
   ('garden', 1, 'Worlds to explore', 'Your garden grows in worlds. Bloom the Core and the next world opens up.', 'garden', false),
   ('rainbow', 0, 'Eat the rainbow', 'Tap any colour to learn what it does for you and which foods bring it.', 'rainbow', true),

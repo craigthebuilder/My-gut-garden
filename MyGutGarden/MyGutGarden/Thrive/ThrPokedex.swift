@@ -82,6 +82,7 @@ struct ThrPokedexView: View {
                             ThrNavRow(icon: "leaf.fill", title: "Plant Garden",
                                       subtitle: collectedSubtitle)
                         }
+                        .coachTarget("fieldguide")
                         Divider().overlay(theme.colors.divider)
                         NavigationLink {
                             ThrRainbowPokedexView(appState: appState, latestMeal: latestMeal)
@@ -161,7 +162,8 @@ struct ThrPlantGardenView: View {
                         ForEach(collected) { plant in
                             CollectibleTile(name: plant.name, rarity: plant.rarity, collected: true) {
                                 IllustrationPlaceholder(systemImage: "leaf.fill",
-                                                        tint: plant.rarity.accent(theme))
+                                                        tint: plant.rarity.accent(theme),
+                                                        imageName: ThrPlantArt.assetName(plant.name))
                             }
                         }
                     }
@@ -193,7 +195,8 @@ struct ThrPlantSuggestionSheet: View {
                 bodyText: "Slip it into a meal this week to add it to your lifetime collection.",
                 rarity: plant.rarity
             ) {
-                IllustrationPlaceholder(systemImage: "leaf.fill", tint: plant.rarity.accent(theme))
+                IllustrationPlaceholder(systemImage: "leaf.fill", tint: plant.rarity.accent(theme),
+                                        imageName: ThrPlantArt.assetName(plant.name))
             }
             PrimaryButton(title: "Got it", action: { dismiss() })
         }
@@ -201,6 +204,16 @@ struct ThrPlantSuggestionSheet: View {
         .frame(maxWidth: .infinity)
         .background(theme.colors.background.ignoresSafeArea())
         .presentationDetents([.medium])
+    }
+}
+
+// MARK: - Owner plant art convention
+
+/// "Swiss chard" → "plant-swiss-chard". Drop an image with that name into
+/// Assets.xcassets and the tile/reveal picks it up automatically.
+enum ThrPlantArt {
+    static func assetName(_ plantName: String) -> String {
+        "plant-" + plantName.lowercased().replacingOccurrences(of: " ", with: "-")
     }
 }
 

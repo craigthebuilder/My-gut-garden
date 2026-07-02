@@ -5,7 +5,7 @@
 //
 //  Composes the shared `FieldGuideCard` (numbered, eyebrow, mascot slot, ornate
 //  parchment) and adds Module D's bloom meter + what-to-feed. 🔒 Fence 2: a
-//  claim_risk guild renders `EmergingScienceTag` (via the card) AND surfaces its
+//  claim_risk stays data-only (RD-review ledger, FENCES.md); neither a tag nor
 //  `substantiation`, so its name never reads as a bare health claim.
 //
 
@@ -100,11 +100,11 @@ struct GuildDetailView: View {
                     title: guild.displayName,
                     subtitle: nil,
                     bodyText: guild.functionCopy,
-                    rarity: nil,
-                    emergingScience: guild.claimRisk          // 🔒 Fence 2
+                    rarity: nil
                 ) {
                     IllustrationPlaceholder(systemImage: guild.mascotSymbol,
-                                            tint: theme.colors.primary)
+                                            tint: theme.colors.primary,
+                                            imageName: "guild-\(guild.internalName)")
                 }
 
                 Card {
@@ -112,8 +112,6 @@ struct GuildDetailView: View {
                 }
 
                 feedsCard
-
-                confidenceCard
 
                 if guild.bloom.state == .blooming { replayBloomButton }
             }
@@ -147,21 +145,9 @@ struct GuildDetailView: View {
         }
     }
 
-    private var confidenceCard: some View {
-        Card {
-            VStack(alignment: .leading, spacing: theme.metrics.space3) {
-                HStack(spacing: theme.metrics.space2) {
-                    Badge(text: guild.confidenceTag.capitalized)
-                    if guild.claimRisk { EmergingScienceTag() } // 🔒 Fence 2
-                }
-                if guild.claimRisk, let substantiation = guild.substantiation {
-                    Text(substantiation)
-                        .font(theme.typography.caption())
-                        .foregroundStyle(theme.colors.textSecondary)
-                }
-            }
-        }
-    }
+    // Owner (2026-07-02): the confidence badge / "[emerging science]" tag and the
+    // internal substantiation notes no longer render anywhere. `claim_risk` +
+    // `substantiation` stay in the data model as the RD-review ledger (FENCES.md).
 
     private var replayBloomButton: some View {
         SecondaryButton(title: "Replay the bloom", systemImage: "sparkles") {

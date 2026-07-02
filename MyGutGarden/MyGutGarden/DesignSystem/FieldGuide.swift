@@ -9,6 +9,7 @@
 //
 
 import SwiftUI
+import UIKit
 
 /// Rarity → accent treatment (outline/holo intensity scales celebration, §13).
 extension RarityTier {
@@ -40,21 +41,35 @@ struct CollectibleNumberBadge: View {
     }
 }
 
-/// Placeholder illustration slot (owner drops mascot art here later).
+/// The owner-art slot. Pass `imageName` and, when an image with that name
+/// exists in Assets.xcassets, it renders in place of the tinted glyph — no code
+/// change needed beyond dropping the asset in. Conventions used across the app:
+///   "OnboardingHero"            — the welcome page's plant picture
+///   "plant-<name-kebab-case>"   — field-guide plant tiles (e.g. "plant-swiss-chard")
+///   "guild-<internal_name>"     — guild mascots (e.g. "guild-base_layer")
 struct IllustrationPlaceholder: View {
     @Environment(\.theme) private var theme
     var systemImage = "leaf.fill"
     var tint: Color? = nil
+    var imageName: String? = nil
 
     var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: theme.metrics.radiusMedium, style: .continuous)
-                .fill((tint ?? theme.colors.secondary).opacity(0.18))
-            Image(systemName: systemImage)
-                .font(.system(size: 44))
-                .foregroundStyle((tint ?? theme.colors.secondary).opacity(0.7))
+        if let imageName, UIImage(named: imageName) != nil {
+            Image(imageName)
+                .resizable()
+                .scaledToFill()
+                .clipShape(RoundedRectangle(cornerRadius: theme.metrics.radiusMedium, style: .continuous))
+                .accessibilityHidden(true)
+        } else {
+            ZStack {
+                RoundedRectangle(cornerRadius: theme.metrics.radiusMedium, style: .continuous)
+                    .fill((tint ?? theme.colors.secondary).opacity(0.18))
+                Image(systemName: systemImage)
+                    .font(.system(size: 44))
+                    .foregroundStyle((tint ?? theme.colors.secondary).opacity(0.7))
+            }
+            .accessibilityHidden(true)
         }
-        .accessibilityHidden(true)
     }
 }
 
@@ -67,7 +82,6 @@ struct FieldGuideCard<Illustration: View>: View {
     var subtitle: String? = nil
     var bodyText: String? = nil
     var rarity: RarityTier? = nil
-    var emergingScience = false         // Fence 2, set for claim_risk guilds
     @ViewBuilder var illustration: () -> Illustration
 
     var body: some View {
@@ -92,7 +106,6 @@ struct FieldGuideCard<Illustration: View>: View {
                 .font(theme.typography.display(28))
                 .foregroundStyle(theme.colors.primary)
 
-            if emergingScience { EmergingScienceTag() }
             if let rarity { Badge(text: rarity.label, tint: rarity.accent(theme)) }
 
             if let subtitle {

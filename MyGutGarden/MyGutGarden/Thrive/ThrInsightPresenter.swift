@@ -72,7 +72,7 @@ struct ThrInsightView: View {
                 threePsCard
                 rainbowCard
                 fiberCard
-                if let curiosity { ThrCuriosityCard(fact: curiosity.factText, confidenceTag: curiosity.confidenceTag) }
+                if let curiosity { ThrCuriosityCard(fact: curiosity.factText) }
                 hiddenPrompts
             }
             .padding(theme.metrics.space5)

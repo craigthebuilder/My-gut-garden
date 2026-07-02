@@ -73,7 +73,7 @@ struct GuildFeedAttr: Codable, Sendable, Hashable {
     let internalName: String
     let displayName: String
     let relevance: String               // minor | moderate | primary
-    let claimRisk: Bool                  // true => render "[emerging science]" (Fence 1)
+    let claimRisk: Bool                  // RD-review ledger only (Fence 1); no visible tag (owner, 2026-07-02)
 }
 
 struct FoodAttributes: Codable, Sendable, Hashable {

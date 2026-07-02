@@ -43,7 +43,9 @@ struct AppShell: View {
 
 // MARK: - Home (single-mode tabs)
 
-private enum AppTab: Hashable { case today, snap, fieldGuide, garden, you }
+/// Internal (not private) so Today's explore rows can ask the shell to switch
+/// tabs (field guide / garden route straight to their tabs).
+enum AppTab: Hashable { case today, snap, fieldGuide, garden, you }
 
 private struct ShellHome: View {
     @Environment(\.theme) private var theme
@@ -54,7 +56,9 @@ private struct ShellHome: View {
     var body: some View {
         ZStack {
             TabView(selection: $tab) {
-                Tab("Today", systemImage: "leaf", value: AppTab.today) { ThrRootView(appState: appState) }
+                Tab("Today", systemImage: "leaf", value: AppTab.today) {
+                    ThrRootView(appState: appState, onSwitchTab: { tab = $0 })
+                }
                 Tab("Snap", systemImage: "camera", value: AppTab.snap) {
                     CapRootView(appState: appState, recognizer: recognizer)
                         .environment(\.mealInsightPresenter,
@@ -70,6 +74,19 @@ private struct ShellHome: View {
                 }
                 Tab("You", systemImage: "person", value: AppTab.you) { ShellSettings(appState: appState) }
             }
+            // The dim-page spotlight tutorial (SPEC §7). Attached here (not a
+            // ZStack sibling) so it can read the `.coachTarget` anchors that
+            // bubble up from the tabs' views — and walk the tour across tabs.
+            .overlayPreferenceValue(CoachTargetKey.self) { anchors in
+                CoachMarkOverlay(controller: appState.coach, appState: appState,
+                                 anchors: anchors,
+                                 onNavigate: { hint in
+                    if let destination = Self.tab(forCoachHint: hint,
+                                                  gardenUnlocked: appState.progression.isTier2Unlocked) {
+                        tab = destination
+                    }
+                })
+            }
             if let event = appState.pendingCelebration {
                 celebration(for: event)
             }
@@ -82,13 +99,24 @@ private struct ShellHome: View {
             if let offer = appState.pendingDailyCheckIn {
                 dailyCheckIn(offer)
             }
-            // The dim-page tutorial call-outs (SPEC §7), above everything.
-            CoachMarkOverlay(controller: appState.coach, appState: appState)
         }
         .tint(theme.colors.primary)
         .task {
             await appState.coach.loadCompleted(appState)
             await appState.coach.startIfNeeded("intro", appState: appState)
+        }
+    }
+
+    /// Which tab a tutorial step's `target_hint` lives on, so the intro tour
+    /// walks the real app. nil → stay put (the card centers if no target).
+    static func tab(forCoachHint hint: String, gardenUnlocked: Bool) -> AppTab? {
+        switch hint {
+        case "home", "dashboard", "trythis", "fiber", "plants", "rainbow", "checkin": .today
+        case "snap": .snap
+        case "fieldguide", "fermented", "phytochemicals": .fieldGuide
+        case "garden": gardenUnlocked ? .garden : nil
+        case "you": .you
+        default: nil
         }
     }
 
@@ -249,6 +277,14 @@ private struct ShellHome: View {
                 systemImage: "leaf.fill",
                 onDismiss: dismissCelebration
             )
+        case let .fiberGoalUnlocked(goal):
+            // The one surfaced derived number, and only after this unlock (§10).
+            CelebrationOverlay(
+                title: "Your fiber goal is ready",
+                message: "You've explored enough plants for us to learn your baseline. From here, aim for \(goal) g of fiber a day — we'll offer gentle raises as it sits well, with water reminders along the way.",
+                systemImage: "target",
+                onDismiss: dismissCelebration
+            )
         }
     }
 }
@@ -287,7 +323,7 @@ private struct ShellSettings: View {
                 SectionHeader(title: "You")
                 Card {
                     VStack(alignment: .leading, spacing: theme.metrics.space3) {
-                        if let goal = appState.profile?.fiberGoalG {
+                        if let goal = ThrHomeModel.surfacedGoal(appState.profile) {
                             Text("Daily fiber goal: \(goal) g")     // the only surfaced derived number (§10)
                                 .font(theme.typography.title())
                                 .foregroundStyle(theme.colors.textPrimary)

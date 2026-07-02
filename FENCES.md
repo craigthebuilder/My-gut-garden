@@ -11,14 +11,23 @@ blocked — build the machinery; only the *content* is fenced. Grep for
 
 ---
 
+> **Owner decision (2026-07-02): the visible `[emerging science]` tag is retired
+> app-wide** (cards, sheets, coach-marks, pushes, celebrations, notifications).
+> `claim_risk`, `substantiation`, and `confidence_tag` remain in the data model
+> purely as this review ledger. **Consequence for the RD/legal pass: claim-risky
+> names and copy now ship UNQUALIFIED, so Fence 1 and Fence 4 review is more
+> load-bearing, not less** — anything that can't stand as an unqualified claim
+> must be renamed or reworded before launch (the Tumor Preventors name is the
+> sharpest case).
+
 ## The five fences
 
 | Fence | What is fenced | Where (target locations) | Status |
 |---|---|---|---|
-| **1 — Health-claim naming (guilds/worlds)** | Emerging/associational guild + world names that imply health/disease benefit (e.g. Mood / Estrogen / Mitochondria / Tumor-related). | `guilds.claim_risk` + `guilds.substantiation` (`/data/guilds.csv`, seed migration); rendered as an inline `[emerging science]` tag on the guild/world card, bloom celebration, and any notification. `worlds` inherit the same rule as the roster grows. | Machinery in the garden module; every claim-risky name carries the tag + a substantiation string. |
+| **1 — Health-claim naming (guilds/worlds)** | Emerging/associational guild + world names that imply health/disease benefit (e.g. Mood / Estrogen / Mitochondria / Tumor-related). | `guilds.claim_risk` + `guilds.substantiation` (`/data/guilds.csv`, seed migration). `worlds` inherit the same rule as the roster grows. | Machinery in the garden module; every claim-risky name carries a substantiation string. **No visible tag renders (owner, 2026-07-02)** — names must pass review as unqualified claims or be renamed. |
 | **2 — Fiber-titration safety** | Ramp rate, step size, consecutive-day thresholds, the personalized target ceiling, the absolute max, and the "raise water with fiber" guidance. Increasing fiber too fast causes GI distress — safe titration is the whole point. | `GameConfig` fiber-ramp constants (`fiberRampConsecutiveDaysToOffer`, `fiberRampStepG`, `fiberGoalAbsoluteMaxG`, target cap); consumed by the **guardian engine** (`SPEC.md §11`). | Constants are placeholders, all `// RD-REVIEW-REQUIRED`. |
 | **3 — Food-sensitivity engine + care prompts** | The suggestion thresholds (min occurrences, min portion, proximity window, confounder down-weighting / false-positive discernment); the maladjustment-vs-missing-bacteria education; the small-amount titration guidance; and the **"could this be an allergy? — worth checking with a doctor/allergist"** care prompt. | Guardian-engine suggestion gate + `GameConfig` sensitivity constants; food-flag transition copy in the You-section / snap surfaces. | All `// RD-REVIEW-REQUIRED`. **Framing invariant (copy review, not content):** wellness-only, investigation-not-accusation, user-confirmed, **never a diagnosis**, never auto-promotes a tier, never a severity/score. |
-| **4 — Education & recipe claims** | Per-color "what it does" + `deficiency_copy`; phytochemical class/compound "what it does"; recipe health framing; any tutorial line that states a benefit. | `colors` / `phytochemicals` / `recipes` / `tutorial_steps` seed; surfaced in Field Guide, Rainbow, Phytochemicals, and coach-marks. Associational claims carry an inline `[emerging science]` tag. | Curated only (never runtime-generated); RD **+ legal** pass before launch. |
+| **4 — Education & recipe claims** | Per-color "what it does" + `deficiency_copy`; phytochemical class/compound "what it does"; recipe health framing; any tutorial line that states a benefit. | `colors` / `phytochemicals` / `recipes` / `tutorial_steps` seed; surfaced in Field Guide, Rainbow, Phytochemicals, and coach-marks. `claim_risk` marks the rows needing review; **no visible tag renders (owner, 2026-07-02)**. | Curated only (never runtime-generated); RD **+ legal** pass before launch — copy must stand unqualified. |
 | **5 — Disordered-eating & privacy duty of care (app-wide)** | The safety posture itself. | Cross-cutting; enforced by convention + the invariants below. | Enforced in the spine + copy review. |
 
 **Fence 5 detail (app-wide):**

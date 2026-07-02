@@ -131,3 +131,73 @@ Tempeh|fermented soy cake|true||true|moderate|stir_fry;sandwich|fermented;soy
 Natto|fermented soybeans|true||true|high|rice_bowl|fermented;soy;high_histamine
 Sourdough bread|sourdough;levain|true||true|low|sandwich;toast|fermented;grain;gluten;wheat
 Kombucha|fermented tea;booch|true||true|moderate||fermented;beverage;polyphenol_rich
+# ---- Everyday non-plant + pantry foods (owner request 2026-07-02) -------------
+# So "anything you react to" search covers what people actually eat: meats, fish,
+# eggs, dairy, oils, vinegars, condiments, sweeteners, drinks. None of these count
+# toward plant diversity (no plant_name); fiber junctions intentionally absent
+# (zero-fiber foods, not a data gap). is_fermented=true only where live cultures
+# are typical at consumption. Histamine high/moderate follows commonly-cited
+# histamine food lists (cured/aged/canned/fermented); fresh meats default low.
+Chicken|chicken breast;chicken thigh;grilled chicken;roast chicken;poultry|false||false|low|soup;curry;stir_fry;salad|meat;poultry
+Turkey|turkey breast;ground turkey|false||false|low|soup;salad;sandwich|meat;poultry
+Duck|duck breast;roast duck|false||false|low|curry|meat;poultry
+Beef|steak;ground beef;beef mince;red meat;meat|false||false|low|stir_fry;pasta_sauce;curry;soup|meat;red_meat
+Pork|pork chop;pork loin;pork belly|false||false|low|stir_fry;soup|meat;red_meat
+Lamb|lamb chop;ground lamb|false||false|low|curry;stew|meat;red_meat
+Bacon|smoked bacon;pancetta|false||false|high|salad;pasta_sauce;soup|meat;red_meat;processed_meat
+Ham|sliced ham;prosciutto|false||false|high|sandwich;salad;pizza|meat;red_meat;processed_meat
+Salami|cured salami;pepperoni|false||false|high|sandwich;pizza|meat;red_meat;processed_meat
+Sausage|pork sausage;bratwurst;chorizo|false||false|high|soup;pasta_sauce;stew|meat;processed_meat
+Salmon|salmon fillet;grilled salmon|false||false|low|sushi;salad|fish
+Smoked salmon|lox;cured salmon|false||false|high|bagel;salad;sushi|fish
+Tuna|tuna steak;canned tuna;ahi tuna|false||false|high|sushi;salad;sandwich|fish
+Cod|codfish;white fish|false||false|low|fish_and_chips;soup|fish
+Tilapia||false||false|low||fish
+Trout|rainbow trout|false||false|low||fish
+Sardines|canned sardines|false||false|high|salad;pasta_sauce|fish
+Anchovy|anchovies;anchovy paste|false||false|high|pizza;dressing;pasta_sauce|fish
+Mackerel|smoked mackerel|false||false|high|salad|fish
+Shrimp|prawns;prawn;king prawn|false||false|moderate|stir_fry;curry;pasta_sauce|shellfish
+Crab|crab meat;crab stick|false||false|moderate|sushi;salad;soup|shellfish
+Lobster|lobster tail|false||false|moderate||shellfish
+Scallop|scallops|false||false|moderate|pasta_sauce|shellfish
+Mussels|mussel|false||false|high|soup;pasta_sauce|shellfish
+Oyster|oysters|false||false|moderate||shellfish
+Clam|clams|false||false|moderate|soup;pasta_sauce|shellfish
+Squid|calamari;cuttlefish|false||false|moderate|stir_fry|shellfish
+Fish sauce|nam pla;nuoc mam|false||false|high|curry;stir_fry;dressing;marinade|fish;condiment
+Egg|eggs;fried egg;boiled egg;scrambled egg;omelette|false||false|low|baked_goods;dressing;fried_rice;pasta|egg
+Milk|whole milk;skim milk;cows milk|false||false|low|smoothie;baked_goods;sauce;porridge|dairy;lactose
+Butter|salted butter;unsalted butter|false||false|low|baked_goods;sauce;pastry;toast|dairy
+Ghee|clarified butter|false||false|low|curry|dairy
+Cream|heavy cream;double cream;whipping cream|false||false|low|soup;pasta_sauce;dessert|dairy;lactose
+Ice cream|gelato;soft serve|false||false|low|dessert|dairy;lactose
+Cream cheese||false||false|moderate|bagel;dessert;sushi|dairy;lactose
+Cottage cheese|curd cheese|false||false|moderate|salad|dairy;lactose
+Mozzarella|fresh mozzarella;buffalo mozzarella|false||false|moderate|pizza;salad;pasta_sauce|dairy;lactose
+Parmesan|parmigiano;grana padano;parmesan cheese|false||true|high|pasta_sauce;pesto;pizza;salad|dairy;fermented;high_histamine
+Olive oil|extra virgin olive oil;evoo|true||false|low|dressing;marinade;pasta_sauce;pesto|oil
+Canola oil|rapeseed oil;vegetable oil|true||false|low|baked_goods;fried_food|oil
+Sunflower oil||true||false|low|fried_food;dressing|oil
+Coconut oil||true||false|low|curry;baked_goods;smoothie|oil
+Sesame oil|toasted sesame oil|true||false|low|stir_fry;dressing;marinade|oil;sesame
+Avocado oil||true||false|low|dressing;marinade|oil
+Peanut oil|groundnut oil|true||false|low|stir_fry;fried_food|oil;peanut
+Vinegar|white vinegar;distilled vinegar|true||false|high|dressing;pickles;marinade|condiment
+Apple cider vinegar|acv;cider vinegar|true||false|high|dressing;marinade|condiment
+Balsamic vinegar|balsamic|true||false|high|dressing;salad|condiment
+Rice vinegar|rice wine vinegar|true||false|moderate|sushi;dressing;stir_fry|condiment
+Soy sauce|shoyu;light soy sauce;dark soy sauce|true||false|high|stir_fry;marinade;sushi;fried_rice|soy;gluten;wheat;condiment
+Tamari|gluten free soy sauce|true||false|high|stir_fry;marinade|soy;condiment
+Mustard|dijon;yellow mustard;wholegrain mustard|true||false|low|dressing;sandwich;marinade|condiment
+Ketchup|tomato ketchup;catsup|true||false|moderate|sandwich;fried_food|condiment
+Mayonnaise|mayo;aioli|false||false|low|sandwich;salad;dressing|egg;condiment
+Hot sauce|sriracha;chili sauce;tabasco|true||false|moderate|stir_fry;marinade;tacos|condiment
+Worcestershire sauce||false||false|high|marinade;stew|fish;condiment
+Honey|raw honey|false||false|low|baked_goods;dressing;tea|sweetener;fodmap
+Maple syrup||true||false|low|baked_goods;pancakes|sweetener
+Sugar|white sugar;cane sugar;brown sugar|true||false|low|baked_goods;dessert;sauce|sweetener
+Coffee|espresso;black coffee;latte;cold brew|true||false|low||beverage;caffeine
+Black tea|tea;english breakfast tea;earl grey|true||false|low||beverage;caffeine
+Beer|lager;ale;pilsner|true||false|high||alcohol;gluten
+Wine|red wine;white wine;rose|true||false|high||alcohol
