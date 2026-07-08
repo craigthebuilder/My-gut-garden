@@ -72,6 +72,23 @@ The loop:
    join foods f on f.id = mi.food_id
    order by m.captured_at desc limit 100;
    ```
+   And the **catalogue gaps** — foods the model named that never resolved (they
+   show in-app as "Spotted, but new to us"):
+   ```sql
+   -- vision names with no matching canonical name OR alias → add to foods.csv
+   select m.captured_at, v.food->>'name' as unmatched_name
+   from meals m,
+        jsonb_array_elements((m.vision_raw_json #>> '{}')::jsonb -> 'foods') as v(food)
+   where m.vision_raw_json is not null
+     and not exists (
+       select 1 from foods f
+       where lower(f.canonical_name) = lower(v.food->>'name')
+          or lower(v.food->>'name') in (select lower(a) from unnest(f.aliases) a))
+   order by m.captured_at desc limit 100;
+   ```
+   Fix each gap either with an **alias** (same food, different name) or a **new
+   food row** when it's nutritionally distinct — e.g. *purple sweet potato* got
+   its own entry (blue-purple + anthocyanins), not an alias on the orange one.
 3. Sort misses into the three buckets above (alias / prompt / model) and fix the
    cheapest bucket first.
 4. Keep a folder of ~30 "benchmark plates" (photos that once failed). After any

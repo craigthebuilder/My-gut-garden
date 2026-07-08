@@ -204,3 +204,4 @@ Coffee|espresso;black coffee;latte;cold brew|true||false|low||beverage;caffeine|
 Black tea|tea;english breakfast tea;earl grey|true||false|low||beverage;caffeine|none|none
 Beer|lager;ale;pilsner|true||false|high||alcohol;gluten|none|moderate
 Wine|red wine;white wine;rose|true||false|high||alcohol|none|moderate
+Purple sweet potato|purple sweet potatoes;okinawan sweet potato;stokes purple;murasaki;ube|true|Purple sweet potato|false|low|fries;mash;curry|root_vegetable;purple|low|moderate

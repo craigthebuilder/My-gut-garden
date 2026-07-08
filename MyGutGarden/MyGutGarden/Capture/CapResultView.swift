@@ -34,6 +34,7 @@ struct CapResultScreen: View {
                     VStack(alignment: .leading, spacing: theme.metrics.space5) {
                         CapAllergyBanner(alerts: model.allergyAlerts)      // persistent reminder at top
                         CapSensitivityNotice(flags: model.sensitivityFlags) // soft, in-overview
+                        CapUnmatchedNote(names: model.unmatchedItems.map(\.visionName))
                         insight
                         actions
                     }
@@ -116,6 +117,44 @@ struct CapResultScreen: View {
             SecondaryButton(title: "Snap another", systemImage: "camera.fill") {
                 model.reset()
             }
+        }
+    }
+}
+
+// MARK: - Unmatched foods ("when unsure, flag it", SPEC §4)
+
+/// The camera named these but the catalogue couldn't resolve them, so they are
+/// NOT counted — say so instead of dropping them silently (owner testing find,
+/// 2026-07-07: "the model identified purple sweet potato but the app didn't log
+/// it"). The full vision result is stored on the meal, so the owner's
+/// unmatched-gap query (TESTING_GUIDE.md) picks these up for catalogue fixes.
+struct CapUnmatchedNote: View {
+    @Environment(\.theme) private var theme
+    let names: [String]
+
+    var body: some View {
+        if !names.isEmpty {
+            VStack(alignment: .leading, spacing: theme.metrics.space2) {
+                HStack(spacing: theme.metrics.space2) {
+                    Image(systemName: "questionmark.circle")
+                        .foregroundStyle(theme.colors.secondary)
+                    Text("Spotted, but new to us")
+                        .font(theme.typography.body(weight: .semibold))
+                        .foregroundStyle(theme.colors.textPrimary)
+                }
+                Text(names.joined(separator: ", "))
+                    .font(theme.typography.body())
+                    .foregroundStyle(theme.colors.textPrimary)
+                Text("The catalogue doesn't know these yet, so they aren't counted. They've been noted — or add a close match yourself via \u{201C}Edit this meal\u{201D}.")
+                    .font(theme.typography.caption())
+                    .foregroundStyle(theme.colors.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(theme.metrics.space4)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(theme.colors.secondary.opacity(0.1),
+                        in: RoundedRectangle(cornerRadius: theme.metrics.radiusMedium, style: .continuous))
+            .accessibilityElement(children: .combine)
         }
     }
 }
