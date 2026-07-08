@@ -103,13 +103,95 @@ enum FoodName {
     }
 }
 
-// MARK: - Frozen vision-LLM contract (SPEC §4)
+// MARK: - Portion math (mirrors the est_fiber_g DB trigger)
 
+/// Client-side mirror of the meal_items fiber trigger (20260708000001) so live
+/// UI estimates agree with what the server persists: grams ratio against the
+/// food's typical serving when both are known, else the coarse tier multiplier.
+/// RD-REVIEW-REQUIRED: the clamp band and tier multipliers are fenced (Fence 2/4).
+enum PortionMath {
+    static func ratio(estGrams: Double?, typicalServingG: Double?, tier: String) -> Double {
+        if let grams = estGrams, let serving = typicalServingG, serving > 0 {
+            return min(4.0, max(0.1, grams / serving))
+        }
+        switch tier {
+        case "trace": return 0.5
+        case "lots": return 1.5
+        default: return 1.0
+        }
+    }
+
+    static func ratio(estGrams: Double?, typicalServingG: Double?, tier: PortionTier) -> Double {
+        ratio(estGrams: estGrams, typicalServingG: typicalServingG, tier: tier.rawValue)
+    }
+
+    /// The coarse tier a grams ratio lands in — kept in sync with the slider
+    /// bands so `portion_tier` stays meaningful for v1 readers of the column.
+    static func tier(forRatio ratio: Double) -> PortionTier {
+        if ratio <= 0.5 { return .trace }
+        if ratio >= 1.5 { return .lots }
+        return .serving
+    }
+}
+
+// MARK: - Meal time labels (check-in linking)
+
+/// Time-derived meal names ("11am breakfast") for anywhere a logged meal is
+/// referenced outside its own detail view — above all the check-in's
+/// "link to a meal" picker. Owner decision (2026-07-08): a meal is named by
+/// WHEN it happened, never by the note text and never "Meal 2" — people
+/// remember "the 11am breakfast", so that's the name they link symptoms to.
+enum MealTimeLabel {
+    /// "11am breakfast", "1pm lunch", "7pm dinner", "11pm late bite".
+    static func label(for date: Date, calendar: Calendar = .current,
+                      withMinutes: Bool = false) -> String {
+        let comps = calendar.dateComponents([.hour, .minute], from: date)
+        let hour = comps.hour ?? 12
+        return clockText(hour: hour, minute: comps.minute ?? 0, withMinutes: withMinutes)
+            + " " + daypart(hour: hour)
+    }
+
+    /// Labels for one day's meals, in the same order. Two meals landing on the
+    /// same coarse label get minutes appended so a grazing day still reads
+    /// unambiguously ("8:05am breakfast" / "8:40am breakfast").
+    static func labels(for dates: [Date], calendar: Calendar = .current) -> [String] {
+        let coarse = dates.map { label(for: $0, calendar: calendar) }
+        return coarse.enumerated().map { i, text in
+            let duplicated = coarse.enumerated().contains { $0.offset != i && $0.element == text }
+            return duplicated ? label(for: dates[i], calendar: calendar, withMinutes: true) : text
+        }
+    }
+
+    /// breakfast 4–11:59, lunch 12–15:59, dinner 16–21:59, late bite otherwise.
+    static func daypart(hour: Int) -> String {
+        switch hour {
+        case 4...11: "breakfast"
+        case 12...15: "lunch"
+        case 16...21: "dinner"
+        default: "late bite"
+        }
+    }
+
+    private static func clockText(hour: Int, minute: Int, withMinutes: Bool) -> String {
+        let h12 = hour % 12 == 0 ? 12 : hour % 12
+        let suffix = hour < 12 ? "am" : "pm"
+        return withMinutes ? String(format: "%d:%02d%@", h12, minute, suffix) : "\(h12)\(suffix)"
+    }
+}
+
+// MARK: - Vision-LLM contract (SPEC §4) — CONTRACT v2
+
+/// v2 (owner decision, 2026-07-08): the model estimates what it can SEE —
+/// identity + quantity (`householdMeasure` + `estGrams`) and decomposes mixed
+/// dishes into components. Composition stays DB-owned (rule #2): same food,
+/// same numbers, every day. v2 fields are optional so v1 payloads still decode.
 struct VisionFood: Codable, Sendable, Hashable {
     let name: String
-    let portionTier: PortionTier
+    let portionTier: PortionTier        // coarse fallback (annotation/no-photo paths)
     let confidence: Double
     let dishType: String?
+    let householdMeasure: String?       // "a fist", "a cupped handful" — the human anchor
+    let estGrams: Double?               // grams VISIBLE (quantity, never composition)
 }
 
 struct VisionResult: Codable, Sendable {
@@ -154,10 +236,16 @@ struct FoodAttributes: Codable, Sendable, Hashable {
     let isPlant: Bool
     let plant: PlantRef?
     let isFermented: Bool
+    /// Grams of one typical serving (RD-fenced placeholder) — the anchor that
+    /// turns `estGrams` into a portion ratio for the live ~fiber math.
+    let typicalServingG: Double?
     let fibers: [FiberAttr]
     let colors: [String]
     let phytochemicals: [PhytochemicalAttr]
     let guildFeeds: [GuildFeedAttr]
+
+    /// Directional fiber for ONE typical serving (Σ fiber-fraction grams, Fence 4).
+    var fiberPerServingG: Double { fibers.reduce(0) { $0 + ($1.estGramsPerServing ?? 0) } }
 }
 
 // MARK: - The `recognize` Edge Function response (SPEC §4 end-to-end)

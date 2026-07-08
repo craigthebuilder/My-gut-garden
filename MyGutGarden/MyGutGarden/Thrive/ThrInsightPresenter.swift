@@ -85,11 +85,14 @@ struct ThrInsightView: View {
     // MARK: Fermentation note (SPEC §17) — informational, never a warning.
 
     /// Directional grams of FAST-fermenting fiber in this meal, from the
-    /// DB-joined attributes (fermentability == "high") scaled by coarse portion.
+    /// DB-joined attributes (fermentability == "high") scaled by the v2 grams
+    /// ratio (falls back to the coarse tier when no estimate came through).
     private var fastFermentG: Double {
         meal.response.items.reduce(0) { total, item in
             guard let attrs = item.attributes else { return total }
-            let mult = GuardianRunner.portionMultiplier(item.vision.portionTier.rawValue)
+            let mult = PortionMath.ratio(estGrams: item.vision.estGrams,
+                                         typicalServingG: attrs.typicalServingG,
+                                         tier: item.vision.portionTier)
             let fast = attrs.fibers.filter { $0.fermentability == "high" }
                 .compactMap(\.estGramsPerServing).reduce(0, +)
             return total + fast * mult

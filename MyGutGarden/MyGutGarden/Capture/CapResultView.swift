@@ -34,7 +34,12 @@ struct CapResultScreen: View {
                     VStack(alignment: .leading, spacing: theme.metrics.space5) {
                         CapAllergyBanner(alerts: model.allergyAlerts)      // persistent reminder at top
                         CapSensitivityNotice(flags: model.sensitivityFlags) // soft, in-overview
-                        CapUnmatchedNote(names: model.unmatchedItems.map(\.visionName))
+                        // Edit-FIRST (owner, 2026-07-08): what we saw + one-tap
+                        // fixes lead the screen. Unmatched names resolve inline
+                        // here, so the old separate note is absorbed.
+                        if let review = model.reviewModel {
+                            CapReviewPanel(model: review)
+                        }
                         insight
                         actions
                     }

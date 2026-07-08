@@ -17,16 +17,30 @@ const MODEL = "claude-opus-4-8";
 const API_URL = "https://api.anthropic.com/v1/messages";
 const ANTHROPIC_VERSION = "2023-06-01";
 
+// CONTRACT v2 (2026-07-08): the model estimates what it can SEE — identity +
+// quantity (hand-anchored measure + grams) and decomposes mixed dishes into
+// component foods. It still NEVER produces composition numbers (rule #2): no
+// nutrition, fiber, FODMAP, or calorie values; the database owns those.
 const SYSTEM_PROMPT =
   `You are a food-recognition vision model for a gut-health app. ` +
-  `Identify the distinct foods visible in the photo and give a COARSE visible-portion ` +
-  `tier for each. Lean generous on portion. You do food identification and portion ` +
-  `tiering ONLY - never any nutrition, fiber, FODMAP, or calorie numbers; the app's ` +
-  `database derives all of those. When unsure, still include the item but lower its ` +
-  `confidence. Respond with STRICT JSON ONLY - no prose, no markdown fences. ` +
+  `Identify the foods visible in the photo.\n` +
+  `MIXED DISHES: when the plate is a prepared dish (curry, stir-fry, sandwich, ` +
+  `salad, soup), list each COMPONENT food as its own entry (chicken tikka masala ` +
+  `-> chicken, tomato, cream, onion, garlic, rice) and set dish_type on every ` +
+  `component (e.g. "curry"). Never list the dish itself as a food entry. Include ` +
+  `ingredients that are clearly part of the dish even when partially hidden ` +
+  `(the sauce's base), at lower confidence.\n` +
+  `QUANTITY per food: household_measure = a SHORT everyday anchor a person can ` +
+  `picture - prefer "a fist", "half a fist", "two fists", "a palm", "a cupped ` +
+  `handful", "a handful", "a thumb", "a pinch", "a glass", "a slice", "a piece"; ` +
+  `est_grams = your best integer estimate of the grams of that food visible. ` +
+  `Lean generous. Also give the coarse portion_tier.\n` +
+  `You estimate only what you can SEE: food identity and quantity. NEVER any ` +
+  `nutrition, fiber, FODMAP, or calorie numbers; the app's database derives all ` +
+  `of those. When unsure, still include the item but lower its confidence. ` +
+  `Respond with STRICT JSON ONLY - no prose, no markdown fences. ` +
   `The JSON must match exactly this shape:\n${CONTRACT_SHAPE}\n` +
-  `portion_tier is one of "trace", "serving", "lots". confidence is 0.0–1.0. ` +
-  `dish_type names the prepared dish when recognizable (e.g. "curry", "stir_fry"), else null.`;
+  `portion_tier is one of "trace", "serving", "lots". confidence is 0.0–1.0.`;
 
 const USER_PROMPT =
   `Identify the foods in this meal photo and return the strict JSON contract.`;
@@ -46,8 +60,11 @@ const ANNOTATION_SYSTEM_PROMPT =
   `quantity words in the note. Map them: "a lot/lots/loads/heaps/tons/plenty/a ` +
   `whole/extra" -> "lots"; "a little/a bit/tiny/small amount/a touch/a sprinkle/ ` +
   `a dash/barely any/light" -> "trace"; no quantity word -> "serving". You do food ` +
-  `identification and portion tiering ONLY - never any nutrition, fiber, ` +
+  `identification and quantity ONLY - never any nutrition, fiber, ` +
   `FODMAP, or calorie numbers; the app's database derives all of those. ` +
+  `Set est_grams only when the note states an amount ("200g", "two eggs", ` +
+  `"a cup of rice") - integer grams, else null. Set household_measure only ` +
+  `when the note names one, else null. ` +
   `Respond with STRICT JSON ONLY - no prose, no markdown fences. ` +
   `The JSON must match exactly this shape:\n${CONTRACT_SHAPE}\n` +
   `portion_tier is one of "trace", "serving", "lots". confidence is 0.0–1.0. ` +
@@ -112,7 +129,8 @@ export class AnthropicProvider implements RecognitionProvider {
       },
       body: JSON.stringify({
         model: MODEL,
-        max_tokens: 1024,
+        // v2 decomposes mixed dishes into components, so responses run longer.
+        max_tokens: 2048,
         system,
         messages: [{ role: "user", content }],
       }),

@@ -103,6 +103,21 @@ struct GameConfig: Sendable {
     /// FIRST hypothesis for discomfort (before any food flag).
     let adaptationFastFiberDayG: Double = 6
 
+    /// The "Your fiber" 5-dot fast-fermenting day band (owner, 2026-07-08:
+    /// dots + a word, never grams — no gram scale for fermentable load means
+    /// anything to a person). Dot n lights when the day's fast-fermenting
+    /// grams reach thresholds[n-1]. 🔒 FENCE 2/4 (RD-REVIEW-REQUIRED).
+    let fastFermentBandThresholdsG: [Double] = [1, 4, 8, 13, 19]
+    let fastFermentBandLabels = ["quiet", "mild", "steady", "medium", "lively", "a big day"]
+
+    func fastFermentBandLevel(dayG: Double) -> Int {
+        fastFermentBandThresholdsG.filter { dayG >= $0 }.count
+    }
+
+    func fastFermentBandLabel(dayG: Double) -> String {
+        fastFermentBandLabels[fastFermentBandLevel(dayG: dayG)]
+    }
+
     // Quiet balance (words only, never numbers — rule #6 as amended).
     // Daily balance score = Σ tier value (none 0 / low 1 / moderate 2 / high 3)
     // × portion multiplier. Thresholds are coarse placeholder clinical values.

@@ -44,6 +44,7 @@ final class CapCaptureModel {
     // Outputs
     private(set) var confirmedMeal: ConfirmedMeal?
     private(set) var persistedMealId: String?     // the DB meals.id (nil offline) - drives the edit flow
+    private(set) var reviewModel: CapReviewModel? // edit-FIRST panel state (owner, 2026-07-08)
     private(set) var isSaving = false
 
     private let appState: AppState
@@ -204,6 +205,18 @@ final class CapCaptureModel {
             capturedAt: capturedAt
         )
 
+        // The edit-first review panel (owner, 2026-07-08): corrections are the
+        // FIRST thing on the result screen, and each one feeds the accuracy
+        // ledger. Offline (no repo) the panel still renders for the demo, it
+        // just can't persist or log.
+        reviewModel = CapReviewModel(
+            response: response,
+            annotationFoodIds: annotationFoodIds,
+            repository: appState.repository,
+            userId: appState.auth.session?.user?.id,
+            mealId: persistedMealId
+        )
+
         phase = .confirmed
     }
 
@@ -276,6 +289,7 @@ final class CapCaptureModel {
         unmatchedItems = []
         confirmedMeal = nil
         persistedMealId = nil
+        reviewModel = nil
         stagedImage = nil
         userAnnotation = ""
         photoURL = nil

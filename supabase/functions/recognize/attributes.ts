@@ -14,6 +14,9 @@ export interface FoodAttributes {
   is_plant: boolean;
   plant: { name: string; rarity_tier: string } | null;
   is_fermented: boolean;
+  // v2: grams of one typical serving — the anchor that turns the model's
+  // est_grams into a portion ratio (client slider math + est_fiber_g trigger).
+  typical_serving_g: number | null;
   // fermentability: coarse tolerance hint (low | moderate | high), Fence 2. Never
   // a FODMAP-trigger boolean and never an LLM output — the DB derives it.
   fibers: { name: string; relative_amount: string; fermentability: string | null; est_grams_per_serving: number | null }[];
@@ -106,6 +109,7 @@ function toAttributes(row: FoodRow): FoodAttributes {
     is_plant: row.is_plant,
     plant: row.plant ?? null,
     is_fermented: row.is_fermented,
+    typical_serving_g: row.typical_serving_g ?? null,
     fibers: (row.food_fibers ?? []).map((ff: FoodRow) => ({
       name: ff.fibers?.name,
       relative_amount: ff.relative_amount,
@@ -128,7 +132,7 @@ function toAttributes(row: FoodRow): FoodAttributes {
 }
 
 const FOOD_SELECT = `
-  id, canonical_name, aliases, is_plant, is_fermented, common_hidden_in, categories,
+  id, canonical_name, aliases, is_plant, is_fermented, common_hidden_in, categories, typical_serving_g,
   plant:plants(name, rarity_tier),
   food_fibers(relative_amount, est_grams_per_serving, fibers(name, fermentability)),
   food_colors(color_id),

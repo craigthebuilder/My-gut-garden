@@ -27,6 +27,10 @@ final class CapEditMealModel: Identifiable {
         let name: String
         var portion: PortionTier
         var source: CapItemSource
+        // Contract v2 quantity estimate — carried through the wholesale save so
+        // editing a meal never silently wipes the grams the scan captured.
+        var estGrams: Double?
+        var householdMeasure: String?
 
         var id: UUID { rowID }
     }
@@ -72,7 +76,7 @@ final class CapEditMealModel: Identifiable {
             // The meal_items, joined to the food's canonical name.
             let items: [CapMealItemRow] = try await repository.select(
                 "meal_items",
-                columns: "id,food_id,portion_tier,source,foods(canonical_name)",
+                columns: "id,food_id,portion_tier,source,est_grams,household_measure,foods(canonical_name)",
                 filters: ["meal_id": "eq.\(mealId)"]
             )
             rows = items.map { item in
@@ -81,7 +85,9 @@ final class CapEditMealModel: Identifiable {
                     foodId: item.foodId,
                     name: item.foods?.canonicalName ?? "Food",
                     portion: PortionTier(rawValue: item.portionTier) ?? .serving,
-                    source: CapItemSource(rawValue: item.source) ?? .manual
+                    source: CapItemSource(rawValue: item.source) ?? .manual,
+                    estGrams: item.estGrams,
+                    householdMeasure: item.householdMeasure
                 )
             }
         } catch {
@@ -94,6 +100,10 @@ final class CapEditMealModel: Identifiable {
     func setPortion(_ row: Row, portion: PortionTier) {
         guard let idx = rows.firstIndex(where: { $0.rowID == row.rowID }) else { return }
         rows[idx].portion = portion
+        // An explicit tier choice supersedes the scan's gram estimate — clear
+        // it so the DB trigger falls back to the tier the user just picked.
+        rows[idx].estGrams = nil
+        rows[idx].householdMeasure = nil
     }
 
     func delete(_ row: Row) {
@@ -130,7 +140,8 @@ final class CapEditMealModel: Identifiable {
         defer { isSaving = false }
 
         let items: [CapMealItem] = rows.map {
-            CapMealItem(foodId: $0.foodId, portion: $0.portion, source: $0.source)
+            CapMealItem(foodId: $0.foodId, portion: $0.portion, source: $0.source,
+                        estGrams: $0.estGrams, householdMeasure: $0.householdMeasure)
         }
 
         do {
@@ -152,6 +163,8 @@ struct CapMealItemRow: Decodable, Sendable {
     let foodId: String
     let portionTier: String
     let source: String
+    let estGrams: Double?
+    let householdMeasure: String?
     let foods: FoodNameRef?
 
     struct FoodNameRef: Decodable, Sendable {

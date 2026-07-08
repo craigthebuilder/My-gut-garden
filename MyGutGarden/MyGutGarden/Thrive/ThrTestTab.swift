@@ -277,8 +277,7 @@ struct ThrCheckInFormView: View {
             filters: ["captured_at": "gte.\(ThrDates.timestampString(dayStart))",
                       "confirmed": "eq.true"], order: "captured_at.asc"
         ) else { return }
-        meals = rows.filter { ($0.capturedAtDate ?? dayStart) < dayEnd }
-                    .enumerated().map { ThrTodayMeal.make($0.element, index: $0.offset + 1) }
+        meals = ThrTodayMeal.list(rows.filter { ($0.capturedAtDate ?? dayStart) < dayEnd })
     }
 
     private func save() async {
@@ -654,16 +653,19 @@ struct ThrNotesSection: View {
 
 // MARK: - Shared building blocks
 
-/// A logged meal for the tie-to-photo control. Label is derived client-side; the
-/// DB records which meal + the derived occurred_at, the UI never names the meal.
+/// A logged meal for the tie-to-photo control. Labels come from the capture
+/// TIME ("11am breakfast", MealTimeLabel) — never the note text, never
+/// "Meal 2" — so linking a symptom to a meal reads the way people remember
+/// meals. The DB records which meal + the derived occurred_at.
 struct ThrTodayMeal: Identifiable, Sendable, Equatable {
     let id: String
     let label: String
     let capturedAt: Date
 
-    static func make(_ meal: MealRow, index: Int) -> ThrTodayMeal {
-        let label = (meal.userAnnotation.map { !$0.isEmpty } ?? false) ? "After \(meal.userAnnotation!)" : "Meal \(index)"
-        return ThrTodayMeal(id: meal.id, label: label, capturedAt: meal.capturedAtDate ?? Date())
+    static func list(_ rows: [MealRow]) -> [ThrTodayMeal] {
+        let dates = rows.map { $0.capturedAtDate ?? Date() }
+        let labels = MealTimeLabel.labels(for: dates)
+        return rows.indices.map { ThrTodayMeal(id: rows[$0].id, label: labels[$0], capturedAt: dates[$0]) }
     }
 }
 

@@ -38,6 +38,7 @@ enum Fixtures {
             isPlant: isPlant,
             plant: isPlant ? PlantRef(name: name, rarityTier: .common) : nil,
             isFermented: isFermented,
+            typicalServingG: nil,
             fibers: fibers,
             colors: colors,
             phytochemicals: phytochemicals,

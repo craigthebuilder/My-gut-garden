@@ -9,10 +9,14 @@ import { validateVisionResult, type VisionResult } from "../contract.ts";
 
 const SAMPLE_MEAL = {
   foods: [
-    { name: "Garlic", portion_tier: "serving", confidence: 0.82, dish_type: "stir_fry" },
-    { name: "Oats", portion_tier: "lots", confidence: 0.91, dish_type: null },
-    { name: "Spinach", portion_tier: "serving", confidence: 0.77, dish_type: "stir_fry" },
-    { name: "Blueberry", portion_tier: "trace", confidence: 0.88, dish_type: null },
+    { name: "Garlic", portion_tier: "serving", confidence: 0.82, dish_type: "stir_fry",
+      household_measure: "a thumb", est_grams: 6 },
+    { name: "Oats", portion_tier: "lots", confidence: 0.91, dish_type: null,
+      household_measure: "two fists", est_grams: 300 },
+    { name: "Spinach", portion_tier: "serving", confidence: 0.77, dish_type: "stir_fry",
+      household_measure: "a fist", est_grams: 60 },
+    { name: "Blueberry", portion_tier: "trace", confidence: 0.88, dish_type: null,
+      household_measure: "a cupped handful", est_grams: 40 },
   ],
   scene_notes: "mixed breakfast bowl; some items may be partially occluded",
 };

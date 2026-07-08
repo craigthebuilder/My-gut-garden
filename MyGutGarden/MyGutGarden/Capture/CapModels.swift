@@ -40,14 +40,17 @@ enum CapItemSource: String, Sendable, Equatable {
     case annotation                          // Batch C: from the user's snapchat-style note (re-prompt)
 }
 
-/// One row destined for `meal_items` (SPEC §5). Portion stays a coarse tier, 
-/// never a precise gram value surfaced as measured (CLAUDE.md rule #3). The
-/// optional `est_fiber_g` column is deliberately left unset here: Module B does
-/// not invent nutrition numbers (rule #2).
+/// One row destined for `meal_items` (SPEC §5). Contract v2: `estGrams` is the
+/// model's (or the user's slider) QUANTITY estimate and `householdMeasure` its
+/// human anchor ("a fist"); both surface only with "~" softening. The
+/// `est_fiber_g` column is deliberately left unset here: composition math is
+/// the database's job (rule #2, the meal_items trigger).
 struct CapMealItem: Sendable, Equatable {
     let foodId: String
-    let portion: PortionTier
+    var portion: PortionTier
     let source: CapItemSource
+    var estGrams: Double? = nil
+    var householdMeasure: String? = nil
 }
 
 // MARK: - Food search (manual-confirm + hidden-ingredient resolution)

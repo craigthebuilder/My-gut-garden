@@ -53,18 +53,18 @@ final class RecognitionService {
       "provider": "fixture",
       "vision": {
         "foods": [
-          { "name": "Garlic", "portion_tier": "serving", "confidence": 0.82, "dish_type": "stir_fry" },
-          { "name": "Oats", "portion_tier": "lots", "confidence": 0.91, "dish_type": null },
-          { "name": "Spinach", "portion_tier": "serving", "confidence": 0.77, "dish_type": "stir_fry" },
-          { "name": "Blueberry", "portion_tier": "trace", "confidence": 0.88, "dish_type": null }
+          { "name": "Garlic", "portion_tier": "serving", "confidence": 0.82, "dish_type": "stir_fry", "household_measure": "a thumb", "est_grams": 6 },
+          { "name": "Oats", "portion_tier": "lots", "confidence": 0.91, "dish_type": null, "household_measure": "two fists", "est_grams": 300 },
+          { "name": "Spinach", "portion_tier": "serving", "confidence": 0.77, "dish_type": "stir_fry", "household_measure": "a fist", "est_grams": 60 },
+          { "name": "Blueberry", "portion_tier": "trace", "confidence": 0.88, "dish_type": null, "household_measure": "a cupped handful", "est_grams": 40 }
         ],
         "scene_notes": "mixed breakfast bowl; some items may be partially occluded"
       },
       "items": [
         {
-          "vision": { "name": "Garlic", "portion_tier": "serving", "confidence": 0.82, "dish_type": "stir_fry" },
+          "vision": { "name": "Garlic", "portion_tier": "serving", "confidence": 0.82, "dish_type": "stir_fry", "household_measure": "a thumb", "est_grams": 6 },
           "attributes": {
-            "food_id": "demo-garlic", "canonical_name": "Garlic", "is_plant": true,
+            "food_id": "demo-garlic", "canonical_name": "Garlic", "is_plant": true, "typical_serving_g": 6,
             "plant": { "name": "Garlic", "rarity_tier": "common" },
             "is_fermented": false,
             "fibers": [
@@ -77,9 +77,9 @@ final class RecognitionService {
           }
         },
         {
-          "vision": { "name": "Oats", "portion_tier": "lots", "confidence": 0.91, "dish_type": null },
+          "vision": { "name": "Oats", "portion_tier": "lots", "confidence": 0.91, "dish_type": null, "household_measure": "two fists", "est_grams": 300 },
           "attributes": {
-            "food_id": "demo-oats", "canonical_name": "Oats", "is_plant": true,
+            "food_id": "demo-oats", "canonical_name": "Oats", "is_plant": true, "typical_serving_g": 240,
             "plant": { "name": "Oats", "rarity_tier": "common" },
             "is_fermented": false,
             "fibers": [
@@ -95,9 +95,9 @@ final class RecognitionService {
           }
         },
         {
-          "vision": { "name": "Spinach", "portion_tier": "serving", "confidence": 0.77, "dish_type": "stir_fry" },
+          "vision": { "name": "Spinach", "portion_tier": "serving", "confidence": 0.77, "dish_type": "stir_fry", "household_measure": "a fist", "est_grams": 60 },
           "attributes": {
-            "food_id": "demo-spinach", "canonical_name": "Spinach", "is_plant": true,
+            "food_id": "demo-spinach", "canonical_name": "Spinach", "is_plant": true, "typical_serving_g": 60,
             "plant": { "name": "Spinach", "rarity_tier": "common" },
             "is_fermented": false,
             "fibers": [{ "name": "pectin", "relative_amount": "minor", "fermentability": "moderate", "est_grams_per_serving": 0.6 }],
@@ -107,9 +107,9 @@ final class RecognitionService {
           }
         },
         {
-          "vision": { "name": "Blueberry", "portion_tier": "trace", "confidence": 0.88, "dish_type": null },
+          "vision": { "name": "Blueberry", "portion_tier": "trace", "confidence": 0.88, "dish_type": null, "household_measure": "a cupped handful", "est_grams": 40 },
           "attributes": {
-            "food_id": "demo-blueberry", "canonical_name": "Blueberry", "is_plant": true,
+            "food_id": "demo-blueberry", "canonical_name": "Blueberry", "is_plant": true, "typical_serving_g": 75,
             "plant": { "name": "Blueberry", "rarity_tier": "uncommon" },
             "is_fermented": false,
             "fibers": [{ "name": "pectin", "relative_amount": "minor", "fermentability": "moderate", "est_grams_per_serving": 0.5 }],

@@ -119,14 +119,15 @@ if os.path.exists(foods_src):
             histamine[parts[0]] = parts[5]
 
 write_csv("foods.csv",
-          "canonical_name|aliases|is_plant|plant_name|is_fermented|histamine_level|common_hidden_in|categories|protein_tier|energy_tier", [
+          "canonical_name|aliases|is_plant|plant_name|is_fermented|histamine_level|common_hidden_in|categories|protein_tier|energy_tier|typical_serving_g", [
     "|".join([cell(f["canonical_name"]), lst(f.get("aliases")),
               "true" if f["is_plant"] else "false",
               cell(plant_name.get(f.get("plant_id"))),
               "true" if f["is_fermented"] else "false",
               histamine.get(f["canonical_name"], ""),
               lst(f.get("common_hidden_in")), lst(f.get("categories")),
-              cell(f.get("protein_tier") or "none"), cell(f.get("energy_tier") or "low")])
+              cell(f.get("protein_tier") or "none"), cell(f.get("energy_tier") or "low"),
+              cell(f.get("typical_serving_g"))])
     for f in foods
 ])
 

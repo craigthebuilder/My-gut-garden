@@ -75,10 +75,12 @@ app sees the change on its next load:
   ship a seed-refresh migration (the CSV-first lane above).
 
 Adding a food in Studio, concretely: insert the `foods` row (canonical_name,
-aliases, is_plant, is_fermented, categories, protein_tier, energy_tier; pick
-plant_id from `plants` if it should count toward the 30) → add a `food_colors`
-row for its rainbow group → optionally `food_phytochemicals` /
-`food_guild_feeds` / `food_fibers` rows. Then the pull command.
+aliases, is_plant, is_fermented, categories, protein_tier, energy_tier, and
+**typical_serving_g** — grams of one typical serving, the anchor that turns the
+scan's gram estimate into a portion ratio; pick plant_id from `plants` if it
+should count toward the 30) → add a `food_colors` row for its rainbow group →
+optionally `food_phytochemicals` / `food_guild_feeds` / `food_fibers` rows.
+Then the pull command.
 
 ### The coach-mark tour specifically (a common thing to tweak)
 `data/tutorial_steps.csv`, `section_key = intro`, is the first-run walkthrough.

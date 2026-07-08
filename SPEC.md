@@ -66,36 +66,46 @@ SPEC.md  CLAUDE.md  DESIGN.md  FENCES.md
 
 ## 4. The photo→food recognition pipeline (the contract)
 
-The spine every food-side feature depends on. Build it once, in Phase 0, with a frozen output contract. **The contract is unchanged from prior versions** — the only removals are the FODMAP overlay and photo expiry.
+The spine every food-side feature depends on. **CONTRACT v2 (owner decisions, 2026-07-08).** The governing principle:
+
+> **The model estimates what it can see; the database knows what it can't see; users correct both; every correction is stored as data.**
+
+Concretely: vision estimates **identity + quantity** (which foods, decomposed to component level, and roughly how much of each — a hand-anchored household measure plus grams). The **database owns composition** (fiber, splits, fermentability, phytochemicals, guilds, macros per serving) so the same food yields the same numbers every day — per-scan LLM *composition* numbers stay banned because inconsistency turns trends into noise and can't be fixed globally after the fact.
 
 **Flow:**
 1. User snaps a meal photo.
 2. Photo uploaded to Supabase Storage (**retained permanently**, §5); Edge Function invoked.
-3. Edge Function sends the image to a multimodal vision LLM with a **structured prompt** demanding strict JSON only. The model does **food identification + coarse portion estimation**, nothing nutritional.
-4. Response parsed and validated; each identified food is resolved to a `food_id` (fuzzy-match canonical names + aliases; unmatched items flagged for manual confirm).
-5. Backend performs the **database join** (§5) to derive fiber, phytochemical, guild-feed, and color attributes. **The LLM never produces nutrition numbers — the database does.**
+3. Edge Function sends the image to a multimodal vision LLM with a **structured prompt** demanding strict JSON only. The model does **identification + quantity**: it **decomposes mixed dishes into component foods** (curry → chicken, tomato, cream, onion, rice; `dish_type` set on each component) and per food emits a **household measure** from a hand-anchored vocabulary ("a fist", "half a fist", "two fists", "a palm", "a cupped handful", "a handful", "a thumb", "a pinch", "a glass", "a slice", "a piece") plus **`est_grams`** — nothing nutritional.
+4. Response parsed and validated; each identified food is resolved to a `food_id` (plural-tolerant match over canonical names + aliases; unmatched items surface for inline resolution on the result screen).
+5. Backend performs the **database join** (§5) to derive fiber, phytochemical, guild-feed, and color attributes plus `typical_serving_g`. **The LLM never produces composition numbers — the database does.** `est_fiber_g` = fiber-per-serving × (`est_grams` / `typical_serving_g`), clamped, with the coarse tier multipliers as the fallback when either side is missing (DB trigger; fenced).
 6. **Food-flag surfacing** (§9) runs as two independent passes: a LOUD **allergy** check that fires *before* the result overview, and a soft **sensitivity/watching** check that renders *inside* the overview.
+7. **Edit-first review (owner, 2026-07-08):** the result screen LEADS with "N plants spotted — tap anything that's off": per-item rows ("~a fist · ~120g") expanding to a **½×–2× amount slider**, inline resolution for "new to us" names, an "add a food we missed" search, and a one-tap **"Looks right."** Every interaction (and the looks-right) writes a `recognition_feedback` event — the accuracy ledger that is simultaneously the owner's is-it-working metric, the eval set for vision-model changes, and the label source for a future custom model.
 
-**Vision LLM output contract (strict JSON):**
+**Vision LLM output contract (strict JSON, v2):**
 ```json
 {
   "foods": [
     {
-      "name": "string (best guess, canonical-ish)",
+      "name": "string (best guess, canonical-ish, component-level)",
       "portion_tier": "trace | serving | lots",
       "confidence": 0.0,
-      "dish_type": "string | null"
+      "dish_type": "string | null",
+      "household_measure": "string | null",
+      "est_grams": 0
     }
   ],
   "scene_notes": "string | null"
 }
 ```
+v2 fields are optional-on-decode so v1 payloads/fixtures stay valid. `portion_tier` is retained as the coarse shadow (derived from the grams ratio on edits) so v1 readers of the column stay meaningful.
 
-**Annotation (optional second pass):** the user may add a free-text note on the photo ("lots of onion"). When present, a **second text-only call** using the same system prompt returns only additional food IDs + coarse tiers; it is validated by the same validator, joined identically, and its items get `source = 'annotation'`. Primary vision wins on dedup. The annotation **never** upgrades a tier and **never** emits a number.
+**Annotation (optional second pass):** the user may add a free-text note on the photo ("lots of onion"). When present, a **second text-only call** returns only additional foods; validated by the same validator, joined identically, items get `source = 'annotation'`. Primary vision wins on dedup. `est_grams` only when the note states an amount; composition numbers never.
 
-**Portion = coarse tiers only.** `trace / serving / lots`, from *visible* portion, leaning generous. Visible portion ≠ total intake and the camera can't see oil/sauce/hidden aromatics — the model is **directional, and says so.**
+**Portion honesty.** Quantity is a thing cameras can genuinely judge (~±30–40% per item is the honest state of the art); composition is not. Everything displays **"~" softened and directional, and says so** — daily totals partially average out, and week-over-week trends (what titration needs) are robust to consistent bias. Plant diversity — the game's core — needs no portion at all and stays exact.
 
-**Volume "diagnosis" (v1 vs v1.x):** v1 takes `portion_tier` straight from the model. v1.x may capture `ARKit` depth on LiDAR iPhones as an *optional* refining input, degrading gracefully when absent.
+**Coverage (the librarian — agreed direction, next build round):** when a scan hits a food the catalogue doesn't know, the item logs immediately and a **background "librarian" job** (cheap text model, no photo) first decides *alias-of-existing vs genuinely new*, then generates a full per-serving profile — fiber + splits, fermentability class, plant credit, colors, phytochemicals **only from the existing compound vocabulary**, guilds from the existing roster, `typical_serving_g`, macros — inserted `verified = false` and **live instantly** (owner decision); the triggering meal retro-links. The owner reviews/amends a Studio queue at leisure; edits propagate. A one-time batch pass pre-seeds the ~600–800 common ingredient-level foods the same way. The catalogue stays **ingredient-level** (bounded, reviewable); vision's decomposition handles dishes.
+
+**Volume "diagnosis" (v1 vs v1.x):** v1 takes the model's `est_grams` + the user's slider. v1.x may capture `ARKit` depth on LiDAR iPhones as an *optional* refining input, degrading gracefully when absent.
 
 **Accuracy ceiling:** hidden-ingredient detection is mitigated, not solved. Everywhere: **"when unsure, flag it."**
 

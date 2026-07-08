@@ -31,18 +31,21 @@ When you're ready for other people: archive → App Store Connect → **TestFlig
 ## 2. How the scan pipeline works (the 60-second mental model)
 
 ```
-photo → Edge Function `recognize` → vision model (ID + coarse portion ONLY)
-      → foods-table match (canonical_name + aliases)
-      → DB attribute join (fiber/colors/phytos/guilds)  → the app
+photo → Edge Function `recognize` → vision model (contract v2, 2026-07-08:
+        component-level food IDs + "~a fist"/est_grams quantity — NEVER composition)
+      → foods-table match (canonical_name + aliases, plural-tolerant)
+      → DB attribute join (fiber/colors/phytos/guilds + typical_serving_g)
+      → the app: est_fiber_g = fiber-per-serving × (est_grams / typical_serving_g)
 ```
 
-Three places accuracy is won or lost, in order of cheapness to fix:
+Four places accuracy is won or lost, in order of cheapness to fix:
 
 | Lever | Where | When to pull it |
 |---|---|---|
-| **Aliases** | `data/foods.csv` `aliases` column | The model says "scallions", the DB has "Spring onion" → item lands in *unmatched*. Add the alias, regenerate, push. This is the #1 cheap win — expect to add dozens in week one. |
-| **Prompt** | `supabase/functions/recognize/providers/anthropic.ts` (`SYSTEM_PROMPT`) | The model over-splits ("rice", "white rice", "grain"), misses dish types, or hallucinates garnish. Tune the instructions. |
-| **Model** | Same file, `const MODEL = "claude-opus-4-8"` | Try `claude-sonnet-4-6` for ~5-10× cheaper/faster scans, or stay on Opus for accuracy. One-line change. |
+| **Aliases** | `data/foods.csv` `aliases` column (or Studio + pull) | The model says "scallions", the DB has "Spring onion" → item lands in *unmatched*. Add the alias. This is the #1 cheap win — expect to add dozens in week one. |
+| **Prompt** | `supabase/functions/recognize/providers/anthropic.ts` (`SYSTEM_PROMPT`) | The model over-splits ("rice", "white rice", "grain"), under-decomposes mixed dishes, gives absurd gram estimates, or hallucinates garnish. Tune the instructions. |
+| **Serving anchors** | `foods.typical_serving_g` (Studio or `data/foods.csv`) | A food's fiber scales oddly with the slider → its typical-serving grams are off. RD-fenced placeholders; fix the anchor, pull. |
+| **Model** | Same file, `const MODEL = "claude-opus-4-8"` | Try `claude-sonnet-4-6` (~5×) or `claude-haiku-4-5-20251001` (~15× cheaper) once the feedback ledger says they match Opus on your benchmark plates. One-line change. |
 
 > ⚠️ **Any edit under `supabase/functions/` does NOTHING until you run**
 > `supabase functions deploy recognize`
@@ -54,11 +57,35 @@ Three places accuracy is won or lost, in order of cheapness to fix:
 
 You already have ground truth being collected for free:
 - **`meals.vision_raw_json`** stores exactly what the model said for every snap.
-- **`meal_items.user_confirmed` / `user_denied`** stores what you said back
-  (the "Did we get these right?" taps in Recent Meals — use them religiously
-  while testing; they're your labels).
+- **`recognition_feedback`** (2026-07-08) is the accuracy ledger: every result-
+  screen correction lands here as an event — `looks_right` (one-tap confirm),
+  `item_removed` ("wasn't on the plate"), `item_added` (model missed it),
+  `portion_changed` (slider moved), `unmatched_resolved` (user mapped a
+  "new to us" name). `vision_name` keeps what the model called it. This is your
+  is-it-working metric, the eval set for model changes, AND the training set
+  for a future custom model — photo + model guess + human truth, per meal.
+- **`meal_items.user_confirmed` / `user_denied`** stores the Recent-Meals
+  key-question answers.
 - **`unmatched`** foods (things the model named but the DB couldn't resolve)
-  surface in the result screen.
+  surface right on the result screen with an inline "Pick a match."
+
+The one-glance health check (Studio → SQL):
+```sql
+-- scans this week: how many were confirmed clean vs. corrected?
+select
+  count(distinct meal_id) filter (where event = 'looks_right')  as clean_scans,
+  count(*) filter (where event = 'item_removed')                as hallucinations,
+  count(*) filter (where event = 'item_added')                  as misses,
+  count(*) filter (where event = 'portion_changed')             as portion_fixes,
+  count(*) filter (where event = 'unmatched_resolved')          as catalogue_gaps
+from recognition_feedback
+where created_at > now() - interval '7 days';
+
+-- which foods get corrected most (prompt/alias targets)
+select coalesce(vision_name, f.canonical_name) as name, event, count(*)
+from recognition_feedback rf left join foods f on f.id = rf.food_id
+group by 1, 2 order by count(*) desc limit 20;
+```
 
 The loop:
 1. Snap 10–20 real meals over a few days. Confirm/deny every hypothesis.

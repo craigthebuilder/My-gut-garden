@@ -181,3 +181,32 @@ struct BotanicalFlourish: View {
             .accessibilityHidden(true)
     }
 }
+
+/// A 5-dot intensity band (owner decision, 2026-07-08) for loads that have no
+/// gram scale a person would recognize — above all the fast-fermenting carb
+/// band on "Your fiber". Filled count + the word carry the meaning together
+/// (never color alone, accessibility floor); grams stay internal.
+struct DotBand: View {
+    @Environment(\.theme) private var theme
+    let level: Int              // 0...max filled dots
+    var max: Int = 5
+    let label: String           // "quiet" … "a big day"
+
+    var body: some View {
+        HStack(spacing: theme.metrics.space2) {
+            HStack(spacing: 4) {
+                ForEach(0..<max, id: \.self) { i in
+                    Circle()
+                        .fill(i < level ? theme.colors.secondary
+                                        : theme.colors.secondary.opacity(0.18))
+                        .frame(width: 10, height: 10)
+                }
+            }
+            Text(label)
+                .font(theme.typography.caption(weight: .medium))
+                .foregroundStyle(theme.colors.textSecondary)
+        }
+        .accessibilityElement()
+        .accessibilityLabel("\(label), level \(level) of \(max)")
+    }
+}

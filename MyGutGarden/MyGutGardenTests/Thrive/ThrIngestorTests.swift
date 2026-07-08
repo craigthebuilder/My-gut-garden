@@ -30,6 +30,7 @@ private enum Fix {
             isPlant: isPlant,
             plant: isPlant ? PlantRef(name: name, rarityTier: rarity) : nil,
             isFermented: isFermented,
+            typicalServingG: nil,
             fibers: fibers,
             colors: colors,
             phytochemicals: phytos,

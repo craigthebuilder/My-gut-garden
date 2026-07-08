@@ -84,7 +84,9 @@ enum CapMealDraftBuilder {
             let source: CapItemSource = annotationFoodIds.contains(attrs.foodId) ? .annotation : .vision
             return CapMealItem(foodId: attrs.foodId,
                                portion: item.vision.portionTier,
-                               source: source)
+                               source: source,
+                               estGrams: item.vision.estGrams,
+                               householdMeasure: item.vision.householdMeasure)
         }
     }
 

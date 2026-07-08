@@ -194,6 +194,33 @@ struct CapFoodSearchService: Sendable {
     }
 }
 
+// MARK: - Recognition feedback (the scan-accuracy ledger)
+
+/// Best-effort writer for `recognition_feedback` — every correction (and every
+/// "looks right") a user makes on a scan. Fire-and-forget: feedback must never
+/// block or break the logging flow. Per-user RLS; read by the owner for the
+/// accuracy metrics + model evals (TESTING_GUIDE), never surfaced as a score.
+struct CapFeedbackLog: Sendable {
+    let repository: Repository
+    let userId: String
+    let mealId: String?
+
+    func log(_ event: String, foodId: String? = nil,
+             visionName: String? = nil, detail: [String: Any]? = nil) async {
+        var body: [String: PGValue] = [
+            "user_id": .string(userId),
+            "event": .string(event)
+        ]
+        if let mealId { body["meal_id"] = .string(mealId) }
+        if let foodId { body["food_id"] = .string(foodId) }
+        if let visionName { body["vision_name"] = .string(visionName) }
+        if let detail, let json = CapJSON.string(fromObject: detail) {
+            body["detail"] = .string(json)   // jsonb-as-string (see file header caveat)
+        }
+        try? await repository.insertVoid("recognition_feedback", body)
+    }
+}
+
 // MARK: - Meal persistence (SPEC §5, `meals` + `meal_items`)
 
 /// Writes one confirmed meal and its items, RLS-scoped by the caller's token.
@@ -257,11 +284,16 @@ struct CapMealPersistence: Sendable {
     }
 
     private func insertItem(mealId: String, item: CapMealItem) async throws {
-        try await repository.insertVoid("meal_items", [
+        var body: [String: PGValue] = [
             "meal_id": .string(mealId),
             "food_id": .string(item.foodId),
             "portion_tier": .string(item.portion.rawValue),
             "source": .string(item.source.rawValue)
-        ])
+        ]
+        // Contract v2 quantity estimate — the DB trigger scales est_fiber_g by
+        // est_grams / foods.typical_serving_g when both are present.
+        if let grams = item.estGrams { body["est_grams"] = .double(grams) }
+        if let measure = item.householdMeasure { body["household_measure"] = .string(measure) }
+        try await repository.insertVoid("meal_items", body)
     }
 }

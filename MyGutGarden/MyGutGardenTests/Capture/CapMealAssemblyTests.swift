@@ -27,15 +27,15 @@ struct CapMealAssemblyTests {
         // Single-mode (§9): sensitivity foods are still eaten + logged; only items
         // the DB could not resolve (attributes == nil) are dropped.
         let kept = ResolvedItem(
-            vision: VisionFood(name: "Kale", portionTier: .serving, confidence: 0.9, dishType: nil),
+            vision: VisionFood(name: "Kale", portionTier: .serving, confidence: 0.9, dishType: nil, householdMeasure: nil, estGrams: nil),
             attributes: Fixtures.food(name: "Kale")
         )
         let alsoKept = ResolvedItem(
-            vision: VisionFood(name: "Onion", portionTier: .serving, confidence: 0.9, dishType: nil),
+            vision: VisionFood(name: "Onion", portionTier: .serving, confidence: 0.9, dishType: nil, householdMeasure: nil, estGrams: nil),
             attributes: Fixtures.food(name: "Onion")
         )
         let unresolvable = ResolvedItem(
-            vision: VisionFood(name: "Mystery", portionTier: .serving, confidence: 0.3, dishType: nil),
+            vision: VisionFood(name: "Mystery", portionTier: .serving, confidence: 0.3, dishType: nil, householdMeasure: nil, estGrams: nil),
             attributes: nil
         )
 

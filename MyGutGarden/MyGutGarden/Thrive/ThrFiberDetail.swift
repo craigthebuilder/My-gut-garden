@@ -40,6 +40,7 @@ final class ThrFiberTrendModel {
         let foodId: String
         let portionTier: String
         let estFiberG: Double?
+        let estGrams: Double?
     }
     private struct FiberRow: Decodable, Sendable {
         let id: String
@@ -75,16 +76,21 @@ final class ThrFiberTrendModel {
                                    uniquingKeysWith: { a, _ in a })
         let mealList = "(" + meals.map(\.id).joined(separator: ",") + ")"
         guard let items: [ItemRow] = try? await repo.select(
-            "meal_items", columns: "meal_id,food_id,portion_tier,est_fiber_g",
+            "meal_items", columns: "meal_id,food_id,portion_tier,est_fiber_g,est_grams",
             filters: ["meal_id": "in.\(mealList)"]), !items.isEmpty else { isLoaded = true; return }
 
         // Per-food composition from the reference tables.
+        struct ServingRow: Decodable, Sendable { let id: String; let typicalServingG: Double? }
         async let fibersT: [FiberRow] = (try? await repo.select(
             "fibers", columns: "id,fermentability,solubility")) ?? []
         async let junctionsT: [JunctionRow] = (try? await repo.select(
             "food_fibers", columns: "food_id,fiber_id,est_grams_per_serving")) ?? []
-        let (fibers, junctions) = await (fibersT, junctionsT)
+        async let servingsT: [ServingRow] = (try? await repo.select(
+            "foods", columns: "id,typical_serving_g")) ?? []
+        let (fibers, junctions, servings) = await (fibersT, junctionsT, servingsT)
         let fiberById = Dictionary(fibers.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
+        let servingByFood = Dictionary(servings.compactMap { r in r.typicalServingG.map { (r.id, $0) } },
+                                       uniquingKeysWith: { a, _ in a })
 
         // food_id → per-serving grams by speed + solubility bucket.
         var speedByFood: [String: [String: Double]] = [:]
@@ -102,7 +108,9 @@ final class ThrFiberTrendModel {
         for item in items {
             guard let day = dayByMeal[item.mealId].flatMap({ dayIndex[$0] }) else { continue }
             totalByDay[day] += item.estFiberG ?? 0
-            let mult = GuardianRunner.portionMultiplier(item.portionTier)
+            let mult = PortionMath.ratio(estGrams: item.estGrams,
+                                         typicalServingG: servingByFood[item.foodId],
+                                         tier: item.portionTier)
             for (speed, grams) in speedByFood[item.foodId] ?? [:] {
                 bySpeed[speed]?[day] += grams * mult
             }
@@ -238,6 +246,17 @@ struct ThrFiberDetailView: View {
                     .foregroundStyle(theme.colors.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
                 if model.isLoaded {
+                    // Owner (2026-07-08): today's fast-fermenting load reads as
+                    // a 5-dot band + a word, never a gram number — there is no
+                    // gram scale for fermentable load a person would recognize.
+                    HStack {
+                        Text("Today")
+                            .font(theme.typography.caption(weight: .semibold))
+                            .foregroundStyle(theme.colors.textPrimary)
+                        Spacer()
+                        DotBand(level: GameConfig.shared.fastFermentBandLevel(dayG: todayFastG),
+                                label: GameConfig.shared.fastFermentBandLabel(dayG: todayFastG))
+                    }
                     ThrMultiLineChart(series: speedSeries)
                 } else {
                     ProgressView().frame(maxWidth: .infinity)
@@ -266,6 +285,10 @@ struct ThrFiberDetailView: View {
     private func normalized(_ values: [Double]) -> [Double] {
         values.map { $0 / model.chartMax }
     }
+
+    /// Today's directional fast-fermenting grams (internal only — surfaces as
+    /// the 5-dot band, never a number).
+    private var todayFastG: Double { model.bySpeed["high"]?.last ?? 0 }
 
     private var speedSeries: [ThrTrendSeries] {
         [

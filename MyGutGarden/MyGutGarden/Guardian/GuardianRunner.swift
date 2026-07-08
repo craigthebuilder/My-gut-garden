@@ -44,9 +44,10 @@ struct GuardianRunner {
             "meal_items",
             filters: ["meal_id": "in.(\(meals.map(\.id).joined(separator: ",")))"])) ?? []
 
-        // Food flags + names (for prompt copy + attribution).
+        // Food flags + names (for prompt copy + attribution) + serving anchors.
         let flagRows = (try? await repository.fetchFoodFlags()) ?? []
-        let foodNames = await foodNameLookup()
+        let foodRef = await foodRefLookup()
+        let foodNames = foodRef.names
         let flags: [GuardianFlag] = flagRows.compactMap { row in
             guard let fid = row.foodId, let tier = FlagTier(rawValue: row.flagTier) else { return nil }
             return GuardianFlag(foodId: fid, foodName: foodNames[fid] ?? "this food", tier: tier)
@@ -55,8 +56,10 @@ struct GuardianRunner {
         // §17 inputs: fast-fermenting grams per food + coarse balance tiers.
         let fastGramsByFood = await fastFermentGramsByFood()
         let days = Self.buildDays(checkIns: checkIns, dayByCheckIn: dayByCheckIn, entries: entries,
-                                  items: items, mealDay: mealDay, fastGramsByFood: fastGramsByFood)
+                                  items: items, mealDay: mealDay, fastGramsByFood: fastGramsByFood,
+                                  typicalServingByFood: foodRef.servingG)
         let balanceSignals = await balanceSignals(items: items, mealDay: mealDay,
+                                                  typicalServingByFood: foodRef.servingG,
                                                   promptedAt: profile.balancePromptedAt, asOf: asOf)
 
         let decision = GuardianEngine.decide(goal: goal, days: days, flags: flags,
@@ -78,7 +81,8 @@ struct GuardianRunner {
     static func buildDays(checkIns: [CheckInRow], dayByCheckIn: [String: String],
                           entries: [CheckInEntryRow], items: [GuardianMealItemRow],
                           mealDay: [String: String],
-                          fastGramsByFood: [String: Double] = [:]) -> [GuardianDay] {
+                          fastGramsByFood: [String: Double] = [:],
+                          typicalServingByFood: [String: Double] = [:]) -> [GuardianDay] {
         // Symptom section keys whose value_int is a coarse 0–3 severity.
         let symptomKeys: Set<String> = ["felt_okay", "gas", "bloating", "cramping", "pain", "urgency"]
         let cfg = GameConfig.shared
@@ -102,7 +106,10 @@ struct GuardianRunner {
         for it in items {
             guard let day = mealDay[it.mealId] else { continue }
             fiber[day, default: 0] += it.estFiberG ?? 0
-            fastFiber[day, default: 0] += (fastGramsByFood[it.foodId] ?? 0) * Self.portionMultiplier(it.portionTier)
+            let ratio = PortionMath.ratio(estGrams: it.estGrams,
+                                          typicalServingG: typicalServingByFood[it.foodId],
+                                          tier: it.portionTier)
+            fastFiber[day, default: 0] += (fastGramsByFood[it.foodId] ?? 0) * ratio
             if heavyTiers.contains(it.portionTier) { heavy[day, default: []].insert(it.foodId) }
         }
 
@@ -121,14 +128,8 @@ struct GuardianRunner {
         }
     }
 
-    /// The same coarse portion scaling the meal_items fiber trigger uses.
-    static func portionMultiplier(_ tier: String) -> Double {
-        switch tier {
-        case "trace": 0.5
-        case "lots": 1.5
-        default: 1.0
-        }
-    }
+    // Portion scaling lives in the shared PortionMath (mirrors the DB trigger,
+    // grams-ratio first with the coarse tier fallback).
 
     // MARK: - Fetches
 
@@ -169,8 +170,9 @@ struct GuardianRunner {
     }
 
     /// The §17 quiet-balance signals: coarse daily protein/energy scores from
-    /// foods.protein_tier / energy_tier × portion multiplier. Words downstream.
+    /// foods.protein_tier / energy_tier × portion ratio. Words downstream.
     private func balanceSignals(items: [GuardianMealItemRow], mealDay: [String: String],
+                                typicalServingByFood: [String: Double],
                                 promptedAt: Date?, asOf: Date) async -> GuardianBalance {
         let cooldownEnd = promptedAt.map {
             Calendar.current.date(byAdding: .day, value: GameConfig.shared.balancePromptCooldownDays, to: $0) ?? $0
@@ -197,7 +199,9 @@ struct GuardianRunner {
         var energy: [String: Double] = [:]
         for it in items {
             guard let day = mealDay[it.mealId] else { continue }
-            let mult = Self.portionMultiplier(it.portionTier)
+            let mult = PortionMath.ratio(estGrams: it.estGrams,
+                                         typicalServingG: typicalServingByFood[it.foodId],
+                                         tier: it.portionTier)
             protein[day, default: 0] += (proteinByFood[it.foodId] ?? 0) * mult
             energy[day, default: 0] += (energyByFood[it.foodId] ?? 0) * mult
         }
@@ -210,9 +214,14 @@ struct GuardianRunner {
         )
     }
 
-    private func foodNameLookup() async -> [String: String] {
-        let rows: [GuardianFoodNameRow] = (try? await repository.select("foods", columns: "id,canonical_name")) ?? []
-        return Dictionary(rows.map { ($0.id, $0.canonicalName) }, uniquingKeysWith: { a, _ in a })
+    /// One foods read → names (prompt copy) + typical-serving anchors (ratios).
+    private func foodRefLookup() async -> (names: [String: String], servingG: [String: Double]) {
+        let rows: [GuardianFoodNameRow] = (try? await repository.select(
+            "foods", columns: "id,canonical_name,typical_serving_g")) ?? []
+        let names = Dictionary(rows.map { ($0.id, $0.canonicalName) }, uniquingKeysWith: { a, _ in a })
+        let servings = Dictionary(rows.compactMap { r in r.typicalServingG.map { (r.id, $0) } },
+                                  uniquingKeysWith: { a, _ in a })
+        return (names, servings)
     }
 
     // MARK: - Date helpers
@@ -229,9 +238,16 @@ struct GuardianRunner {
 }
 
 // Row types local to the guardian (not shared).
-struct GuardianMealItemRow: Decodable, Sendable { let mealId: String; let foodId: String; let portionTier: String; let estFiberG: Double? }
+struct GuardianMealItemRow: Decodable, Sendable {
+    let mealId: String; let foodId: String; let portionTier: String
+    let estFiberG: Double?
+    var estGrams: Double? = nil   // v2 quantity estimate; nil on legacy rows
+}
 private struct GuardianGoalRow: Decodable {
     let fiberGoalG: Int?; let fiberTargetG: Int?; let fiberGoalState: String
     var gasComfort: String? = nil; var balancePromptedAt: String? = nil
 }
-private struct GuardianFoodNameRow: Decodable { let id: String; let canonicalName: String }
+private struct GuardianFoodNameRow: Decodable {
+    let id: String; let canonicalName: String
+    var typicalServingG: Double? = nil
+}

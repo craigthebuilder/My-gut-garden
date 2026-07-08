@@ -169,6 +169,12 @@ for r in foods:
         err(f"foods: illegal protein_tier {r['protein_tier']} for {r['canonical_name']}")
     if r["energy_tier"] not in TIER:
         err(f"foods: illegal energy_tier {r['energy_tier']} for {r['canonical_name']}")
+    if r["typical_serving_g"]:
+        try:
+            if float(r["typical_serving_g"]) <= 0:
+                raise ValueError
+        except ValueError:
+            err(f"foods: typical_serving_g must be a positive number, got {r['typical_serving_g']} for {r['canonical_name']}")
     if r["plant_name"] and r["plant_name"] not in plant_names:
         err(f"foods: {r['canonical_name']} references missing plant {r['plant_name']}")
     if r["is_plant"] == "true" and not r["plant_name"]:
@@ -357,8 +363,8 @@ w()
 
 # ---- foods (FK -> plants; histamine_level column was dropped in single-mode) ---
 w("-- ---- foods — ON CONFLICT (canonical_name); plant_id via plants join --")
-w("insert into foods (canonical_name, aliases, is_plant, plant_id, is_fermented, common_hidden_in, categories, protein_tier, energy_tier)")
-w("select v.canonical_name, v.aliases, v.is_plant, p.id, v.is_fermented, v.common_hidden_in, v.categories, v.protein_tier, v.energy_tier")
+w("insert into foods (canonical_name, aliases, is_plant, plant_id, is_fermented, common_hidden_in, categories, protein_tier, energy_tier, typical_serving_g)")
+w("select v.canonical_name, v.aliases, v.is_plant, p.id, v.is_fermented, v.common_hidden_in, v.categories, v.protein_tier, v.energy_tier, v.typical_serving_g::numeric")
 w("from (values")
 vals = []
 for r in foods:
@@ -366,10 +372,10 @@ for r in foods:
         s(r["canonical_name"]), arr(split_list(r["aliases"])), b(r["is_plant"]),
         s(r["plant_name"]), b(r["is_fermented"]),
         arr(split_list(r["common_hidden_in"])), arr(split_list(r["categories"])),
-        s(r["protein_tier"]), s(r["energy_tier"]),
+        s(r["protein_tier"]), s(r["energy_tier"]), num(r["typical_serving_g"]),
     ]) + ")")
 w(",\n".join(vals))
-w(") as v(canonical_name, aliases, is_plant, plant_name, is_fermented, common_hidden_in, categories, protein_tier, energy_tier)")
+w(") as v(canonical_name, aliases, is_plant, plant_name, is_fermented, common_hidden_in, categories, protein_tier, energy_tier, typical_serving_g)")
 w("left join plants p on p.name = v.plant_name")
 w("on conflict (canonical_name) do update set")
 w("  aliases = excluded.aliases,")
@@ -379,7 +385,8 @@ w("  is_fermented = excluded.is_fermented,")
 w("  common_hidden_in = excluded.common_hidden_in,")
 w("  categories = excluded.categories,")
 w("  protein_tier = excluded.protein_tier,")
-w("  energy_tier = excluded.energy_tier;")
+w("  energy_tier = excluded.energy_tier,")
+w("  typical_serving_g = excluded.typical_serving_g;")
 w()
 
 # ---- food_fibers --------------------------------------------------------------
