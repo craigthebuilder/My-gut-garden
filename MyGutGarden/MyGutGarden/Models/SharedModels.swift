@@ -31,6 +31,38 @@ enum FlagTier: String, Codable, Sendable {
     case watching, sensitivity, allergy
 }
 
+/// The gas-for-growth trade the user chooses (SPEC §17). A PREFERENCE, never a
+/// symptom score: it tunes the fiber ramp, the guardian's thresholds, and how
+/// prominent fermentation notes are. Default `balanced` preserves the pre-§17
+/// fenced values exactly.
+enum GasComfort: String, Codable, CaseIterable, Sendable {
+    case gentle, balanced, bold
+
+    var label: String {
+        switch self {
+        case .gentle: "Keep it quiet"
+        case .balanced: "Some is fine"
+        case .bold: "Bring it on"
+        }
+    }
+
+    var explainer: String {
+        switch self {
+        case .gentle: "Slower ramp, gentler nudges — comfort first."
+        case .balanced: "A steady climb with the occasional lively day."
+        case .bold: "Fast garden growth; a talkative gut doesn't bother you."
+        }
+    }
+
+    /// One step toward gentle (the guardian's "ramp slower?" accept action).
+    var gentler: GasComfort {
+        switch self {
+        case .bold: .balanced
+        case .balanced, .gentle: .gentle
+        }
+    }
+}
+
 // MARK: - Frozen vision-LLM contract (SPEC §4)
 
 struct VisionFood: Codable, Sendable, Hashable {

@@ -75,10 +75,49 @@ struct ThrInsightView: View {
             threePsCard
             rainbowCard
             fiberCard
+            fermentationNote
             if let curiosity { ThrCuriosityCard(fact: curiosity.factText) }
             hiddenPrompts
         }
         .task { await load() }
+    }
+
+    // MARK: Fermentation note (SPEC §17) — informational, never a warning.
+
+    /// Directional grams of FAST-fermenting fiber in this meal, from the
+    /// DB-joined attributes (fermentability == "high") scaled by coarse portion.
+    private var fastFermentG: Double {
+        meal.response.items.reduce(0) { total, item in
+            guard let attrs = item.attributes else { return total }
+            let mult = GuardianRunner.portionMultiplier(item.vision.portionTier.rawValue)
+            let fast = attrs.fibers.filter { $0.fermentability == "high" }
+                .compactMap(\.estGramsPerServing).reduce(0, +)
+            return total + fast * mult
+        }
+    }
+
+    private var gasComfort: GasComfort {
+        appState.profile?.gasComfort.flatMap(GasComfort.init(rawValue:)) ?? .balanced
+    }
+
+    /// Shows only when the meal crosses the comfort-tuned threshold. Secondary
+    /// tint (informational), never the warning/error styling. 🔒 FENCE 2/4 copy.
+    @ViewBuilder private var fermentationNote: some View {
+        if fastFermentG >= GameConfig.shared.fermentationNoteThresholdG(for: gasComfort) {
+            HStack(alignment: .top, spacing: theme.metrics.space2) {
+                Image(systemName: "wind")
+                    .foregroundStyle(theme.colors.secondary)
+                Text("A lively meal for your microbes — plenty of fast-fermenting fiber. Some gas afterward is just your crews feasting; comfort builds as you ramp up slowly.")
+                    .font(theme.typography.caption())
+                    .foregroundStyle(theme.colors.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(theme.metrics.space3)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(theme.colors.secondary.opacity(0.1),
+                        in: RoundedRectangle(cornerRadius: theme.metrics.radiusMedium, style: .continuous))
+            .accessibilityElement(children: .combine)
+        }
     }
 
     // MARK: Sections

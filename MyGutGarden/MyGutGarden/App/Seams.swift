@@ -129,6 +129,16 @@ enum GuardianPrompt: Sendable, Identifiable, Equatable {
     case suggestWatching(foodName: String, foodId: String)       // "keep an eye on [food]?"
     case couldBeAllergy(foodName: String, foodId: String)        // care prompt, NEVER a diagnosis
     case overcameSensitivity(foodName: String, foodId: String)   // celebrated demote back into the diet
+    /// SPEC §17: discomfort after a big fast-fermenting day → adaptation is the
+    /// FIRST hypothesis. Accept = move gas_comfort one step gentler.
+    case rampSlower(currentComfort: GasComfort)
+    /// SPEC §17 quiet balance: one calm educational sentence on a sustained
+    /// directional extreme. Words only, dismiss-only, cooldown-limited.
+    case balance(kind: BalanceKind)
+
+    enum BalanceKind: String, Sendable {
+        case proteinLight, proteinHeavy, energyLight
+    }
 
     var id: String {
         switch self {
@@ -136,6 +146,8 @@ enum GuardianPrompt: Sendable, Identifiable, Equatable {
         case let .suggestWatching(_, f): "watch-\(f)"
         case let .couldBeAllergy(_, f): "allergy-\(f)"
         case let .overcameSensitivity(_, f): "overcame-\(f)"
+        case let .rampSlower(c): "ramp-slower-\(c.rawValue)"
+        case let .balance(kind): "balance-\(kind.rawValue)"
         }
     }
 }

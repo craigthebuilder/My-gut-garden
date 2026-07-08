@@ -61,6 +61,8 @@ insert into tutorial_steps (section_key, "order", title, body, target_hint, clai
   ('fermented', 0, 'Fermented finds', 'Fermented foods bring live cultures — the probiotic P. A little each day is a lovely habit, and each find is collected here.', 'fermented', true),
   ('phytochemicals', 0, 'Phytochemicals', 'The compounds behind the colors — your microbes turn them into useful things. The coverage bars show how much of the catalogue you''ve eaten this week, fortnight, and month.', 'phytochemicals', true),
   ('phytochemicals', 1, 'Chase the gaps', 'Tap a coverage bar to see exactly which compounds you haven''t had lately — each one lists the foods that carry it.', 'phytochemicals', false),
+  ('yourfiber', 0, 'Fast fibers, slow fibers', 'Fast-fermenting fibers get devoured by your microbes within hours; slower ones burn all day. Fast fuel grows the garden quickest — and makes the most gas while your crews scale up. These charts show your mix.', 'yourfiber', true),
+  ('yourfiber', 1, 'Your gut adapts', 'Feed a crew steadily and it grows capacity — meals that felt lively a month ago sit quietly once the microbes that eat them multiply. Slow, steady increases are the whole trick.', 'yourfiber', true),
   ('trends', 0, 'Your trends', 'Customise your daily check-in and watch mood, energy, and clarity move against your starting baseline.', 'trends', false)
 on conflict (section_key, "order") do update set
   title = excluded.title,

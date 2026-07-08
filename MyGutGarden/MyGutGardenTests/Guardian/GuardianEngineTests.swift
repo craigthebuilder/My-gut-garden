@@ -82,6 +82,74 @@ struct GuardianEngineTests {
         #expect(GuardianEngine.fiberTitration(goal: goal, days: days) == nil)
     }
 
+    // MARK: The comfort layer (SPEC §17, Fences 2/3/4)
+
+    @Test func boldComfortOffersSoonerAndBigger() {
+        let goal = GuardianGoalState(goalG: 20, targetG: 40, unlocked: true)
+        let days = (0..<2).map { Self.day($0, fiber: 22) }   // only 2 fine days
+        #expect(GuardianEngine.fiberTitration(goal: goal, days: days, comfort: .bold)
+                == .fiberGoalIncrease(currentG: 20, proposedG: 24))
+        #expect(GuardianEngine.fiberTitration(goal: goal, days: days, comfort: .balanced) == nil)
+    }
+
+    @Test func gentleComfortStepsSmaller() {
+        let goal = GuardianGoalState(goalG: 20, targetG: 40, unlocked: true)
+        let days = (0..<4).map { Self.day($0, fiber: 22) }
+        #expect(GuardianEngine.fiberTitration(goal: goal, days: days, comfort: .gentle)
+                == .fiberGoalIncrease(currentG: 20, proposedG: 22))
+    }
+
+    @Test func adaptationIsTheFirstHypothesisAfterAFastFermentDay() {
+        var day = Self.day(0, discomfort: 2, fiber: 20)
+        day = GuardianDay(date: day.date, discomfort: 2, hasConfounder: false,
+                          fiberLoadG: 20, heavyFoodIds: ["f1"], fastFiberLoadG: 8)
+        #expect(GuardianEngine.adaptationCheck(days: [day], comfort: .balanced)
+                == .rampSlower(currentComfort: .balanced))
+        // decide() must prefer it over attribution for the same signals.
+        let decision = GuardianEngine.decide(
+            goal: GuardianGoalState(goalG: nil, targetG: nil, unlocked: false),
+            days: [day], flags: [], foodNames: [:], comfort: .balanced)
+        #expect(decision.prompt == .rampSlower(currentComfort: .balanced))
+    }
+
+    @Test func adaptationSilentWhenAlreadyGentleOrConfoundedOrLowFastFiber() {
+        let hot = GuardianDay(date: Self.day(0).date, discomfort: 2, hasConfounder: false,
+                              fiberLoadG: 20, heavyFoodIds: [], fastFiberLoadG: 8)
+        #expect(GuardianEngine.adaptationCheck(days: [hot], comfort: .gentle) == nil)
+        let confounded = GuardianDay(date: hot.date, discomfort: 2, hasConfounder: true,
+                                     fiberLoadG: 20, heavyFoodIds: [], fastFiberLoadG: 8)
+        #expect(GuardianEngine.adaptationCheck(days: [confounded], comfort: .balanced) == nil)
+        let lowFast = GuardianDay(date: hot.date, discomfort: 2, hasConfounder: false,
+                                  fiberLoadG: 20, heavyFoodIds: [], fastFiberLoadG: 2)
+        #expect(GuardianEngine.adaptationCheck(days: [lowFast], comfort: .balanced) == nil)
+    }
+
+    @Test func balancePromptsOnlyWithDataAndOutsideCooldown() {
+        let light = GuardianBalance(dailyProteinScores: Array(repeating: 1.0, count: 10),
+                                    dailyEnergyScores: Array(repeating: 4.0, count: 10),
+                                    loggedDays: 10, inCooldown: false)
+        #expect(GuardianEngine.balance(light) == .balance(kind: .proteinLight))
+
+        let cooled = GuardianBalance(dailyProteinScores: light.dailyProteinScores,
+                                     dailyEnergyScores: light.dailyEnergyScores,
+                                     loggedDays: 10, inCooldown: true)
+        #expect(GuardianEngine.balance(cooled) == nil)
+
+        let thin = GuardianBalance(dailyProteinScores: [1, 1], dailyEnergyScores: [1, 1],
+                                   loggedDays: 2, inCooldown: false)
+        #expect(GuardianEngine.balance(thin) == nil)
+
+        let heavy = GuardianBalance(dailyProteinScores: Array(repeating: 10.0, count: 10),
+                                    dailyEnergyScores: Array(repeating: 4.0, count: 10),
+                                    loggedDays: 10, inCooldown: false)
+        #expect(GuardianEngine.balance(heavy) == .balance(kind: .proteinHeavy))
+
+        let steady = GuardianBalance(dailyProteinScores: Array(repeating: 4.0, count: 10),
+                                     dailyEnergyScores: Array(repeating: 4.0, count: 10),
+                                     loggedDays: 10, inCooldown: false)
+        #expect(GuardianEngine.balance(steady) == nil)
+    }
+
     // MARK: Week-one unlock — the first surfaced goal (SPEC §10, Fence 2)
 
     @Test func initialGoalIsBaselineMeanPlusBuffer() {

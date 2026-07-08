@@ -18,11 +18,14 @@ enum GuardianEngine {
 
     // MARK: Job 1 — fiber titration OFFER (Fence 2). Never auto-applies.
 
-    /// Offer `+fiberRampStepG` when the user has felt fine (discomfort 0) at/above the
-    /// current goal for `fiberRampConsecutiveFineDaysToOffer` consecutive most-recent
-    /// non-confounder days, the goal is unlocked, and it's below the cap (personalized
-    /// target, and an absolute safety max). Confounder days are skipped, not counted.
-    static func fiberTitration(goal: GuardianGoalState, days: [GuardianDay]) -> GuardianPrompt? {
+    /// Offer a step up when the user has felt fine (discomfort 0) at/above the
+    /// current goal for enough consecutive most-recent non-confounder days, the
+    /// goal is unlocked, and it's below the cap (personalized target + absolute
+    /// safety max). Confounder days are skipped, not counted. The gas-comfort
+    /// dial (SPEC §17) sets both the step size and the required run; `balanced`
+    /// reproduces the pre-§17 fenced values.
+    static func fiberTitration(goal: GuardianGoalState, days: [GuardianDay],
+                               comfort: GasComfort = .balanced) -> GuardianPrompt? {
         guard goal.unlocked, let current = goal.goalG else { return nil }
         let cap = min(goal.targetG ?? cfg.fiberGoalAbsoluteMaxG, cfg.fiberGoalAbsoluteMaxG)
         guard current < cap else { return nil }
@@ -32,11 +35,45 @@ enum GuardianEngine {
             if d.hasConfounder { continue }                       // neither helps nor breaks the run
             if d.discomfort == 0 && d.fiberLoadG >= Double(current) { fine += 1 } else { break }
         }
-        guard fine >= cfg.fiberRampConsecutiveFineDaysToOffer else { return nil }
+        guard fine >= cfg.fiberRampFineDays(for: comfort) else { return nil }
 
-        let proposed = min(current + cfg.fiberRampStepG, cap)
+        let proposed = min(current + cfg.fiberRampStepG(for: comfort), cap)
         guard proposed > current else { return nil }
         return .fiberGoalIncrease(currentG: current, proposedG: proposed)
+    }
+
+    // MARK: Adaptation first (SPEC §17). 🔒 FENCES 2/3.
+
+    /// When the MOST RECENT reported day was uncomfortable AND heavy in
+    /// fast-fermenting fiber (and not confounded), the first hypothesis is
+    /// adaptation, not a problem food: offer to ramp gentler. Never fires for
+    /// users already at `gentle` (nothing gentler to offer).
+    static func adaptationCheck(days: [GuardianDay], comfort: GasComfort) -> GuardianPrompt? {
+        guard comfort != .gentle else { return nil }
+        guard let latest = days.sorted(by: { $0.date > $1.date }).first,
+              !latest.hasConfounder,
+              latest.discomfort >= cfg.guardianOffDayThreshold(for: comfort),
+              latest.fastFiberLoadG >= cfg.adaptationFastFiberDayG
+        else { return nil }
+        return .rampSlower(currentComfort: comfort)
+    }
+
+    // MARK: Quiet balance (SPEC §17). 🔒 FENCES 3/4. Words only, never numbers.
+
+    /// One calm educational prompt on a SUSTAINED directional extreme, and only
+    /// with enough logged data and outside the cooldown. Deliberately the
+    /// lowest-priority job — it never outranks comfort or food signals.
+    static func balance(_ signals: GuardianBalance) -> GuardianPrompt? {
+        guard !signals.inCooldown, signals.loggedDays >= cfg.balanceMinLoggedDays else { return nil }
+        func mean(_ xs: [Double]) -> Double {
+            xs.isEmpty ? 0 : xs.reduce(0, +) / Double(xs.count)
+        }
+        let protein = mean(signals.dailyProteinScores)
+        let energy = mean(signals.dailyEnergyScores)
+        if protein < cfg.balanceProteinLightScore { return .balance(kind: .proteinLight) }
+        if protein > cfg.balanceProteinHeavyScore { return .balance(kind: .proteinHeavy) }
+        if energy < cfg.balanceEnergyLightScore { return .balance(kind: .energyLight) }
+        return nil
     }
 
     // MARK: Week-one unlock — the first surfaced goal (SPEC §10). 🔒 FENCE 2.
@@ -99,18 +136,28 @@ enum GuardianEngine {
         return nil
     }
 
-    // MARK: The one decision to surface (gains first, then a careful suggestion).
+    // MARK: The one decision to surface. Order (SPEC §11 + §17): gains first,
+    // then ADAPTATION before any food suggestion (§17: "ramp slower?" comes
+    // before a flag), then the careful attribution, then quiet balance last.
 
     static func decide(goal: GuardianGoalState, days: [GuardianDay],
-                       flags: [GuardianFlag], foodNames: [String: String]) -> GuardianDecision {
-        if let p = fiberTitration(goal: goal, days: days) {
+                       flags: [GuardianFlag], foodNames: [String: String],
+                       comfort: GasComfort = .balanced,
+                       balanceSignals: GuardianBalance = .empty) -> GuardianDecision {
+        if let p = fiberTitration(goal: goal, days: days, comfort: comfort) {
             return GuardianDecision(prompt: p, rationale: "sustained comfort at/above goal")
         }
         if let p = overcame(days: days, flags: flags) {
             return GuardianDecision(prompt: p, rationale: "sensitivity food tolerated repeatedly")
         }
+        if let p = adaptationCheck(days: days, comfort: comfort) {
+            return GuardianDecision(prompt: p, rationale: "discomfort after a fast-fermenting day → adaptation first")
+        }
         if let p = attribution(days: days, flags: flags, foodNames: foodNames) {
             return GuardianDecision(prompt: p, rationale: "food recurs across off-days")
+        }
+        if let p = balance(balanceSignals) {
+            return GuardianDecision(prompt: p, rationale: "sustained directional balance extreme")
         }
         return .none
     }

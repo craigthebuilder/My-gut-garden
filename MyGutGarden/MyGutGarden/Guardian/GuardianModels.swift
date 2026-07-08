@@ -18,6 +18,22 @@ struct GuardianDay: Sendable, Equatable {
     let hasConfounder: Bool        // sick / stressed / poor sleep / off food that day → down-weighted
     let fiberLoadG: Double         // estimated fiber grams that day (Σ meal_items.est_fiber_g)
     let heavyFoodIds: Set<String>  // foods eaten at ≥ guardianMinPortionToCount that day
+    /// Directional grams of FAST-fermenting fiber that day (SPEC §17). Lets the
+    /// engine treat "big prebiotic day + felt off" as ADAPTATION first.
+    var fastFiberLoadG: Double = 0
+}
+
+/// The quiet-balance signals (SPEC §17): coarse daily protein/energy scores
+/// (tier value × portion multiplier, summed per day). Words downstream only.
+struct GuardianBalance: Sendable, Equatable {
+    let dailyProteinScores: [Double]
+    let dailyEnergyScores: [Double]
+    let loggedDays: Int
+    /// True while the balance-prompt cooldown is running (users.balance_prompted_at).
+    let inCooldown: Bool
+
+    static let empty = GuardianBalance(dailyProteinScores: [], dailyEnergyScores: [],
+                                       loggedDays: 0, inCooldown: true)
 }
 
 /// A food the user already flags (SPEC §9) — used for attribution + demotion.

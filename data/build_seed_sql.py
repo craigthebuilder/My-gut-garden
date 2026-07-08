@@ -135,6 +135,8 @@ for r in fibers:
     b(r["is_fodmap_trigger"])
     if r["fermentability"] not in {"low", "moderate", "high"}:
         err(f"fibers: illegal fermentability {r['fermentability']} for {r['name']}")
+    if r["solubility"] not in {"soluble", "insoluble", "resistant"}:
+        err(f"fibers: illegal solubility {r['solubility']} for {r['name']}")
 
 for r in phytos:
     if r["class"] not in PHYTO_CLASS:
@@ -157,11 +159,16 @@ for r in plants:
     if r["rarity_tier"] not in RARITY:
         err(f"plants: illegal rarity_tier {r['rarity_tier']} for {r['name']}")
 
+TIER = {"none", "low", "moderate", "high"}
 for r in foods:
     b(r["is_plant"])
     b(r["is_fermented"])
     if r["histamine_level"] and r["histamine_level"] not in HISTAMINE:
         err(f"foods: illegal histamine_level {r['histamine_level']} for {r['canonical_name']}")
+    if r["protein_tier"] not in TIER:
+        err(f"foods: illegal protein_tier {r['protein_tier']} for {r['canonical_name']}")
+    if r["energy_tier"] not in TIER:
+        err(f"foods: illegal energy_tier {r['energy_tier']} for {r['canonical_name']}")
     if r["plant_name"] and r["plant_name"] not in plant_names:
         err(f"foods: {r['canonical_name']} references missing plant {r['plant_name']}")
     if r["is_plant"] == "true" and not r["plant_name"]:
@@ -269,12 +276,13 @@ w()
 
 # ---- fibers -------------------------------------------------------------------
 w("-- ---- fibers — ON CONFLICT (name) -------------------------------------")
-w("insert into fibers (name, is_fodmap_trigger, fermentability, notes) values")
-vals = [f"  ({s(r['name'])}, {b(r['is_fodmap_trigger'])}, {s(r['fermentability'])}, {s(r['notes'])})" for r in fibers]
+w("insert into fibers (name, is_fodmap_trigger, fermentability, solubility, notes) values")
+vals = [f"  ({s(r['name'])}, {b(r['is_fodmap_trigger'])}, {s(r['fermentability'])}, {s(r['solubility'])}, {s(r['notes'])})" for r in fibers]
 w(",\n".join(vals))
 w("on conflict (name) do update set")
 w("  is_fodmap_trigger = excluded.is_fodmap_trigger,")
 w("  fermentability = excluded.fermentability,")
+w("  solubility = excluded.solubility,")
 w("  notes = excluded.notes;")
 w()
 
@@ -349,8 +357,8 @@ w()
 
 # ---- foods (FK -> plants; histamine_level column was dropped in single-mode) ---
 w("-- ---- foods — ON CONFLICT (canonical_name); plant_id via plants join --")
-w("insert into foods (canonical_name, aliases, is_plant, plant_id, is_fermented, common_hidden_in, categories)")
-w("select v.canonical_name, v.aliases, v.is_plant, p.id, v.is_fermented, v.common_hidden_in, v.categories")
+w("insert into foods (canonical_name, aliases, is_plant, plant_id, is_fermented, common_hidden_in, categories, protein_tier, energy_tier)")
+w("select v.canonical_name, v.aliases, v.is_plant, p.id, v.is_fermented, v.common_hidden_in, v.categories, v.protein_tier, v.energy_tier")
 w("from (values")
 vals = []
 for r in foods:
@@ -358,9 +366,10 @@ for r in foods:
         s(r["canonical_name"]), arr(split_list(r["aliases"])), b(r["is_plant"]),
         s(r["plant_name"]), b(r["is_fermented"]),
         arr(split_list(r["common_hidden_in"])), arr(split_list(r["categories"])),
+        s(r["protein_tier"]), s(r["energy_tier"]),
     ]) + ")")
 w(",\n".join(vals))
-w(") as v(canonical_name, aliases, is_plant, plant_name, is_fermented, common_hidden_in, categories)")
+w(") as v(canonical_name, aliases, is_plant, plant_name, is_fermented, common_hidden_in, categories, protein_tier, energy_tier)")
 w("left join plants p on p.name = v.plant_name")
 w("on conflict (canonical_name) do update set")
 w("  aliases = excluded.aliases,")
@@ -368,7 +377,9 @@ w("  is_plant = excluded.is_plant,")
 w("  plant_id = excluded.plant_id,")
 w("  is_fermented = excluded.is_fermented,")
 w("  common_hidden_in = excluded.common_hidden_in,")
-w("  categories = excluded.categories;")
+w("  categories = excluded.categories,")
+w("  protein_tier = excluded.protein_tier,")
+w("  energy_tier = excluded.energy_tier;")
 w()
 
 # ---- food_fibers --------------------------------------------------------------

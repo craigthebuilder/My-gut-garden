@@ -58,6 +58,60 @@ struct GameConfig: Sendable {
     let fiberInitialGoalBufferG = 2                // RD-REVIEW: grams above the observed baseline mean
     let fiberInitialGoalMinG = 10                  // RD-REVIEW: floor for the first surfaced goal
 
+    // MARK: The comfort layer (SPEC §17). 🔒 FENCES 2/3/4 — RD-REVIEW-REQUIRED.
+    // The gas-comfort dial tunes ramp speed + thresholds; `balanced` reproduces
+    // the pre-§17 fenced values exactly, so existing behavior is the default.
+
+    /// Grams-per-offer step by comfort (balanced == fiberRampStepG).
+    func fiberRampStepG(for comfort: GasComfort) -> Int {
+        switch comfort {
+        case .gentle: 2
+        case .balanced: fiberRampStepG
+        case .bold: 4
+        }
+    }
+
+    /// Consecutive fine days before an increase is offered (balanced == default).
+    func fiberRampFineDays(for comfort: GasComfort) -> Int {
+        switch comfort {
+        case .gentle: 4
+        case .balanced: fiberRampConsecutiveFineDaysToOffer
+        case .bold: 2
+        }
+    }
+
+    /// The coarse discomfort level (0–3) that counts a day as "off" for the
+    /// attribution engine. Bold users tolerate more before a day counts.
+    func guardianOffDayThreshold(for comfort: GasComfort) -> Int {
+        switch comfort {
+        case .gentle, .balanced: 2
+        case .bold: 3
+        }
+    }
+
+    /// Directional grams of FAST-fermenting fiber in one meal before the
+    /// post-snap fermentation note shows ("your crews feasting").
+    func fermentationNoteThresholdG(for comfort: GasComfort) -> Double {
+        switch comfort {
+        case .gentle: 3
+        case .balanced: 5
+        case .bold: 8
+        }
+    }
+
+    /// Fast-fermenting grams in a DAY that make "adaptation" the guardian's
+    /// FIRST hypothesis for discomfort (before any food flag).
+    let adaptationFastFiberDayG: Double = 6
+
+    // Quiet balance (words only, never numbers — rule #6 as amended).
+    // Daily balance score = Σ tier value (none 0 / low 1 / moderate 2 / high 3)
+    // × portion multiplier. Thresholds are coarse placeholder clinical values.
+    let balanceMinLoggedDays = 8           // enough data in the 14-day window before any prompt
+    let balanceProteinLightScore = 2.0     // mean daily protein score below this → "running light"
+    let balanceProteinHeavyScore = 9.0     // mean above this → "quite protein-heavy lately"
+    let balanceEnergyLightScore = 2.0      // mean daily energy score below this → "running light on fuel"
+    let balancePromptCooldownDays = 14     // at most one balance prompt per this window
+
     // MARK: Guardian discomfort-attribution gate (§11). 🔒 FENCE 3 — RD-REVIEW-REQUIRED.
     // False-positive discernment: NEVER flag on a single off day or a confounder-heavy
     // day. The engine only SUGGESTS a 'watching' flag; the user confirms every step.

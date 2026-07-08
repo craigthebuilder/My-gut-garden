@@ -221,8 +221,52 @@ private struct ShellHome: View {
                     onConfirm: { dismissGuardian(); Task { await clearFlag(foodId: foodId) } },
                     onCancel: dismissGuardian
                 )
+            case let .rampSlower(currentComfort):
+                // SPEC §17: adaptation is the FIRST hypothesis — offered before
+                // any food suggestion, and the user authors the change.
+                ConfirmationModal(
+                    title: "A big fermenting day",
+                    message: "That was a lot of fast-fermenting fiber, and you felt it. That's usually your crews adapting to new fuel, not a problem food — comfort builds as their capacity grows. Want to ramp a little gentler for a while?",
+                    confirmTitle: "Go gentler",
+                    cancelTitle: "Keep my pace",
+                    severity: .info,
+                    onConfirm: { dismissGuardian(); Task { await setGasComfort(currentComfort.gentler) } },
+                    onCancel: dismissGuardian
+                )
+            case let .balance(kind):
+                // SPEC §17 quiet balance: one calm sentence, dismiss-only, words
+                // never numbers (rule #6 as amended). // RD-REVIEW-REQUIRED copy.
+                ConfirmationModal(
+                    title: "A gentle observation",
+                    message: balanceMessage(kind),
+                    confirmTitle: "Got it",
+                    cancelTitle: nil,
+                    severity: .info,
+                    onConfirm: dismissGuardian,
+                    onCancel: dismissGuardian
+                )
             }
         }
+    }
+
+    /// 🔒 FENCE 3/4 (RD-REVIEW-REQUIRED): curated balance copy — educational,
+    /// gain-framed, never a number, score, or instruction to restrict.
+    private func balanceMessage(_ kind: GuardianPrompt.BalanceKind) -> String {
+        switch kind {
+        case .proteinLight:
+            "Your recent meals look a little light on protein-rich foods. Protein keeps energy steady and repairs the body — beans, lentils, tofu, yogurt, eggs, fish, or meat all count. Just something to keep in mind."
+        case .proteinHeavy:
+            "Your recent plates lean heavily on protein-rich foods. Nothing wrong with protein — but variety is what feeds your garden. A few more plants alongside would round things out nicely."
+        case .energyLight:
+            "Your recent meals look light on overall fuel. Gardens need energy to grow — whole grains, nuts, olive oil, or simply heartier portions all help everything work better."
+        }
+    }
+
+    private func setGasComfort(_ comfort: GasComfort) async {
+        guard let repo = appState.repository, let id = appState.profile?.id else { return }
+        try? await repo.update("users", set: ["gas_comfort": .string(comfort.rawValue)],
+                               filters: ["id": "eq.\(id)"])
+        await appState.refreshProfile()
     }
 
     private func applyFiberGoal(_ g: Int) async {
@@ -352,6 +396,7 @@ private struct ShellSettings: View {
                             showCustomize = true
                         }
                         .coachTarget("customize")
+                        gasComfortRow
                         SecondaryButton(title: "Badges", systemImage: "rosette") {
                             showBadges = true
                         }
@@ -374,6 +419,52 @@ private struct ShellSettings: View {
         .sheet(isPresented: $showCheckIn) { ThrTestTabView(appState: appState) }
         .sheet(isPresented: $showCustomize) { YouCheckInPrefsSheet(appState: appState) { showCustomize = false } }
         .sheet(isPresented: $showBadges) { YouBadgesView(appState: appState) }
+    }
+
+    /// SPEC §17: the gas-for-growth dial. Whole row is the menu; a preference,
+    /// never a symptom score. Tunes ramp speed + guardian thresholds.
+    private var gasComfortRow: some View {
+        let current = appState.profile?.gasComfort.flatMap(GasComfort.init(rawValue:)) ?? .balanced
+        return Menu {
+            ForEach(GasComfort.allCases, id: \.self) { option in
+                Button {
+                    Task {
+                        guard let repo = appState.repository, let id = appState.profile?.id else { return }
+                        try? await repo.update("users", set: ["gas_comfort": .string(option.rawValue)],
+                                               filters: ["id": "eq.\(id)"])
+                        await appState.refreshProfile()
+                    }
+                } label: {
+                    if option == current {
+                        Label("\(option.label) — \(option.explainer)", systemImage: "checkmark")
+                    } else {
+                        Text("\(option.label) — \(option.explainer)")
+                    }
+                }
+            }
+        } label: {
+            HStack(spacing: theme.metrics.space2) {
+                Image(systemName: "wind")
+                Text("Gas comfort: \(current.label)")
+                    .font(theme.typography.body(weight: .medium))
+                Spacer()
+                Image(systemName: "chevron.up.chevron.down")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(theme.colors.textSecondary)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.horizontal, theme.metrics.space4)
+            .padding(.vertical, theme.metrics.space3)
+            .foregroundStyle(theme.colors.primary)
+            .background(theme.colors.surface)
+            .clipShape(RoundedRectangle(cornerRadius: theme.metrics.radiusMedium, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: theme.metrics.radiusMedium, style: .continuous)
+                    .strokeBorder(theme.colors.primary.opacity(0.4), lineWidth: 1)
+            )
+        }
+        .accessibilityLabel("Gas comfort")
+        .accessibilityValue(current.label)
     }
 }
 

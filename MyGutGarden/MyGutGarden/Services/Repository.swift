@@ -170,6 +170,9 @@ struct UserProfile: Decodable, Sendable {
     let plantConsumptionLevel: String?   // low | moderate | high | most_of_diet → fiber multiplier
     let fiberGoalAdjustedWeekStart: String?  // idempotency marker for guardian titration offers
     let onboardedAt: String?             // clean isOnboarded marker (SPEC §6)
+    /// SPEC §17: the gas-for-growth preference (gentle|balanced|bold). Optional-
+    /// decoded for pre-migration safety; nil reads as balanced.
+    var gasComfort: String? = nil
 }
 
 /// A food restriction at one of three tiers (SPEC §9). Replaces `exclusions` +

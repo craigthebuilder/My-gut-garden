@@ -394,6 +394,27 @@ struct OnbBaselineStep: View {
                                    value: $vm.baseline.clarity)
                 }
             }
+
+            // SPEC §17: the gas-for-growth trade. Fun-framed, changeable in You.
+            Card {
+                VStack(alignment: .leading, spacing: theme.metrics.space3) {
+                    Text("More fiber can mean a livelier gut while it adapts. How much is okay with you?")
+                        .font(theme.typography.body(weight: .semibold))
+                        .foregroundStyle(theme.colors.textPrimary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    VStack(spacing: theme.metrics.space2) {
+                        ForEach(GasComfort.allCases, id: \.self) { option in
+                            OnbChip(label: option.label, isSelected: vm.gasComfort == option) {
+                                vm.gasComfort = option
+                            }
+                        }
+                    }
+                    Text(vm.gasComfort.explainer)
+                        .font(theme.typography.caption())
+                        .foregroundStyle(theme.colors.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
         }
     }
 }

@@ -50,6 +50,10 @@ final class OnbViewModel {
     /// Plant-food consumption level; drives the fiber-target multiplier. Always written.
     var plantConsumptionLevel: PlantConsumptionTier = .moderate
 
+    /// SPEC §17: the gas-for-growth trade. A preference (tunes ramp + guardian
+    /// thresholds), never a symptom score. Always written.
+    var gasComfort: GasComfort = .balanced
+
     var baseline = OnbBaseline()
 
     // Food flags (§9 three-tier model). Each draft keeps scope + tier distinct,
@@ -258,6 +262,7 @@ final class OnbViewModel {
             "baseline_clarity": .int(baseline.clarity),
 
             "plant_consumption_level": .string(plantConsumptionLevel.rawValue),
+            "gas_comfort":             .string(gasComfort.rawValue),
             "goals":                   .stringArray(goals.map(\.rawValue).sorted()),
 
             // Clean isOnboarded marker: onboarded_at != nil (SPEC §6).

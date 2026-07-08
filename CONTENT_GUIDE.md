@@ -36,7 +36,8 @@ carry the column format + sourcing notes). Lists inside a cell use `;`.
 | **Districts** (unlock groupings) | `data/districts.csv` | `name`, `unlock_rule_key` |
 | **Rainbow colors** (meaning / what-it-does / example foods) | `data/colors.csv` | `meaning_copy`, `what_it_does_copy`, `example_foods`, `deficiency_copy` |
 | **Phytochemicals** (compound → what it does) | `data/phytochemicals.csv` | `name`, `class`, `what_it_does` |
-| **Fibers** (fermentability tolerance hint) | `data/fibers.csv` | `name`, `fermentability` (low/moderate/high) |
+| **Fibers** (fermentability + solubility, the "Your fiber" axes) | `data/fibers.csv` | `name`, `fermentability` (low/moderate/high), `solubility` (soluble/insoluble/resistant) |
+| **Balance tiers** (quiet protein/energy guardian words) | `data/foods.csv` | `protein_tier`, `energy_tier` (none/low/moderate/high — words downstream, never numbers) |
 | **Coach-mark / tutorial copy** | `data/tutorial_steps.csv` | `section_key`, `order`, `title`, `body`, `target_hint` (which on-screen element it spotlights) |
 | **Success stories** (onboarding social proof) | `data/success_stories.csv` | `text`, `attribution`, `verified` |
 | **Which foods carry which color / phytochemical / fiber / guild feed** | `data/food_colors.csv`, `data/food_phytochemicals.csv`, `data/food_fibers.csv`, `data/food_guild_feeds.csv` | junction tables keyed by food name |
@@ -54,8 +55,8 @@ documented at the bottom of `data/README.md` (look for "seed-refresh migration")
 Each row's `target_hint` is matched to a `.coachTarget("…")` in the Swift views;
 the tour switches tabs and auto-scrolls to spotlight each one. Valid hints today:
 `home, dashboard, threeps, trythis, snap, fieldguide, fiber, checkin, customize`
-(intro) and `garden, rainbow, phytochemicals, plants, fermented, trends` (section
-tours that fire the first time you open those surfaces). To add a step, add a row;
+(intro) and `garden, rainbow, phytochemicals, plants, fermented, yourfiber, trends`
+(section tours that fire the first time you open those surfaces). To add a step, add a row;
 to point it somewhere new, register a `.coachTarget` on that view and add the hint
 to `ShellHome.tab(forCoachHint:)` in `App/AppShell.swift`.
 
@@ -76,7 +77,9 @@ string, rebuild. The highest-traffic ones:
 | **The 3 P's explainer copy** | `Thrive/ThrDashboard.swift` → `ThrThreePsDetailView.explainers` |
 | **Post-snap insight** ("N plants", fiber, rainbow) | `Thrive/ThrInsightPresenter.swift` |
 | **Allergy / sensitivity banners** | `Capture/CapResultView.swift`, `Thrive/ThrComponents.swift` |
-| **Guardian prompts** (fiber offer, "keep an eye on…", care prompt) | `App/AppShell.swift` → `guardianPrompt(_:)` |
+| **Guardian prompts** (fiber offer, "keep an eye on…", care prompt, "ramp slower?", balance words) | `App/AppShell.swift` → `guardianPrompt(_:)` + `balanceMessage(_:)` |
+| **"Your fiber" education** (fast/slow fibers, gas-is-a-signal, adaptation — the one FODMAP mention) | `Thrive/ThrFiberDetail.swift` → `education` |
+| **Gas-comfort labels + explainers** | `Models/SharedModels.swift` → `GasComfort` |
 | **Badges** (titles + thresholds) | `You/YouBadges.swift` |
 | **Celebrations** (rare find, bloom, goal unlock) | `App/AppShell.swift` → `celebration(for:)` |
 | **All spacing/color/font tokens** (never hardcode) | `Theme.swift` |

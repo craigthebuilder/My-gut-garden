@@ -107,15 +107,23 @@ struct ThrRootView: View {
                 .foregroundStyle(theme.colors.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)
                 .frame(maxWidth: .infinity, alignment: .leading)
-            Group {
-                if model.fiberGoalG != nil {
-                    ThrFiberLine(consumedG: model.fiberConsumedTodayG,
-                                 goalG: model.fiberGoalG,
-                                 fraction: model.fiberFraction)
-                } else if model.isLoaded {
-                    lockedFiberLine
+            // Locked or unlocked, the fiber line opens "Your fiber" (SPEC §17):
+            // the trend + the fermentation-speed / solubility composition history.
+            NavigationLink {
+                ThrFiberDetailView(appState: appState, homeModel: model)
+            } label: {
+                Group {
+                    if model.fiberGoalG != nil {
+                        ThrFiberLine(consumedG: model.fiberConsumedTodayG,
+                                     goalG: model.fiberGoalG,
+                                     fraction: model.fiberFraction)
+                    } else if model.isLoaded {
+                        lockedFiberLine
+                    }
                 }
+                .contentShape(Rectangle())
             }
+            .buttonStyle(.plain)
             .padding(.top, theme.metrics.space1)
             .coachTarget("fiber")
             .id("fiber")
