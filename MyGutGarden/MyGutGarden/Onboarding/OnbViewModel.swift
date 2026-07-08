@@ -188,17 +188,18 @@ final class OnbViewModel {
     }
     private var allFoodRows: [OnbFoodSearchRow] = []
 
-    /// Case-insensitive substring match over canonical names AND aliases.
+    /// Case-insensitive, plural-tolerant substring match over canonical names
+    /// AND aliases ("scrambled eggs" finds the "scrambled egg" alias).
     func searchFoods() async {
-        let q = foodQuery.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let q = foodQuery.trimmingCharacters(in: .whitespacesAndNewlines)
         guard q.count >= 2, let repo = appState.repository else { foodHits = []; return }
         if allFoodRows.isEmpty {
             allFoodRows = (try? await repo.select(
                 "foods", columns: "id,canonical_name,aliases", order: "canonical_name")) ?? []
         }
         foodHits = allFoodRows.filter { row in
-            row.canonicalName.lowercased().contains(q)
-                || row.aliases.contains { $0.lowercased().contains(q) }
+            FoodName.matches(haystack: row.canonicalName, query: q)
+                || row.aliases.contains { FoodName.matches(haystack: $0, query: q) }
         }
         .prefix(8)
         .map { OnbFoodHit(id: $0.id, canonicalName: $0.canonicalName) }

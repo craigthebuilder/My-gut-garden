@@ -165,29 +165,32 @@ struct CapFoodSearchService: Sendable {
         let aliases: [String]
     }
 
-    /// Case-insensitive substring match over canonical names AND aliases (so
-    /// "meat", "acv", or "prawns" resolve). The catalog is small enough to
-    /// filter in memory. Trimmed; empty → [].
+    /// Case-insensitive, PLURAL-TOLERANT substring match over canonical names
+    /// AND aliases (so "meat", "prawns", or "scrambled eggs" resolve —
+    /// FoodName mirrors the Edge Function's matcher). The catalog is small
+    /// enough to filter in memory. Trimmed; empty → [].
     func search(_ term: String, limit: Int = 20) async throws -> [CapFoodSearchResult] {
-        let trimmed = term.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let trimmed = term.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return [] }
         let rows: [CapFoodSearchRow] = try await repository.select(
             "foods", columns: "id,canonical_name,aliases", order: "canonical_name")
         return rows.filter { row in
-            row.canonicalName.lowercased().contains(trimmed)
-                || row.aliases.contains { $0.lowercased().contains(trimmed) }
+            FoodName.matches(haystack: row.canonicalName, query: trimmed)
+                || row.aliases.contains { FoodName.matches(haystack: $0, query: trimmed) }
         }
         .prefix(limit)
         .map { CapFoodSearchResult(id: $0.id, canonicalName: $0.canonicalName) }
     }
 
     /// Best single match for a name (used to resolve a confirmed hidden
-    /// ingredient like "onion" → its food_id). Prefers an exact (case-folded)
-    /// canonical-name hit, else the first substring match.
+    /// ingredient like "onions" → its food_id). Prefers an exact
+    /// (case-folded, plural-tolerant) canonical-name hit, else the first hit.
     func bestMatch(for name: String) async throws -> CapFoodSearchResult? {
         let results = try await search(name)
-        let folded = name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        return results.first { $0.canonicalName.lowercased() == folded } ?? results.first
+        let folded = FoodName.singularizedLastWord(
+            name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased())
+        return results.first { FoodName.singularizedLastWord($0.canonicalName.lowercased()) == folded }
+            ?? results.first
     }
 }
 

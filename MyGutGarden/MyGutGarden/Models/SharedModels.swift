@@ -63,6 +63,46 @@ enum GasComfort: String, Codable, CaseIterable, Sendable {
     }
 }
 
+// MARK: - Food-name matching (plural-tolerant, mirrors the Edge Function)
+
+/// Plural/singular-tolerant food-name helpers, mirroring the recognize Edge
+/// Function's matcher (attributes.ts `singularizeLastWord`) so in-app search
+/// behaves exactly like the pipeline: "scrambled eggs" finds the
+/// "scrambled egg" alias without anyone maintaining plural aliases.
+enum FoodName {
+    /// Singularize the LAST word only ("cherry tomatoes" → "cherry tomato",
+    /// "anchovies" → "anchovy"). Conservative: ss/us/is endings (watercress,
+    /// asparagus) are left alone, and plural canonicals ("Oats") normalize the
+    /// same from both sides of a comparison.
+    static func singularizedLastWord(_ name: String) -> String {
+        var words = name.split(separator: " ", omittingEmptySubsequences: true).map(String.init)
+        guard var word = words.last else { return name }
+        if word.count > 4, word.hasSuffix("ies") {
+            word = String(word.dropLast(3)) + "y"
+        } else if word.count > 4, word.hasSuffix("oes") {
+            word = String(word.dropLast(2))
+        } else if word.count > 4, ["ches", "shes", "sses", "xes", "zes"].contains(where: word.hasSuffix) {
+            word = String(word.dropLast(2))
+        } else if word.count > 3, word.hasSuffix("s"),
+                  !word.hasSuffix("ss"), !word.hasSuffix("us"), !word.hasSuffix("is") {
+            word = String(word.dropLast())
+        }
+        words[words.count - 1] = word
+        return words.joined(separator: " ")
+    }
+
+    /// Case-insensitive substring match that tolerates a plural/singular
+    /// mismatch on either side's last word.
+    static func matches(haystack: String, query: String) -> Bool {
+        let h = haystack.lowercased()
+        let q = query.lowercased()
+        if h.contains(q) { return true }
+        let hs = singularizedLastWord(h)
+        let qs = singularizedLastWord(q)
+        return h.contains(qs) || hs.contains(qs) || hs.contains(q)
+    }
+}
+
 // MARK: - Frozen vision-LLM contract (SPEC §4)
 
 struct VisionFood: Codable, Sendable, Hashable {

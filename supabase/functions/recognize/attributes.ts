@@ -75,8 +75,28 @@ export interface ThriveSummary {
 // deno-lint-ignore no-explicit-any
 type FoodRow = any;
 
+/**
+ * Singularize the LAST word of a food name so plural/singular mismatches never
+ * miss: "scrambled eggs" → "scrambled egg", "cherry tomatoes" → "cherry
+ * tomato", "anchovies" → "anchovy". Conservative by design — words ending in
+ * ss/us/is (watercress, asparagus) are left alone. Applied to BOTH the
+ * catalogue keys and the model's output, so plural canonicals ("Oats") and
+ * plural model guesses land on the same key either way.
+ * Mirrored in Swift (SharedModels.FoodName) for the in-app search paths.
+ */
+function singularizeLastWord(name: string): string {
+  const words = name.split(" ");
+  let w = words[words.length - 1];
+  if (w.length > 4 && w.endsWith("ies")) w = w.slice(0, -3) + "y";
+  else if (w.length > 4 && w.endsWith("oes")) w = w.slice(0, -2);
+  else if (w.length > 4 && /(ches|shes|sses|xes|zes)$/.test(w)) w = w.slice(0, -2);
+  else if (w.length > 3 && w.endsWith("s") && !/(ss|us|is)$/.test(w)) w = w.slice(0, -1);
+  words[words.length - 1] = w;
+  return words.join(" ");
+}
+
 function norm(s: string): string {
-  return s.toLowerCase().trim().replace(/\s+/g, " ");
+  return singularizeLastWord(s.toLowerCase().trim().replace(/\s+/g, " "));
 }
 
 function toAttributes(row: FoodRow): FoodAttributes {
