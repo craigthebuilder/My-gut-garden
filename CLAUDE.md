@@ -51,7 +51,7 @@ The **coach-mark / tutorial layer** (`SPEC.md §7`, `DESIGN.md §4`) is a **shar
 3. **Portion is coarse tiers only** (`trace / serving / lots`). Never surface precise grams as if measured. Never "12.3g inulin." Directional, and say so. (`§4`, `§5`)
 4. **Never diagnose — this is a wellness app.** The app never asserts a medical condition or names a microbe/bug. Allergy is **user-self-classified**; the strongest the app goes is a *"worth raising with a doctor/allergist"* care prompt. (`§9`, `§11`, `§15`)
 5. **Design tokens are the single source of truth.** All UI reads from `Theme.swift`. **Never hardcode a color, font, radius, or spacing value.** (`DESIGN.md`)
-6. **`est_daily_kcal` and `fiber_target_g` are internal only.** Never displayed; never framed as a calorie/deficit/weight-loss number. The only surfaced anthropometric-derived number is **`fiber_goal_g` in grams** (and only after it unlocks). (`§10`, `§15` Fence 5)
+6. **`est_daily_kcal` and `fiber_target_g` are internal only.** Never displayed; never framed as a calorie/deficit/weight-loss number. The only surfaced anthropometric-derived number is **`fiber_goal_g` in grams** (and only after it unlocks). Owner amendment (2026-07-07, `SPEC.md §17`): coarse internal `protein_tier`/`energy_tier` aggregates MAY drive **guardian education prompts in words** on sustained extremes — still never a surfaced number, score, meter, or daily macro UI. (`§10`, `§15` Fence 5)
 7. **No gamification on restriction.** Streaks/badges/celebrations attach to positive outcomes only (fiber goal, plant variety, rainbow, guild blooming) — never to restriction or a food-flag count. `food_flags` carries **no** severity/score/rank column (no bad-guy meter). (`§13`, `§15` Fence 5)
 8. **The guardian is deterministic, quiet, and user-confirmed.** It is **rules + curated copy — no live LLM.** It may *suggest* and may auto-create a `watching` flag or the positive "you've overcome it" transition, but the user **authors every promotion** into `sensitivity`/`allergy`. Everything it does is transparent and editable in the **You** section. (`§3`, `§11`)
 9. **Fiber only ramps safely.** The goal rises no faster than the tolerance signal allows, is capped at `fiber_target_g` and an absolute max, and every increase is *offered* (accept/decline) and paired with a water reminder. (`§10`, `§11`, `§15` Fence 2)
@@ -85,7 +85,7 @@ The `[seed]` tables in `SPEC.md §5` are **assembled as part of the build** and 
 - **`tutorial_steps`** — curated coach-mark content per `section_key` (Fence 4 where health claims appear).
 - **`curiosity_facts`, `success_stories`** — curated, truthful, representative.
 
-**No `fodmap_profiles`** — the FODMAP overlay is retired. Sourcing hints: USDA FoodData Central (foods/fiber); Phenol-Explorer / USDA flavonoid data (phytochemicals). **Cite sources in the data files.** Don't invent nutrition values — leave a gap and mark it rather than guess.
+**No `fodmap_profiles`** — the FODMAP *overlay* stays retired. The 2026-07-07 comfort layer (`SPEC.md §17`) teaches the same science **fermentability-first**: `fibers` carry `fermentability` (+ a `solubility` column when §17 builds), education says "fast-fermenting fiber," and the word FODMAP appears exactly once as a bridge in education copy — never as a per-food label or elimination frame. Sourcing hints: USDA FoodData Central (foods/fiber); Phenol-Explorer / USDA flavonoid data (phytochemicals). **Cite sources in the data files.** Don't invent nutrition values — leave a gap and mark it rather than guess.
 
 ---
 

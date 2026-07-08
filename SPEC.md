@@ -370,4 +370,57 @@ Fences mark **content** that a registered dietitian (RD) + owner must review bef
 
 ---
 
+## 17. The comfort layer — fermentability, adaptation & quiet balance (owner direction, 2026-07-07)
+
+The app's goal, restated by the owner: *get people excited to eat more plant foods through
+gamification and education, while making sure doing so never makes them feel bad.* Many target
+users don't self-identify as symptomatic — they simply know certain foods "cause issues," avoid
+them, and don't know why. This layer teaches the why and coaches the how, without ever
+resurrecting the retired FODMAP-elimination overlay.
+
+**Language rule: fermentability-first.** Teach "fast-fermenting fiber → more gas → your crews
+feasting → comfort builds as you ramp slowly." The word *FODMAP* appears exactly once, in the
+education section, as a bridge for users who know the term ("fast-fermenting fibers are what
+clinicians call FODMAPs"). Never as a per-food warning label, never as an elimination frame.
+Gas is reframed as a *signal*, not a failure; the user chooses their own comfort level.
+
+**The five pieces (all deterministic, curated, RD-fenced — Fences 2/3/4):**
+
+1. **Post-snap fermentation note.** When a meal's DB-joined fiber mix is heavy in
+   high-fermentability fibers (inulin/FOS/GOS per `fibers.fermentability`), the scan result
+   shows a gentle one-liner: *"Big prebiotic load — some gas afterward is your crews feasting.
+   Comfort builds as you ramp slowly."* Coarse thresholds in `GameConfig` (fenced). Never a
+   warning color; informational tone.
+2. **Gas-comfort setting.** One question (onboarding + editable in You): *"How much gas are you
+   willing to trade for a faster-growing garden?"* — three levels (keep-it-quiet / some-is-fine /
+   bring-it-on). It tunes: the guardian's discomfort thresholds, the fiber ramp step/speed, and
+   how prominent fermentation notes are. Stored on `users`; never framed as a symptom score.
+3. **"Your fiber" surface.** Tapping the Today fiber line opens a fiber page: the goal trend,
+   plus the owner-requested composition history — daily load split by **fermentation speed**
+   (fast / moderate / gentle, from `fibers.fermentability`) and by **solubility** (soluble /
+   insoluble / resistant, via a new `fibers.solubility` column). All directional (Σ coarse
+   `est_fiber_g`), same charting language as the 3 P's/rainbow trends. This is where "what has
+   my FODMAP-ish load looked like?" gets answered — in fermentability language.
+4. **Adaptation education.** A curated "How your gut adapts" set (education pages + coach
+   steps): soluble vs insoluble vs fermentable in plain words; why gas ≠ harm; the
+   slow-ramp adaptation story ("feed a crew steadily and it grows the capacity to handle
+   more"); when to actually pay attention (ties into the guardian, never a diagnosis).
+5. **Adaptation-aware guardian.** When discomfort follows a high-fermentability day, the
+   guardian's FIRST hypothesis is adaptation, not the food: it offers *"ramp slower?"*
+   (adjusting the fiber step) before it ever suggests a watching flag, and its copy explains
+   why. Repetition rules unchanged (Fence 3); this only reorders the hypotheses and improves
+   false-positive discernment.
+
+**Quiet balance (protein & energy) — backend + guardian only.** Foods gain coarse, DB-curated
+`protein_tier` and `energy_tier` values (none/low/moderate/high — never grams/kcal, the camera
+can't deliver that precision and the app never claims it). A weekly aggregate feeds the guardian
+ONLY: on a *sustained* directional extreme (e.g. weeks running light on protein), it surfaces one
+calm educational prompt ("you may be running light on protein lately — here's what that can feel
+like"), user-dismissible, never repeated more than the fenced cadence. **No numbers, no scores,
+no daily UI, no macro dashboard.** Rule #6's spirit holds: `est_daily_kcal`/`fiber_target_g`
+stay internal-only and the only surfaced derived *number* remains `fiber_goal_g`; the balance
+prompts are words, not values. Thresholds and copy are RD-REVIEW-REQUIRED (Fences 2/3/4).
+
+---
+
 *End of SPEC.md. Build order and agent rules: `CLAUDE.md`. Visual system: `DESIGN.md`. RD-review index: `FENCES.md`. Frozen historical record: `gut_app_framework_v2.md`, `PHASE2_PLAN.md`.*
