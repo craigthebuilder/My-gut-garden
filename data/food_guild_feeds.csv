@@ -6,83 +6,83 @@
 # Source: framework §4 (guild feeds_copy) and §5 (fiber->guild table); polyphenol/lignan/isoflavone food sources per Phenol-Explorer.
 # Format: pipe-delimited. food|guild|relevance
 food|guild|relevance
-Garlic|base_layer|primary
-Onion|base_layer|primary
-Leek|base_layer|moderate
-Shallot|base_layer|moderate
-Spring onion|base_layer|minor
-Asparagus|base_layer|moderate
-Jerusalem artichoke|base_layer|primary
-Chicory root|base_layer|primary
-Chickpea|base_layer|moderate
-Lentil|base_layer|moderate
-Black bean|base_layer|moderate
-Soybean|base_layer|moderate
-Whole wheat|base_layer|minor
-Garlic|recycling_engine|minor
-Chicory root|recycling_engine|minor
-Onion|recycling_engine|minor
-Oats|anti_inflammatory_arsenal|primary
-Green banana|anti_inflammatory_arsenal|moderate
-Potato|anti_inflammatory_arsenal|moderate
-Brown rice|anti_inflammatory_arsenal|moderate
-Apple|anti_inflammatory_arsenal|primary
-Carrot|anti_inflammatory_arsenal|moderate
-Pear|anti_inflammatory_arsenal|moderate
-Orange|anti_inflammatory_arsenal|minor
-Flaxseed|anti_inflammatory_arsenal|moderate
-Chia seed|anti_inflammatory_arsenal|moderate
-Okra|anti_inflammatory_arsenal|moderate
-Oats|appetite_crew|primary
-Barley|appetite_crew|primary
-Whole wheat|appetite_crew|moderate
-Rye|appetite_crew|moderate
-White mushroom|appetite_crew|moderate
-Shiitake mushroom|appetite_crew|moderate
-Oyster mushroom|appetite_crew|moderate
-Green banana|locksmith|primary
-Potato|locksmith|moderate
-Brown rice|locksmith|moderate
-Oats|locksmith|minor
-Lentil|locksmith|minor
-Cranberry|knights_of_the_wall|primary
-Pomegranate|knights_of_the_wall|primary
-Green tea|knights_of_the_wall|primary
-Concord grape|knights_of_the_wall|primary
-Blueberry|knights_of_the_wall|moderate
-Raspberry|knights_of_the_wall|moderate
-Blackberry|knights_of_the_wall|moderate
-Spinach|vitamin_lab|moderate
-Kale|vitamin_lab|moderate
-Broccoli|vitamin_lab|moderate
-Romaine lettuce|vitamin_lab|moderate
-Parsley|vitamin_lab|minor
-Swiss chard|vitamin_lab|minor
-Asparagus|vitamin_lab|minor
-Beet|vitamin_lab|minor
-Natto|vitamin_lab|moderate
-Oats|mood_regulators|moderate
-Pumpkin seed|mood_regulators|moderate
-Sunflower seed|mood_regulators|moderate
-Sesame seed|mood_regulators|moderate
-Soybean|mood_regulators|moderate
-Tofu|mood_regulators|moderate
-Soybean|estrogen_regulators|primary
-Tempeh|estrogen_regulators|primary
-Natto|estrogen_regulators|primary
-Tofu|estrogen_regulators|moderate
-Miso|estrogen_regulators|moderate
-Pomegranate|mitochondria_boosters|primary
-Walnut|mitochondria_boosters|primary
-Raspberry|mitochondria_boosters|moderate
-Strawberry|mitochondria_boosters|moderate
-Blackberry|mitochondria_boosters|moderate
-Blueberry|mitochondria_boosters|minor
-Flaxseed|tumor_preventors|primary
-Sesame seed|tumor_preventors|moderate
-Rye|tumor_preventors|moderate
-Spinach|stone_breakers|moderate
-Beet|stone_breakers|moderate
-Swiss chard|stone_breakers|moderate
 Almond|stone_breakers|minor
+Apple|anti_inflammatory_arsenal|primary
+Asparagus|base_layer|moderate
+Asparagus|vitamin_lab|minor
+Barley|appetite_crew|primary
+Beet|stone_breakers|moderate
+Beet|vitamin_lab|minor
+Black bean|base_layer|moderate
+Blackberry|knights_of_the_wall|moderate
+Blackberry|mitochondria_boosters|moderate
+Blueberry|knights_of_the_wall|moderate
+Blueberry|mitochondria_boosters|minor
+Broccoli|vitamin_lab|moderate
+Brown rice|anti_inflammatory_arsenal|moderate
+Brown rice|locksmith|moderate
+Carrot|anti_inflammatory_arsenal|moderate
+Chia seed|anti_inflammatory_arsenal|moderate
+Chickpea|base_layer|moderate
+Chicory root|base_layer|primary
+Chicory root|recycling_engine|minor
+Concord grape|knights_of_the_wall|primary
+Cranberry|knights_of_the_wall|primary
+Flaxseed|anti_inflammatory_arsenal|moderate
+Flaxseed|tumor_preventors|primary
+Garlic|base_layer|primary
+Garlic|recycling_engine|minor
+Green banana|anti_inflammatory_arsenal|moderate
+Green banana|locksmith|primary
+Green tea|knights_of_the_wall|primary
+Jerusalem artichoke|base_layer|primary
+Kale|vitamin_lab|moderate
+Leek|base_layer|moderate
+Lentil|base_layer|moderate
+Lentil|locksmith|minor
+Miso|estrogen_regulators|moderate
+Natto|estrogen_regulators|primary
+Natto|vitamin_lab|moderate
+Oats|anti_inflammatory_arsenal|primary
+Oats|appetite_crew|primary
+Oats|locksmith|minor
+Oats|mood_regulators|moderate
+Okra|anti_inflammatory_arsenal|moderate
+Onion|base_layer|primary
+Onion|recycling_engine|minor
+Orange|anti_inflammatory_arsenal|minor
+Oyster mushroom|appetite_crew|moderate
+Parsley|vitamin_lab|minor
+Pear|anti_inflammatory_arsenal|moderate
+Pomegranate|knights_of_the_wall|primary
+Pomegranate|mitochondria_boosters|primary
+Potato|anti_inflammatory_arsenal|moderate
+Potato|locksmith|moderate
+Pumpkin seed|mood_regulators|moderate
 Purple sweet potato|knights_of_the_wall|moderate
+Raspberry|knights_of_the_wall|moderate
+Raspberry|mitochondria_boosters|moderate
+Romaine lettuce|vitamin_lab|moderate
+Rye|appetite_crew|moderate
+Rye|tumor_preventors|moderate
+Sesame seed|mood_regulators|moderate
+Sesame seed|tumor_preventors|moderate
+Shallot|base_layer|moderate
+Shiitake mushroom|appetite_crew|moderate
+Soybean|base_layer|moderate
+Soybean|estrogen_regulators|primary
+Soybean|mood_regulators|moderate
+Spinach|stone_breakers|moderate
+Spinach|vitamin_lab|moderate
+Spring onion|base_layer|minor
+Strawberry|mitochondria_boosters|moderate
+Sunflower seed|mood_regulators|moderate
+Swiss chard|stone_breakers|moderate
+Swiss chard|vitamin_lab|minor
+Tempeh|estrogen_regulators|primary
+Tofu|estrogen_regulators|moderate
+Tofu|mood_regulators|moderate
+Walnut|mitochondria_boosters|primary
+White mushroom|appetite_crew|moderate
+Whole wheat|appetite_crew|moderate
+Whole wheat|base_layer|minor

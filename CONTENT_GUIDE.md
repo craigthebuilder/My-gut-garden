@@ -50,6 +50,36 @@ It rewrites two generated files, then you copy the current content into a fresh
 migration and `supabase db push`. The exact copy-into-a-new-migration pattern is
 documented at the bottom of `data/README.md` (look for "seed-refresh migration").
 
+### Self-serve: edit the FOOD CATALOGUE directly in Supabase Studio
+
+For the tables you'll touch constantly while testing, you don't need the CSV
+pipeline at all — edit them live in **Supabase Studio → Table Editor** and the
+app sees the change on its next load:
+
+- **Editable in Studio:** `foods` (add rows, edit the `aliases` array),
+  `plants`, `phytochemicals`, and the junctions `food_colors`, `food_fibers`,
+  `food_phytochemicals`, `food_guild_feeds`.
+- **Your work queue:** the **`unmatched_food_sightings`** view (Views section)
+  lists every vision name that resolved to nothing. Add the alias or food, and
+  its rows vanish. Work it to empty.
+- **Afterwards, sync the repo** so the seed pipeline never clobbers your edits:
+  ```
+  python3 data/pull_foods_from_db.py     # DB → CSVs (add --preview to test)
+  python3 data/build_seed_sql.py         # validate + regenerate
+  git commit
+  ```
+- **NEVER edit these in Studio:** `recipes`, `curiosity_facts`,
+  `success_stories` (their seeds are delete+insert — the next seed refresh
+  **erases** Studio edits), and the fence-managed `guilds` / `worlds` /
+  `tutorial_steps` / `colors` / `fibers`. For all of those, edit the CSV and
+  ship a seed-refresh migration (the CSV-first lane above).
+
+Adding a food in Studio, concretely: insert the `foods` row (canonical_name,
+aliases, is_plant, is_fermented, categories, protein_tier, energy_tier; pick
+plant_id from `plants` if it should count toward the 30) → add a `food_colors`
+row for its rainbow group → optionally `food_phytochemicals` /
+`food_guild_feeds` / `food_fibers` rows. Then the pull command.
+
 ### The coach-mark tour specifically (a common thing to tweak)
 `data/tutorial_steps.csv`, `section_key = intro`, is the first-run walkthrough.
 Each row's `target_hint` is matched to a `.coachTarget("…")` in the Swift views;

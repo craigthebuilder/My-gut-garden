@@ -3,127 +3,128 @@
 # Source: USDA "eat the rainbow" groupings; visible pigment of the common form of the food.
 # Format: pipe-delimited. food|color
 food|color
-Garlic|white_brown
-Onion|white_brown
-Leek|white_brown
-Shallot|white_brown
-Spring onion|green
-Chives|green
-Broccoli|green
-Cauliflower|white_brown
-Cabbage|green
-Kale|green
-Brussels sprouts|green
-Bok choy|green
-Arugula|green
-Radish|red
-Turnip|white_brown
-Watercress|green
-Spinach|green
-Romaine lettuce|green
-Swiss chard|green
-Collard greens|green
-Carrot|orange
-Beet|red
-Sweet potato|orange
-Potato|white_brown
-Parsnip|white_brown
-Ginger|white_brown
-Turmeric|yellow
-Jerusalem artichoke|white_brown
-Chicory root|white_brown
-Pumpkin|orange
-Butternut squash|orange
-Zucchini|green
-Cucumber|green
-Tomato|red
-Bell pepper|red
-Eggplant|blue_purple
-Chili pepper|red
-Asparagus|green
-Celery|green
-Fennel|white_brown
-Artichoke|green
-Okra|green
-Green pea|green
-Corn|yellow
-Chickpea|white_brown
-Lentil|white_brown
-Black bean|blue_purple
-Kidney bean|red
-White bean|white_brown
-Soybean|green
-Peanut|white_brown
-Oats|white_brown
-Barley|white_brown
-Brown rice|white_brown
-Quinoa|white_brown
-Whole wheat|white_brown
-Rye|white_brown
-Buckwheat|white_brown
-Millet|yellow
-Sorghum|white_brown
-Almond|white_brown
-Walnut|white_brown
-Cashew|white_brown
-Pistachio|green
-Hazelnut|white_brown
-Pecan|white_brown
-Brazil nut|white_brown
-Flaxseed|white_brown
-Chia seed|white_brown
-Sesame seed|white_brown
-Sunflower seed|white_brown
-Pumpkin seed|green
-Apple|red
-Apple|green
-Banana|yellow
-Green banana|green
-Blueberry|blue_purple
-Strawberry|red
-Raspberry|red
-Blackberry|blue_purple
-Orange|orange
-Lemon|yellow
-Grape|green
-Concord grape|blue_purple
-Pomegranate|red
-Kiwi|green
-Mango|orange
-Pineapple|yellow
-Pear|green
-Avocado|green
-Fig|blue_purple
-Cranberry|red
-Date|white_brown
-Basil|green
-Parsley|green
-Cilantro|green
-Mint|green
-Rosemary|green
-Thyme|green
-Oregano|green
-Cinnamon|white_brown
-Nutmeg|white_brown
-Cumin|white_brown
-Black pepper|white_brown
-Sumac|red
-White mushroom|white_brown
-Shiitake mushroom|white_brown
-Oyster mushroom|white_brown
-Nori|green
-Wakame|green
-Kombu|green
-Tofu|white_brown
-Green tea|green
-Yogurt|white_brown
-Kefir|white_brown
 Aged cheese|yellow
-Sauerkraut|white_brown
+Almond|white_brown
+Apple|green
+Apple|red
+Artichoke|green
+Arugula|green
+Asparagus|green
+Avocado|green
+Banana|yellow
+Barley|white_brown
+Basil|green
+Beet|red
+Bell pepper|red
+Black bean|blue_purple
+Black pepper|white_brown
+Blackberry|blue_purple
+Blueberry|blue_purple
+Bok choy|green
+Brazil nut|white_brown
+Broccoli|green
+Brown rice|white_brown
+Brussels sprouts|green
+Buckwheat|white_brown
+Butternut squash|orange
+Cabbage|green
+Carrot|orange
+Cashew|white_brown
+Cauliflower|white_brown
+Celery|green
+Chia seed|white_brown
+Chickpea|white_brown
+Chicory root|white_brown
+Chili pepper|red
+Chives|green
+Cilantro|green
+Cinnamon|white_brown
+Collard greens|green
+Concord grape|blue_purple
+Corn|yellow
+Cranberry|red
+Cucumber|green
+Cumin|white_brown
+Date|white_brown
+Eggplant|blue_purple
+Fennel|white_brown
+Fig|blue_purple
+Flaxseed|white_brown
+Garlic|white_brown
+Ginger|white_brown
+Grape|green
+Green banana|green
+Green banana|white_brown
+Green pea|green
+Green tea|green
+Hazelnut|white_brown
+Jerusalem artichoke|white_brown
+Kale|green
+Kefir|white_brown
+Kidney bean|red
 Kimchi|red
-Miso|white_brown
-Tempeh|white_brown
-Natto|white_brown
-Sourdough bread|white_brown
+Kiwi|green
 Kombucha|white_brown
+Kombu|green
+Leek|white_brown
+Lemon|yellow
+Lentil|white_brown
+Mango|orange
+Millet|yellow
+Mint|green
+Miso|white_brown
+Natto|white_brown
+Nori|green
+Nutmeg|white_brown
+Oats|white_brown
+Okra|green
+Onion|white_brown
+Orange|orange
+Oregano|green
+Oyster mushroom|white_brown
+Parsley|green
+Parsnip|white_brown
+Peanut|white_brown
+Pear|green
+Pecan|white_brown
+Pineapple|yellow
+Pistachio|green
+Pomegranate|red
+Potato|white_brown
+Pumpkin seed|green
+Pumpkin|orange
 Purple sweet potato|blue_purple
+Quinoa|white_brown
+Radish|red
+Raspberry|red
+Romaine lettuce|green
+Rosemary|green
+Rye|white_brown
+Sauerkraut|white_brown
+Sesame seed|white_brown
+Shallot|white_brown
+Shiitake mushroom|white_brown
+Sorghum|white_brown
+Sourdough bread|white_brown
+Soybean|green
+Spinach|green
+Spring onion|green
+Strawberry|red
+Sumac|red
+Sunflower seed|white_brown
+Sweet potato|orange
+Swiss chard|green
+Tempeh|white_brown
+Thyme|green
+Tofu|white_brown
+Tomato|red
+Turmeric|yellow
+Turnip|white_brown
+Wakame|green
+Walnut|white_brown
+Watercress|green
+White bean|white_brown
+White mushroom|white_brown
+Whole wheat|white_brown
+Yogurt|white_brown
+Zucchini|green

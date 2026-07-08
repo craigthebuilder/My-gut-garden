@@ -9,121 +9,120 @@
 #   matching the popular framing.
 # Format: pipe-delimited. name|scientific_name|plant_family|rarity_tier|description
 name|scientific_name|plant_family|rarity_tier|description
-Garlic|Allium sativum|Amaryllidaceae|common|Tiny clove, huge inulin payload — one of the best-fed guilds' favorite fuels, plus allicin when crushed.
-Onion|Allium cepa|Amaryllidaceae|common|The everyday prebiotic: fructans plus quercetin in the papery layers. The workhorse of gut gardens.
-Leek|Allium ampeloprasum|Amaryllidaceae|uncommon|A gentler, sweeter allium — the white base carries the fructans your microbes queue up for.
-Shallot|Allium cepa var. aggregatum|Amaryllidaceae|uncommon|Onion's refined cousin, denser in polyphenols per bite than most of the allium family.
-Spring onion|Allium fistulosum|Amaryllidaceae|common|Two plants in one: prebiotic white bulb, chlorophyll-rich green tops. Use the whole thing.
-Chives|Allium schoenoprasum|Amaryllidaceae|uncommon|A sprinkle counts — the smallest allium still brings organosulfur compounds to the plate.
-Broccoli|Brassica oleracea var. italica|Brassicaceae|common|The famous one: sulforaphane's parent compound lives in these florets. Steam it lightly, chew it well.
-Cauliflower|Brassica oleracea var. botrytis|Brassicaceae|common|A white-brown crucifer that roasts into sweetness — same glucosinolate family as broccoli, different fiber mix.
-Cabbage|Brassica oleracea var. capitata|Brassicaceae|common|Cheap, keeps for weeks, and ferments into kimchi and sauerkraut — the most versatile crucifer in the guide.
-Kale|Brassica oleracea var. sabellica|Brassicaceae|uncommon|Lutein and glucosinolates in a leaf sturdy enough to massage. The darker the leaf, the more it carries.
-Brussels sprouts|Brassica oleracea var. gemmifera|Brassicaceae|uncommon|Tiny cabbages with an outsized glucosinolate load. Roasting converts the skeptics.
-Bok choy|Brassica rapa subsp. chinensis|Brassicaceae|uncommon|A crucifer that cooks in minutes — crisp stems, tender greens, stir-fry's favorite vehicle.
-Arugula|Eruca vesicaria|Brassicaceae|uncommon|The peppery bite IS the phytochemicals — erucin and friends, straight from the leaf.
-Radish|Raphanus sativus|Brassicaceae|common|A crunchy, peppery crucifer you can eat in seconds — the easy way to sneak a fourth plant into lunch.
-Turnip|Brassica rapa subsp. rapa|Brassicaceae|uncommon|Old-world staple, two foods in one: peppery root plus greens that outdo it nutritionally.
-Watercress|Nasturtium officinale|Brassicaceae|rare|Gram for gram one of the most nutrient-dense leaves known — a rare find worth hunting.
-Spinach|Spinacia oleracea|Amaranthaceae|common|Lutein, folate, and chlorophyll that wilts into anything. The gateway green.
-Romaine lettuce|Lactuca sativa|Asteraceae|common|More than crunch: water, folate, and a gentle fiber that makes salads a habit.
-Swiss chard|Beta vulgaris subsp. vulgaris|Amaranthaceae|rare|Rainbow stems, beet's leafy cousin — betalains and magnesium in one dramatic leaf.
-Collard greens|Brassica oleracea var. viridis|Brassicaceae|uncommon|The sturdy southern crucifer — slow-cooked or raw as a wrap, fiber either way.
-Carrot|Daucus carota|Apiaceae|common|Beta-carotene's poster child, plus pectin — a gentle fiber your butyrate-makers appreciate.
-Beet|Beta vulgaris|Amaranthaceae|uncommon|Betalains stain everything for a reason — pigment IS the payload. Roast, grate, or pickle.
-Sweet potato|Ipomoea batatas|Convolvulaceae|uncommon|Orange flesh, carotenoids, and a fiber mix that lands gently. Cool it after cooking for resistant starch.
-Potato|Solanum tuberosum|Solanaceae|common|The humble spud turns prebiotic when cooked then COOLED — potato salad is resistant-starch food.
-Parsnip|Pastinaca sativa|Apiaceae|rare|Carrot's pale, sweeter cousin — more fiber per bite and criminally underused.
-Ginger|Zingiber officinale|Zingiberaceae|uncommon|Gingerol brings the heat; a thumb of it in a stir-fry counts as a plant all its own.
-Turmeric|Curcuma longa|Zingiberaceae|rare|Curcumin's home. Pair with black pepper — its piperine helps curcumin along.
-Jerusalem artichoke|Helianthus tuberosus|Asteraceae|legendary|The single richest common source of inulin — a legendary feed for the deep-fiber guilds. Start small.
-Chicory root|Cichorium intybus|Asteraceae|legendary|Where supplement-bottle inulin actually comes from — the deepest prebiotic cut in the guide.
-Pumpkin|Cucurbita pepo|Cucurbitaceae|uncommon|Carotenoid-dense flesh and seeds worth roasting — two finds in one gourd.
-Butternut squash|Cucurbita moschata|Cucurbitaceae|uncommon|Sweet orange flesh that carries beta-carotene through soups and roasts all winter.
-Zucchini|Cucurbita pepo var. cylindrica|Cucurbitaceae|common|Mild, fast, and shreds invisibly into sauces — an easy diversity point.
-Cucumber|Cucumis sativus|Cucurbitaceae|common|Mostly water, but the skin carries the fiber and the polyphenols — don't peel it.
-Tomato|Solanum lycopersicum|Solanaceae|common|Lycopene central — and cooking concentrates it. Sauce counts.
-Bell pepper|Capsicum annuum|Solanaceae|common|One plant, three colors — red, yellow, and green peppers each lean into different carotenoids.
-Eggplant|Solanum melongena|Solanaceae|uncommon|Nasunin lives in that deep-purple skin — keep it on.
-Chili pepper|Capsicum annuum var. glabriusculum|Solanaceae|uncommon|Capsaicin is the point — a little heat is a phytochemical dose.
-Asparagus|Asparagus officinalis|Asparagaceae|uncommon|Spring's prebiotic spear — fructans plus glutathione in a five-minute cook.
-Celery|Apium graveolens|Apiaceae|common|The quiet base of a thousand soups — apigenin and crunch, cheap diversity.
-Fennel|Foeniculum vulgare|Apiaceae|rare|Anise-sweet bulb, feathery fronds — an Apiaceae rare that roasts into silk.
-Artichoke|Cynara cardunculus var. scolymus|Asteraceae|rare|Cynarin plus serious inulin — the fanciest prebiotic on the plate.
-Okra|Abelmoschus esculentus|Malvaceae|rare|That silkiness is mucilage — a soothing gel fiber your butyrate-makers ferment happily.
-Green pea|Pisum sativum|Fabaceae|common|Little green protein-fiber spheres — the easiest legume to say yes to.
-Corn|Zea mays|Poaceae|common|A whole grain in disguise — the fiber rides in the kernel skins.
-Chickpea|Cicer arietinum|Fabaceae|uncommon|GOS-rich and endlessly flexible — hummus, roasted, or straight into the stew.
-Lentil|Lens culinaris|Fabaceae|uncommon|The fastest-cooking legume, dense in GOS and folate — a guild feast in 25 minutes.
-Black bean|Phaseolus vulgaris|Fabaceae|uncommon|Dark skins mean anthocyanin cousins — pigment and fiber in the same spoonful.
-Kidney bean|Phaseolus vulgaris var. nanus|Fabaceae|uncommon|Chili's backbone — resistant starch and GOS that survive a long simmer.
-White bean|Phaseolus vulgaris var. albus|Fabaceae|uncommon|Creamy, mild, and one of the highest-fiber foods per cup in the whole guide.
-Soybean|Glycine max|Fabaceae|uncommon|The isoflavone legume — edamame is its freshest, simplest form.
-Peanut|Arachis hypogaea|Fabaceae|common|Botanically a legume, culturally a nut — resveratrol in the skins.
-Oats|Avena sativa|Poaceae|common|Beta-glucan's home field — the breakfast that feeds your propionate-makers.
-Barley|Hordeum vulgare|Poaceae|uncommon|Chewy, nutty, and even richer in beta-glucan than oats — soup's best upgrade.
-Brown rice|Oryza sativa|Poaceae|common|The bran layer is the point — and cooled leftover rice picks up resistant starch.
-Quinoa|Chenopodium quinoa|Amaranthaceae|uncommon|A seed posing as a grain — complete protein plus saponins in the rinse water.
-Whole wheat|Triticum aestivum|Poaceae|common|Arabinoxylan — wheat bran's signature fiber — is one of the most overlooked guild feeds.
-Rye|Secale cereale|Poaceae|rare|Dense, dark, and prebiotic — real rye bread feeds crews that white loaves never reach.
-Buckwheat|Fagopyrum esculentum|Polygonaceae|rare|No wheat, no gluten — rutin-rich seeds that make noodles and pancakes.
-Millet|Panicum miliaceum|Poaceae|rare|An ancient, gentle grain — a rare find that cooks like couscous.
-Sorghum|Sorghum bicolor|Poaceae|rare|The heirloom cereal with tannins and a pop — it even puffs like popcorn.
 Almond|Prunus dulcis|Rosaceae|uncommon|The skins carry polyphenols and the flesh carries fiber — a handful feeds more than you.
-Walnut|Juglans regia|Juglandaceae|uncommon|Ellagitannins that your microbes turn into urolithins — the brainy-looking nut earns it.
-Cashew|Anacardium occidentale|Anacardiaceae|uncommon|Creamy enough to become sauce — a softer entry into daily nuts.
-Pistachio|Pistacia vera|Anacardiaceae|uncommon|Green from lutein — one of the few nuts with meaningful carotenoids.
-Hazelnut|Corylus avellana|Betulaceae|rare|Proanthocyanidin-rich, especially with skins on — beyond the chocolate-spread cameo.
-Pecan|Carya illinoinensis|Juglandaceae|rare|Among the highest polyphenol loads of any nut — pie undersells it.
-Brazil nut|Bertholletia excelsa|Lecythidaceae|rare|One or two a day covers selenium — a rare find that asks for restraint, not volume.
-Flaxseed|Linum usitatissimum|Linaceae|uncommon|Lignans plus mucilage — grind them fresh or they pass through incognito.
-Chia seed|Salvia hispanica|Lamiaceae|uncommon|The gel is the fiber — mucilage that turns pudding-like and feeds gently.
-Sesame seed|Sesamum indicum|Pedaliaceae|uncommon|Sesamin lignans in every sprinkle — tahini is its grown-up form.
-Sunflower seed|Helianthus annuus|Asteraceae|uncommon|Vitamin E and chlorogenic acid by the handful — the lunchbox classic holds up.
-Pumpkin seed|Cucurbita pepo var. styriaca|Cucurbitaceae|uncommon|Zinc, magnesium, and a satisfying crunch — roast the ones from your own pumpkin.
 Apple|Malus domestica|Rosaceae|common|Pectin in the flesh, quercetin in the peel — the original portable prebiotic.
-Banana|Musa acuminata|Musaceae|common|Ripe and sweet feeds you; the greener it is, the more it feeds your microbes.
-Green banana|Musa acuminata (unripe)|Musaceae|uncommon|Unripe means resistant starch — a distinct food from its yellow future self.
-Blueberry|Vaccinium corymbosum|Ericaceae|uncommon|Anthocyanins by the cupful — the berry your barrier-guarding crews adore.
-Strawberry|Fragaria x ananassa|Rosaceae|common|Ellagic acid with universal appeal — the easiest red of the week.
-Raspberry|Rubus idaeus|Rosaceae|uncommon|Eight grams of fiber a cup — the highest-fiber berry on the shelf.
-Blackberry|Rubus fruticosus|Rosaceae|uncommon|So purple it's nearly black — that depth is anthocyanin density.
-Orange|Citrus x sinensis|Rutaceae|common|Eat it, don't juice it — hesperidin and pectin live in the segments and pith.
-Lemon|Citrus x limon|Rutaceae|common|Zest before you juice — the peel oils carry limonene the juice never sees.
-Grape|Vitis vinifera|Vitaceae|common|Resveratrol headlines, but the skins and seeds carry a whole polyphenol cast.
-Concord grape|Vitis labrusca|Vitaceae|rare|The deep-purple American grape — juice-dark skins loaded with anthocyanins.
-Pomegranate|Punica granatum|Lythraceae|rare|Ellagitannins your microbes convert to urolithin A — the mitochondria crews' favorite fruit.
-Kiwi|Actinidia deliciosa|Actinidiaceae|uncommon|Actinidin, vitamin C, and a fiber combo studied for keeping things moving.
-Mango|Mangifera indica|Anacardiaceae|uncommon|Mangiferin plus carotenoids — sunshine that counts toward your orange.
-Pineapple|Ananas comosus|Bromeliaceae|uncommon|Bromelain lives in the core — the part most people throw away.
-Pear|Pyrus communis|Rosaceae|common|Gritty texture is stone cells plus pectin — gentle fiber in dessert clothing.
+Artichoke|Cynara cardunculus var. scolymus|Asteraceae|rare|Cynarin plus serious inulin — the fanciest prebiotic on the plate.
+Arugula|Eruca vesicaria|Brassicaceae|uncommon|The peppery bite IS the phytochemicals — erucin and friends, straight from the leaf.
+Asparagus|Asparagus officinalis|Asparagaceae|uncommon|Spring's prebiotic spear — fructans plus glutathione in a five-minute cook.
 Avocado|Persea americana|Lauraceae|uncommon|A fruit that eats like a fat — with more fiber per half than most salads.
-Fig|Ficus carica|Moraceae|rare|Ancient, jammy, and fiber-dense — fresh or dried, the seeds do the work.
-Cranberry|Vaccinium macrocarpon|Ericaceae|rare|A-type proanthocyanidins — the tart compounds behind its famous reputation.
-Date|Phoenix dactylifera|Arecaceae|uncommon|Nature's caramel wrapped around real fiber — sweetness your microbes share.
+Banana|Musa acuminata|Musaceae|common|Ripe and sweet feeds you; the greener it is, the more it feeds your microbes.
+Barley|Hordeum vulgare|Poaceae|uncommon|Chewy, nutty, and even richer in beta-glucan than oats — soup's best upgrade.
 Basil|Ocimum basilicum|Lamiaceae|common|A handful of leaves is a legitimate plant — rosmarinic acid rides in the aroma.
-Parsley|Petroselinum crispum|Apiaceae|common|Not a garnish — one of the densest apigenin sources you can buy.
-Cilantro|Coriandrum sativum|Apiaceae|common|Love-it-or-soap — either way its leaf carries genuine phytochemical weight.
-Mint|Mentha spicata|Lamiaceae|common|Menthol freshness that turns water, yogurt, and salads into another plant point.
-Rosemary|Salvia rosmarinus|Lamiaceae|uncommon|Carnosic acid in needle form — a woody herb that survives every roast.
-Thyme|Thymus vulgaris|Lamiaceae|uncommon|Thymol in tiny leaves — a pinch across the week quietly adds up.
-Oregano|Origanum vulgare|Lamiaceae|uncommon|One of the highest polyphenol densities of any herb, dried or fresh.
-Cinnamon|Cinnamomum verum|Lauraceae|uncommon|Tree bark, technically — proanthocyanidins in dessert's favorite spice.
-Nutmeg|Myristica fragrans|Myristicaceae|rare|A grating is plenty — warm spice with its own phytochemical signature.
-Cumin|Cuminum cyminum|Apiaceae|uncommon|The backbone of half the world's spice blends — seeds with real polyphenol content.
+Beet|Beta vulgaris|Amaranthaceae|uncommon|Betalains stain everything for a reason — pigment IS the payload. Roast, grate, or pickle.
+Bell pepper|Capsicum annuum|Solanaceae|common|One plant, three colors — red, yellow, and green peppers each lean into different carotenoids.
+Black bean|Phaseolus vulgaris|Fabaceae|uncommon|Dark skins mean anthocyanin cousins — pigment and fiber in the same spoonful.
 Black pepper|Piper nigrum|Piperaceae|common|Piperine — the everyday grind that helps other compounds (curcumin!) absorb.
-Sumac|Rhus coriaria|Anacardiaceae|legendary|The lemony crimson dust of Middle Eastern kitchens — a legendary polyphenol find.
-White mushroom|Agaricus bisporus|Agaricaceae|common|Fungi, not botanically a plant — but beta-glucans earn it a guide page and your 30.
-Shiitake mushroom|Lentinula edodes|Omphalotaceae|uncommon|Lentinan — a beta-glucan studied for decades — plus real umami depth.
-Oyster mushroom|Pleurotus ostreatus|Pleurotaceae|rare|Velvety, quick-cooking, and one of the richer beta-glucan mushrooms.
-Nori|Pyropia yezoensis|Bangiaceae|rare|The sushi wrap is a sea vegetable — minerals and fibers land plants can't offer.
-Wakame|Undaria pinnatifida|Alariaceae|rare|The silky seaweed in miso soup — fucoidan, a fiber unique to the ocean.
-Kombu|Saccharina japonica|Laminariaceae|legendary|The umami kelp of dashi — glutamates plus ocean fibers, a legendary find.
-# ---- Fermented plant foods (2026-07-02): distinct entries — fermentation makes a different food ----
+Blackberry|Rubus fruticosus|Rosaceae|uncommon|So purple it's nearly black — that depth is anthocyanin density.
+Blueberry|Vaccinium corymbosum|Ericaceae|uncommon|Anthocyanins by the cupful — the berry your barrier-guarding crews adore.
+Bok choy|Brassica rapa subsp. chinensis|Brassicaceae|uncommon|A crucifer that cooks in minutes — crisp stems, tender greens, stir-fry's favorite vehicle.
+Brazil nut|Bertholletia excelsa|Lecythidaceae|rare|One or two a day covers selenium — a rare find that asks for restraint, not volume.
+Broccoli|Brassica oleracea var. italica|Brassicaceae|common|The famous one: sulforaphane's parent compound lives in these florets. Steam it lightly, chew it well.
+Brown rice|Oryza sativa|Poaceae|common|The bran layer is the point — and cooled leftover rice picks up resistant starch.
+Brussels sprouts|Brassica oleracea var. gemmifera|Brassicaceae|uncommon|Tiny cabbages with an outsized glucosinolate load. Roasting converts the skeptics.
+Buckwheat|Fagopyrum esculentum|Polygonaceae|rare|No wheat, no gluten — rutin-rich seeds that make noodles and pancakes.
+Butternut squash|Cucurbita moschata|Cucurbitaceae|uncommon|Sweet orange flesh that carries beta-carotene through soups and roasts all winter.
+Cabbage|Brassica oleracea var. capitata|Brassicaceae|common|Cheap, keeps for weeks, and ferments into kimchi and sauerkraut — the most versatile crucifer in the guide.
+Carrot|Daucus carota|Apiaceae|common|Beta-carotene's poster child, plus pectin — a gentle fiber your butyrate-makers appreciate.
+Cashew|Anacardium occidentale|Anacardiaceae|uncommon|Creamy enough to become sauce — a softer entry into daily nuts.
+Cauliflower|Brassica oleracea var. botrytis|Brassicaceae|common|A white-brown crucifer that roasts into sweetness — same glucosinolate family as broccoli, different fiber mix.
+Celery|Apium graveolens|Apiaceae|common|The quiet base of a thousand soups — apigenin and crunch, cheap diversity.
+Chia seed|Salvia hispanica|Lamiaceae|uncommon|The gel is the fiber — mucilage that turns pudding-like and feeds gently.
+Chickpea|Cicer arietinum|Fabaceae|uncommon|GOS-rich and endlessly flexible — hummus, roasted, or straight into the stew.
+Chicory root|Cichorium intybus|Asteraceae|legendary|Where supplement-bottle inulin actually comes from — the deepest prebiotic cut in the guide.
+Chili pepper|Capsicum annuum var. glabriusculum|Solanaceae|uncommon|Capsaicin is the point — a little heat is a phytochemical dose.
+Chives|Allium schoenoprasum|Amaryllidaceae|uncommon|A sprinkle counts — the smallest allium still brings organosulfur compounds to the plate.
+Cilantro|Coriandrum sativum|Apiaceae|common|Love-it-or-soap — either way its leaf carries genuine phytochemical weight.
+Cinnamon|Cinnamomum verum|Lauraceae|uncommon|Tree bark, technically — proanthocyanidins in dessert's favorite spice.
+Collard greens|Brassica oleracea var. viridis|Brassicaceae|uncommon|The sturdy southern crucifer — slow-cooked or raw as a wrap, fiber either way.
+Concord grape|Vitis labrusca|Vitaceae|rare|The deep-purple American grape — juice-dark skins loaded with anthocyanins.
+Corn|Zea mays|Poaceae|common|A whole grain in disguise — the fiber rides in the kernel skins.
+Cranberry|Vaccinium macrocarpon|Ericaceae|rare|A-type proanthocyanidins — the tart compounds behind its famous reputation.
+Cucumber|Cucumis sativus|Cucurbitaceae|common|Mostly water, but the skin carries the fiber and the polyphenols — don't peel it.
+Cumin|Cuminum cyminum|Apiaceae|uncommon|The backbone of half the world's spice blends — seeds with real polyphenol content.
+Date|Phoenix dactylifera|Arecaceae|uncommon|Nature's caramel wrapped around real fiber — sweetness your microbes share.
+Eggplant|Solanum melongena|Solanaceae|uncommon|Nasunin lives in that deep-purple skin — keep it on.
+Fennel|Foeniculum vulgare|Apiaceae|rare|Anise-sweet bulb, feathery fronds — an Apiaceae rare that roasts into silk.
+Fig|Ficus carica|Moraceae|rare|Ancient, jammy, and fiber-dense — fresh or dried, the seeds do the work.
+Flaxseed|Linum usitatissimum|Linaceae|uncommon|Lignans plus mucilage — grind them fresh or they pass through incognito.
+Garlic|Allium sativum|Amaryllidaceae|common|Tiny clove, huge inulin payload — one of the best-fed guilds' favorite fuels, plus allicin when crushed.
+Ginger|Zingiber officinale|Zingiberaceae|uncommon|Gingerol brings the heat; a thumb of it in a stir-fry counts as a plant all its own.
+Grape|Vitis vinifera|Vitaceae|common|Resveratrol headlines, but the skins and seeds carry a whole polyphenol cast.
+Green banana|Musa acuminata (unripe)|Musaceae|uncommon|Unripe means resistant starch — a distinct food from its yellow future self.
+Green pea|Pisum sativum|Fabaceae|common|Little green protein-fiber spheres — the easiest legume to say yes to.
+Hazelnut|Corylus avellana|Betulaceae|rare|Proanthocyanidin-rich, especially with skins on — beyond the chocolate-spread cameo.
+Jerusalem artichoke|Helianthus tuberosus|Asteraceae|legendary|The single richest common source of inulin — a legendary feed for the deep-fiber guilds. Start small.
+Kale|Brassica oleracea var. sabellica|Brassicaceae|uncommon|Lutein and glucosinolates in a leaf sturdy enough to massage. The darker the leaf, the more it carries.
+Kidney bean|Phaseolus vulgaris var. nanus|Fabaceae|uncommon|Chili's backbone — resistant starch and GOS that survive a long simmer.
 Kimchi|Brassica rapa (fermented)|Brassicaceae|rare|Cabbage transformed — live cultures plus the fiber it started with. A probiotic and a plant in one.
-Sauerkraut|Brassica oleracea (fermented)|Brassicaceae|uncommon|The simplest ferment there is: cabbage, salt, time. Choose the refrigerated kind — that's where the cultures live.
-Miso|Glycine max (fermented)|Fabaceae|rare|Soybeans aged into savory depth — stir into warm (not boiling) broth to keep the cultures with you.
-Tempeh|Glycine max (fermented)|Fabaceae|rare|Whole soybeans bound by fungal fermentation — the fiber survives, unlike in most soy foods.
-Natto|Glycine max (fermented, Bacillus subtilis)|Fabaceae|legendary|The boldest ferment in the guide — sticky, pungent, and famous for vitamin K2. A legendary badge of honor.
+Kiwi|Actinidia deliciosa|Actinidiaceae|uncommon|Actinidin, vitamin C, and a fiber combo studied for keeping things moving.
+Kombu|Saccharina japonica|Laminariaceae|legendary|The umami kelp of dashi — glutamates plus ocean fibers, a legendary find.
 Kombucha|Camellia sinensis (fermented)|Theaceae|rare|Tea plus a culture — tangy, lightly fizzy, and a gentle way to add a fermented find to any day.
+Leek|Allium ampeloprasum|Amaryllidaceae|uncommon|A gentler, sweeter allium — the white base carries the fructans your microbes queue up for.
+Lemon|Citrus x limon|Rutaceae|common|Zest before you juice — the peel oils carry limonene the juice never sees.
+Lentil|Lens culinaris|Fabaceae|uncommon|The fastest-cooking legume, dense in GOS and folate — a guild feast in 25 minutes.
+Mango|Mangifera indica|Anacardiaceae|uncommon|Mangiferin plus carotenoids — sunshine that counts toward your orange.
+Millet|Panicum miliaceum|Poaceae|rare|An ancient, gentle grain — a rare find that cooks like couscous.
+Mint|Mentha spicata|Lamiaceae|common|Menthol freshness that turns water, yogurt, and salads into another plant point.
+Miso|Glycine max (fermented)|Fabaceae|rare|Soybeans aged into savory depth — stir into warm (not boiling) broth to keep the cultures with you.
+Natto|Glycine max (fermented, Bacillus subtilis)|Fabaceae|legendary|The boldest ferment in the guide — sticky, pungent, and famous for vitamin K2. A legendary badge of honor.
+Nori|Pyropia yezoensis|Bangiaceae|rare|The sushi wrap is a sea vegetable — minerals and fibers land plants can't offer.
+Nutmeg|Myristica fragrans|Myristicaceae|rare|A grating is plenty — warm spice with its own phytochemical signature.
+Oats|Avena sativa|Poaceae|common|Beta-glucan's home field — the breakfast that feeds your propionate-makers.
+Okra|Abelmoschus esculentus|Malvaceae|rare|That silkiness is mucilage — a soothing gel fiber your butyrate-makers ferment happily.
+Onion|Allium cepa|Amaryllidaceae|common|The everyday prebiotic: fructans plus quercetin in the papery layers. The workhorse of gut gardens.
+Orange|Citrus x sinensis|Rutaceae|common|Eat it, don't juice it — hesperidin and pectin live in the segments and pith.
+Oregano|Origanum vulgare|Lamiaceae|uncommon|One of the highest polyphenol densities of any herb, dried or fresh.
+Oyster mushroom|Pleurotus ostreatus|Pleurotaceae|rare|Velvety, quick-cooking, and one of the richer beta-glucan mushrooms.
+Parsley|Petroselinum crispum|Apiaceae|common|Not a garnish — one of the densest apigenin sources you can buy.
+Parsnip|Pastinaca sativa|Apiaceae|rare|Carrot's pale, sweeter cousin — more fiber per bite and criminally underused.
+Peanut|Arachis hypogaea|Fabaceae|common|Botanically a legume, culturally a nut — resveratrol in the skins.
+Pear|Pyrus communis|Rosaceae|common|Gritty texture is stone cells plus pectin — gentle fiber in dessert clothing.
+Pecan|Carya illinoinensis|Juglandaceae|rare|Among the highest polyphenol loads of any nut — pie undersells it.
+Pineapple|Ananas comosus|Bromeliaceae|uncommon|Bromelain lives in the core — the part most people throw away.
+Pistachio|Pistacia vera|Anacardiaceae|uncommon|Green from lutein — one of the few nuts with meaningful carotenoids.
+Pomegranate|Punica granatum|Lythraceae|rare|Ellagitannins your microbes convert to urolithin A — the mitochondria crews' favorite fruit.
+Potato|Solanum tuberosum|Solanaceae|common|The humble spud turns prebiotic when cooked then COOLED — potato salad is resistant-starch food.
+Pumpkin|Cucurbita pepo|Cucurbitaceae|uncommon|Carotenoid-dense flesh and seeds worth roasting — two finds in one gourd.
+Pumpkin seed|Cucurbita pepo var. styriaca|Cucurbitaceae|uncommon|Zinc, magnesium, and a satisfying crunch — roast the ones from your own pumpkin.
 Purple sweet potato|Ipomoea batatas (purple cultivars)|Convolvulaceae|rare|The orange classic gone violet — anthocyanins in a tuber. Okinawan tables swear by it; cool it after cooking for resistant starch too.
+Quinoa|Chenopodium quinoa|Amaranthaceae|uncommon|A seed posing as a grain — complete protein plus saponins in the rinse water.
+Radish|Raphanus sativus|Brassicaceae|common|A crunchy, peppery crucifer you can eat in seconds — the easy way to sneak a fourth plant into lunch.
+Raspberry|Rubus idaeus|Rosaceae|uncommon|Eight grams of fiber a cup — the highest-fiber berry on the shelf.
+Romaine lettuce|Lactuca sativa|Asteraceae|common|More than crunch: water, folate, and a gentle fiber that makes salads a habit.
+Rosemary|Salvia rosmarinus|Lamiaceae|uncommon|Carnosic acid in needle form — a woody herb that survives every roast.
+Rye|Secale cereale|Poaceae|rare|Dense, dark, and prebiotic — real rye bread feeds crews that white loaves never reach.
+Sauerkraut|Brassica oleracea (fermented)|Brassicaceae|uncommon|The simplest ferment there is: cabbage, salt, time. Choose the refrigerated kind — that's where the cultures live.
+Sesame seed|Sesamum indicum|Pedaliaceae|uncommon|Sesamin lignans in every sprinkle — tahini is its grown-up form.
+Shallot|Allium cepa var. aggregatum|Amaryllidaceae|uncommon|Onion's refined cousin, denser in polyphenols per bite than most of the allium family.
+Shiitake mushroom|Lentinula edodes|Omphalotaceae|uncommon|Lentinan — a beta-glucan studied for decades — plus real umami depth.
+Sorghum|Sorghum bicolor|Poaceae|rare|The heirloom cereal with tannins and a pop — it even puffs like popcorn.
+Soybean|Glycine max|Fabaceae|uncommon|The isoflavone legume — edamame is its freshest, simplest form.
+Spinach|Spinacia oleracea|Amaranthaceae|common|Lutein, folate, and chlorophyll that wilts into anything. The gateway green.
+Spring onion|Allium fistulosum|Amaryllidaceae|common|Two plants in one: prebiotic white bulb, chlorophyll-rich green tops. Use the whole thing.
+Strawberry|Fragaria x ananassa|Rosaceae|common|Ellagic acid with universal appeal — the easiest red of the week.
+Sumac|Rhus coriaria|Anacardiaceae|legendary|The lemony crimson dust of Middle Eastern kitchens — a legendary polyphenol find.
+Sunflower seed|Helianthus annuus|Asteraceae|uncommon|Vitamin E and chlorogenic acid by the handful — the lunchbox classic holds up.
+Sweet potato|Ipomoea batatas|Convolvulaceae|uncommon|Orange flesh, carotenoids, and a fiber mix that lands gently. Cool it after cooking for resistant starch.
+Swiss chard|Beta vulgaris subsp. vulgaris|Amaranthaceae|rare|Rainbow stems, beet's leafy cousin — betalains and magnesium in one dramatic leaf.
+Tempeh|Glycine max (fermented)|Fabaceae|rare|Whole soybeans bound by fungal fermentation — the fiber survives, unlike in most soy foods.
+Thyme|Thymus vulgaris|Lamiaceae|uncommon|Thymol in tiny leaves — a pinch across the week quietly adds up.
+Tomato|Solanum lycopersicum|Solanaceae|common|Lycopene central — and cooking concentrates it. Sauce counts.
+Turmeric|Curcuma longa|Zingiberaceae|rare|Curcumin's home. Pair with black pepper — its piperine helps curcumin along.
+Turnip|Brassica rapa subsp. rapa|Brassicaceae|uncommon|Old-world staple, two foods in one: peppery root plus greens that outdo it nutritionally.
+Wakame|Undaria pinnatifida|Alariaceae|rare|The silky seaweed in miso soup — fucoidan, a fiber unique to the ocean.
+Walnut|Juglans regia|Juglandaceae|uncommon|Ellagitannins that your microbes turn into urolithins — the brainy-looking nut earns it.
+Watercress|Nasturtium officinale|Brassicaceae|rare|Gram for gram one of the most nutrient-dense leaves known — a rare find worth hunting.
+White bean|Phaseolus vulgaris var. albus|Fabaceae|uncommon|Creamy, mild, and one of the highest-fiber foods per cup in the whole guide.
+White mushroom|Agaricus bisporus|Agaricaceae|common|Fungi, not botanically a plant — but beta-glucans earn it a guide page and your 30.
+Whole wheat|Triticum aestivum|Poaceae|common|Arabinoxylan — wheat bran's signature fiber — is one of the most overlooked guild feeds.
+Zucchini|Cucurbita pepo var. cylindrica|Cucurbitaceae|common|Mild, fast, and shreds invisibly into sauces — an easy diversity point.

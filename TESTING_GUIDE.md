@@ -72,23 +72,18 @@ The loop:
    join foods f on f.id = mi.food_id
    order by m.captured_at desc limit 100;
    ```
-   And the **catalogue gaps** — foods the model named that never resolved (they
-   show in-app as "Spotted, but new to us"):
-   ```sql
-   -- vision names with no matching canonical name OR alias → add to foods.csv
-   select m.captured_at, v.food->>'name' as unmatched_name
-   from meals m,
-        jsonb_array_elements((m.vision_raw_json #>> '{}')::jsonb -> 'foods') as v(food)
-   where m.vision_raw_json is not null
-     and not exists (
-       select 1 from foods f
-       where lower(f.canonical_name) = lower(v.food->>'name')
-          or lower(v.food->>'name') in (select lower(a) from unnest(f.aliases) a))
-   order by m.captured_at desc limit 100;
-   ```
-   Fix each gap either with an **alias** (same food, different name) or a **new
+   And the **catalogue gaps**: open the **`unmatched_food_sightings`** view in
+   the Table Editor (Views section). It lists every food name the model reported
+   that matches no canonical name and no alias, across all your meals — the same
+   things the app shows as "Spotted, but new to us." It's **self-healing**: the
+   moment you add the food or alias, its rows disappear. Work it to empty.
+
+   Fix each gap either with an **alias** (same food, different name — edit the
+   `aliases` array on the food's row, right in the Table Editor) or a **new
    food row** when it's nutritionally distinct — e.g. *purple sweet potato* got
    its own entry (blue-purple + anthocyanins), not an alias on the orange one.
+   Then run `python3 data/pull_foods_from_db.py` so the repo's CSVs pick up
+   your Studio edits — full self-serve steps in `CONTENT_GUIDE.md`.
 3. Sort misses into the three buckets above (alias / prompt / model) and fix the
    cheapest bucket first.
 4. Keep a folder of ~30 "benchmark plates" (photos that once failed). After any

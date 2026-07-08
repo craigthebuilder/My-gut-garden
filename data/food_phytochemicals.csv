@@ -4,88 +4,113 @@
 # Source: USDA Database for the Flavonoid Content of Foods; USDA carotenoid tables; Phenol-Explorer.
 # Format: pipe-delimited. food|phytochemical
 food|phytochemical
-Garlic|allicin
-Garlic|s_allyl_cysteine
-Onion|quercetin
-Onion|s_allyl_cysteine
-Leek|kaempferol
-Chives|kaempferol
-Broccoli|sulforaphane
-Broccoli|glucosinolate
-Broccoli|lutein
-Cauliflower|glucosinolate
-Cabbage|glucosinolate
-Kale|sulforaphane
-Kale|lutein
-Kale|kaempferol
-Brussels sprouts|glucosinolate
-Brussels sprouts|sulforaphane
-Bok choy|glucosinolate
+Almond|beta_sitosterol
+Apple|chlorogenic_acid
+Apple|quercetin
 Arugula|glucosinolate
-Radish|glucosinolate
-Watercress|glucosinolate
-Spinach|lutein
-Spinach|zeaxanthin
-Spinach|chlorophyll
-Romaine lettuce|lutein
-Swiss chard|lutein
-Swiss chard|betanin
-Collard greens|lutein
-Collard greens|chlorophyll
-Carrot|beta_carotene
-Carrot|alpha_carotene
+Asparagus|asparagoside
+Avocado|beta_sitosterol
+Basil|chlorophyll
+Basil|linalool
+Beet|betanidin
 Beet|betanin
-Sweet potato|beta_carotene
-Turmeric|curcumin
-Pumpkin|beta_carotene
-Butternut squash|beta_carotene
-Tomato|lycopene
+Beet|isobetanin
+Beet|vulgaxanthin
 Bell pepper|beta_cryptoxanthin
 Bell pepper|capsaicin
-Eggplant|anthocyanin
-Chili pepper|capsaicin
-Parsley|kaempferol
-Basil|chlorophyll
-Rosemary|carnosic_acid
-Oregano|carnosic_acid
+Black pepper|chavicine
 Black pepper|piperine
-Sumac|ellagic_acid
-Corn|zeaxanthin
-Apple|quercetin
-Apple|chlorogenic_acid
-Blueberry|anthocyanin
-Strawberry|ellagic_acid
-Strawberry|anthocyanin
-Raspberry|ellagic_acid
-Raspberry|anthocyanin
 Blackberry|anthocyanin
 Blackberry|ellagic_acid
-Cranberry|anthocyanin
-Pomegranate|punicalagin
-Pomegranate|ellagic_acid
-Concord grape|resveratrol
+Blueberry|anthocyanin
+Bok choy|glucosinolate
+Broccoli|brassicasterol
+Broccoli|glucosinolate
+Broccoli|lutein
+Broccoli|pheophytin
+Broccoli|sulforaphane
+Brussels sprouts|glucosinolate
+Brussels sprouts|sulforaphane
+Butternut squash|beta_carotene
+Cabbage|glucosinolate
+Carrot|alpha_carotene
+Carrot|beta_carotene
+Cauliflower|glucosinolate
+Chickpea|chickpea_saponin
+Chili pepper|capsaicin
+Chives|kaempferol
+Cinnamon|chlorogenic_acid
+Cinnamon|eugenol
+Collard greens|chlorophyll
+Collard greens|lutein
 Concord grape|anthocyanin
+Concord grape|resveratrol
+Corn|zeaxanthin
+Cranberry|anthocyanin
+Eggplant|anthocyanin
+Eggplant|solanine
+Fig|anthocyanin
+Flaxseed|secoisolariciresinol
+Garlic|allicin
+Garlic|diallyl_disulfide
+Garlic|s_allyl_cysteine
 Grape|resveratrol
-Orange|hesperidin
-Orange|beta_cryptoxanthin
+Green tea|caffeine
+Green tea|catechin
+Green tea|epigallocatechin_gallate
+Kale|chlorophyll_b
+Kale|kaempferol
+Kale|lutein
+Kale|sulforaphane
+Kombucha|catechin
+Leek|kaempferol
 Lemon|hesperidin
 Mango|beta_carotene
+Mint|menthol
+Miso|genistein
+Oats|avenacoside
+Oats|avenasterol
+Oats|beta_sitosterol
+Onion|quercetin
+Onion|s_allyl_cysteine
+Orange|beta_cryptoxanthin
+Orange|hesperidin
+Oregano|carnosic_acid
+Parsley|kaempferol
 Pineapple|naringenin
-Fig|anthocyanin
-Avocado|beta_sitosterol
-Walnut|ellagic_acid
-Almond|beta_sitosterol
-Flaxseed|secoisolariciresinol
+Pistachio|lutein
+Pomegranate|ellagic_acid
+Pomegranate|punicalagin
+Potato|solanine
+Pumpkin|beta_carotene
+Purple sweet potato|anthocyanin
+Quinoa|quinoa_saponin
+Radish|glucosinolate
+Raspberry|anthocyanin
+Raspberry|ellagic_acid
+Romaine lettuce|lutein
+Rosemary|alpha_pinene
+Rosemary|carnosic_acid
 Sesame seed|secoisolariciresinol
 Soybean|genistein
-Tofu|genistein
-Tempeh|genistein
-Miso|genistein
-Green tea|epigallocatechin_gallate
-Green tea|catechin
-Kombucha|catechin
-Oats|beta_sitosterol
+Soybean|stigmasterol
+Spinach|chlorophyll
+Spinach|chlorophyll_a
+Spinach|chlorophyllin
+Spinach|lutein
+Spinach|zeaxanthin
+Strawberry|anthocyanin
+Strawberry|ellagic_acid
+Sumac|ellagic_acid
 Sunflower seed|beta_sitosterol
-Pistachio|lutein
-Cinnamon|chlorogenic_acid
-Purple sweet potato|anthocyanin
+Sunflower seed|campesterol
+Sweet potato|beta_carotene
+Swiss chard|betanin
+Swiss chard|indicaxanthin
+Swiss chard|lutein
+Tempeh|genistein
+Tofu|genistein
+Tomato|lycopene
+Turmeric|curcumin
+Walnut|ellagic_acid
+Watercress|glucosinolate
