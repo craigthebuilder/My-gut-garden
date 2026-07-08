@@ -250,11 +250,17 @@ final class ThrPhytoDepthModel {
         }
     }
 
+    /// How far back the recency lookup reaches ("last eaten X days ago").
+    static let recencyLookbackDays = 90
+
     var classes: [ThrPhytoClassRow] = []
     var compounds: [ThrPhytochemicalRow] = []
     var recentPhytoIds: Set<String> = []      // eaten within the gap window
     /// Compound ids eaten within each coverage window.
     var eatenByWindow: [CoverageWindow: Set<String>] = [:]
+    /// Most recent day (yyyy-MM-dd) each compound crossed the plate, within the
+    /// 90-day lookback (owner request, round 3: "last eaten X days ago").
+    private(set) var lastEatenDayByPhyto: [String: String] = [:]
     /// Curated example foods per compound id ("where to find it").
     private(set) var foodNamesByPhyto: [String: [String]] = [:]
     var isLoaded = false
@@ -291,6 +297,21 @@ final class ThrPhytoDepthModel {
         classes.first { $0.id == compound.phytoClass }
     }
 
+    /// "Eaten today" / "Last eaten 12 days ago" / "Not in your last 90 days".
+    func recencyLabel(for compoundId: String) -> String {
+        guard let day = lastEatenDayByPhyto[compoundId],
+              let date = ThrDates.parseDay(day) else {
+            return "Not in your last \(Self.recencyLookbackDays) days"
+        }
+        let days = Calendar.current.dateComponents(
+            [.day], from: date, to: ThrDates.startOfToday()).day ?? 0
+        switch days {
+        case ..<1: return "Eaten today"
+        case 1: return "Last eaten yesterday"
+        default: return "Last eaten \(days) days ago"
+        }
+    }
+
     func load(appState: AppState) async {
         guard let repo = appState.repository else { isLoaded = true; return }
         async let cl: [ThrPhytoClassRow]      = (try? await repo.select("phyto_classes", order: "title")) ?? []
@@ -313,13 +334,14 @@ final class ThrPhytoDepthModel {
         isLoaded = true
     }
 
-    /// Phytochemicals consumed per coverage window (7/14/30 days), via the
-    /// user's recent meals -> meal_items -> food_phytochemicals. The month
-    /// window doubles as the gap window.
+    /// Phytochemicals consumed per coverage window (7/14/30 days) PLUS the most
+    /// recent day each compound crossed the plate (90-day lookback), via the
+    /// user's meals -> meal_items -> food_phytochemicals. The month window
+    /// doubles as the gap window.
     private func computeRecent(_ repo: Repository, userId: String?, foodPhytos: [ThrFoodPhytoRow]) async {
-        let days = CoverageWindow.month.rawValue
         let since = ThrDates.timestampString(
-            Calendar.current.date(byAdding: .day, value: -days, to: ThrDates.startOfToday()) ?? ThrDates.startOfToday())
+            Calendar.current.date(byAdding: .day, value: -Self.recencyLookbackDays,
+                                  to: ThrDates.startOfToday()) ?? ThrDates.startOfToday())
         guard let meals: [MealRow] = try? await repo.select(
             "meals", columns: mealColumns, filters: ["captured_at": "gte.\(since)", "confirmed": "eq.true"]
         ), !meals.isEmpty else { return }
@@ -334,17 +356,23 @@ final class ThrPhytoDepthModel {
         var phytosByFood: [String: [String]] = [:]
         for r in foodPhytos { phytosByFood[r.foodId, default: []].append(r.phytochemicalId) }
 
+        // Most recent day per compound ("last eaten X days ago").
+        var lastEaten: [String: String] = [:]
+        for item in items {
+            guard let day = dayByMeal[item.mealId] else { continue }
+            for phyto in phytosByFood[item.foodId] ?? [] {
+                if let existing = lastEaten[phyto], existing >= day { continue }
+                lastEaten[phyto] = day
+            }
+        }
+        lastEatenDayByPhyto = lastEaten
+
         let calendar = Calendar.current
         for window in CoverageWindow.allCases {
             guard let cutoff = calendar.date(byAdding: .day, value: -window.rawValue,
                                              to: ThrDates.startOfToday()) else { continue }
             let cutoffDay = ThrDates.dateString(cutoff)
-            var eaten: Set<String> = []
-            for item in items {
-                guard let day = dayByMeal[item.mealId], day >= cutoffDay else { continue }
-                eaten.formUnion(phytosByFood[item.foodId] ?? [])
-            }
-            eatenByWindow[window] = eaten
+            eatenByWindow[window] = Set(lastEaten.filter { $0.value >= cutoffDay }.keys)
         }
         recentPhytoIds = eatenByWindow[.month] ?? []
     }
@@ -540,7 +568,8 @@ struct ThrPhytoClassDetailView: View {
                     NavigationLink {
                         ThrPhytoCompoundDetailView(compound: compound, klass: klass,
                                                    recent: model.recentPhytoIds.contains(compound.id),
-                                                   exampleFoods: model.exampleFoods(for: compound.id))
+                                                   exampleFoods: model.exampleFoods(for: compound.id),
+                                                   recencyLabel: model.recencyLabel(for: compound.id))
                     } label: { compoundRow(compound) }
                         .buttonStyle(.plain)
                 }
@@ -556,9 +585,14 @@ struct ThrPhytoClassDetailView: View {
             HStack(spacing: theme.metrics.space3) {
                 Image(systemName: model.recentPhytoIds.contains(compound.id) ? "checkmark.seal.fill" : "atom")
                     .foregroundStyle(model.recentPhytoIds.contains(compound.id) ? theme.colors.success : theme.colors.secondary)
-                Text(compound.name.replacingOccurrences(of: "_", with: " ").capitalized)
-                    .font(theme.typography.body())
-                    .foregroundStyle(theme.colors.textPrimary)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(compound.name.replacingOccurrences(of: "_", with: " ").capitalized)
+                        .font(theme.typography.body())
+                        .foregroundStyle(theme.colors.textPrimary)
+                    Text(model.recencyLabel(for: compound.id))
+                        .font(theme.typography.caption())
+                        .foregroundStyle(theme.colors.textSecondary)
+                }
                 Spacer()
                 Image(systemName: "chevron.right")
                     .font(.system(size: 13, weight: .semibold))
@@ -576,6 +610,8 @@ struct ThrPhytoCompoundDetailView: View {
     /// Curated foods that carry this compound ("what to eat to get more of it",
     /// owner request, round 2). From the food_phytochemicals junction.
     var exampleFoods: [String] = []
+    /// "Last eaten X days ago" (owner request, round 3). nil hides the line.
+    var recencyLabel: String? = nil
 
     var body: some View {
         ScrollView {
@@ -593,7 +629,11 @@ struct ThrPhytoCompoundDetailView: View {
                             .foregroundStyle(theme.colors.textSecondary)
                     }
                 }
-                if recent {
+                if let recencyLabel {
+                    Text(recencyLabel)
+                        .font(theme.typography.caption(weight: .semibold))
+                        .foregroundStyle(recent ? theme.colors.success : theme.colors.textSecondary)
+                } else if recent {
                     Text("You've logged this recently.")
                         .font(theme.typography.caption(weight: .semibold))
                         .foregroundStyle(theme.colors.success)
@@ -652,7 +692,8 @@ struct ThrPhytoMissingListView: View {
                                 ThrPhytoCompoundDetailView(
                                     compound: compound, klass: klass,
                                     recent: model.recentPhytoIds.contains(compound.id),
-                                    exampleFoods: model.exampleFoods(for: compound.id))
+                                    exampleFoods: model.exampleFoods(for: compound.id),
+                                    recencyLabel: model.recencyLabel(for: compound.id))
                             } label: { missingRow(compound) }
                                 .buttonStyle(.plain)
                         }
@@ -675,6 +716,9 @@ struct ThrPhytoMissingListView: View {
                     Text(compound.name.replacingOccurrences(of: "_", with: " ").capitalized)
                         .font(theme.typography.body(weight: .medium))
                         .foregroundStyle(theme.colors.textPrimary)
+                    Text(model.recencyLabel(for: compound.id))
+                        .font(theme.typography.caption())
+                        .foregroundStyle(theme.colors.textSecondary)
                     let foods = model.exampleFoods(for: compound.id, limit: 3)
                     if !foods.isEmpty {
                         Text("In \(foods.joined(separator: ", ").lowercased())")

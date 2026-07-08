@@ -67,6 +67,16 @@ enum ThrDates {
         withFrac.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         return withFrac.date(from: s) ?? ISO8601DateFormatter().date(from: s)
     }
+
+    /// Parse a `yyyy-MM-dd` day string (a `date` column, or a timestamp prefix).
+    static func parseDay(_ s: String) -> Date? {
+        let f = DateFormatter()
+        f.calendar = Calendar(identifier: .gregorian)
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.timeZone = .current
+        f.dateFormat = "yyyy-MM-dd"
+        return f.date(from: String(s.prefix(10)))
+    }
 }
 
 // MARK: - Module-owned decode rows (tables C reads but Repository.swift doesn't model)

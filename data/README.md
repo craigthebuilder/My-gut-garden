@@ -45,7 +45,7 @@ Natural keys: `colors.id` · `fibers/plants/phytochemicals.name` · `districts.o
 | food_phytochemicals | 84 |
 | food_guild_feeds | 79 (every one of the 12 guilds has ≥1 feeder) |
 | curiosity_facts | 35 (food-tagged; the post-snap fact only fires on a matching plate) |
-| recipes | 10 (each with an `ingredients` list incl. serving sizes) |
+| recipes | 18 (each with an `ingredients` list incl. serving sizes) |
 | success_stories | 6 |
 
 > **Single-mode schema drift (2026-07-02):** `fodmap_profiles` and
