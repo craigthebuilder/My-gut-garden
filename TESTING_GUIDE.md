@@ -105,12 +105,19 @@ The loop:
    things the app shows as "Spotted, but new to us." It's **self-healing**: the
    moment you add the food or alias, its rows disappear. Work it to empty.
 
-   Fix each gap either with an **alias** (same food, different name — edit the
-   `aliases` array on the food's row, right in the Table Editor) or a **new
-   food row** when it's nutritionally distinct — e.g. *purple sweet potato* got
-   its own entry (blue-purple + anthocyanins), not an alias on the orange one.
-   Then run `python3 data/pull_foods_from_db.py` so the repo's CSVs pick up
-   your Studio edits — full self-serve steps in `CONTENT_GUIDE.md`.
+   **The librarian now fixes most gaps for you (2026-07-09):** when a scan
+   hits an unknown food, a background job generates its full profile
+   (`verified = false`), adds it to the catalogue live, and links it into the
+   meal — the result screen shows "adding it to the garden…" and heals in
+   ~10–30s. Your job shifts from *adding* foods to *reviewing* them: in Studio,
+   filter `foods` (and `plants`) on **`verified = false`** — each row carries
+   the generator's rationale + source hint in **`librarian_notes`**. Amend
+   anything off, then flip `verified` to true. `unmatched_food_sightings`
+   still catches the stragglers the librarian refused (dish names, junk).
+   Fix those the old way: an **alias** on an existing row, or a **new food
+   row** when nutritionally distinct. Either way, finish with
+   `python3 data/pull_foods_from_db.py` so the repo's CSVs pick up the new
+   catalogue state — full self-serve steps in `CONTENT_GUIDE.md`.
 3. Sort misses into the three buckets above (alias / prompt / model) and fix the
    cheapest bucket first.
 4. Keep a folder of ~30 "benchmark plates" (photos that once failed). After any

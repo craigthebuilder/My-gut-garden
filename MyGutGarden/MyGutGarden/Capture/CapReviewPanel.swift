@@ -1,11 +1,12 @@
 //
 //  CapReviewPanel.swift
-//  MyGutGarden, Module B — the edit-FIRST result panel (owner decision,
-//  2026-07-08): recognition corrections stop hiding behind "Edit this meal"
-//  and become the first thing on the result screen. "N plants spotted — tap
-//  anything that's off." Each row carries the model's hand-anchored measure
-//  ("~a fist · ~120g") and expands to a ½×–2× slider; unmatched names resolve
-//  inline; one tap says "Looks right."
+//  MyGutGarden, Module B — the result-screen review (owner shape, 2026-07-09):
+//  a COMPACT header card ("2 plants spotted — tap to edit") opens a pop-up
+//  holding the full editor: per-item rows with the model's hand-anchored
+//  measure ("~a fist · ~120g") and a ½×–2× slider, inline resolution for
+//  unmatched names, add-a-food, photo delete (Fence 5 — this sheet is the
+//  photo's ONLY delete surface), and a one-tap "Looks right." The old
+//  standalone "Edit this meal" sheet is retired; this replaces it.
 //
 //  Every interaction is logged to `recognition_feedback` — the accuracy ledger
 //  that doubles as the owner's is-it-working metric, the eval set for vision-
@@ -66,9 +67,12 @@ final class CapReviewModel {
         }
     }
 
-    /// A vision name the catalogue couldn't resolve ("new to us").
+    /// A vision name the catalogue couldn't resolve ("new to us"). While the
+    /// librarian is generating its profile, `pending` shows "Adding it to the
+    /// garden…"; a failed/skipped verdict falls back to manual "Pick a match."
     struct Unresolved: Identifiable, Sendable {
         let visionName: String
+        var pending = false
         var id: String { visionName }
     }
 
@@ -76,6 +80,10 @@ final class CapReviewModel {
     private(set) var unresolved: [Unresolved] = []
     private(set) var looksRightSent = false
     private(set) var isSaving = false
+    /// Fence 5: photos are permanent-but-deletable, and this sheet is the
+    /// delete surface. `hadPhoto` remembers one existed even after removal.
+    private(set) var hadPhoto = false
+    private(set) var photoRemoved = false
     var errorText: String?
 
     private let repository: Repository?
@@ -83,10 +91,12 @@ final class CapReviewModel {
     private let mealId: String?
 
     init(response: RecognitionResponse, annotationFoodIds: Set<String>,
+         photoURL: String?,
          repository: Repository?, userId: String?, mealId: String?) {
         self.repository = repository
         self.userId = userId
         self.mealId = mealId
+        self.hadPhoto = photoURL != nil
 
         rows = response.items.compactMap { item in
             guard let attrs = item.attributes else { return nil }
@@ -103,8 +113,15 @@ final class CapReviewModel {
                 portionTier: item.vision.portionTier
             )
         }
-        unresolved = response.unmatched.map(Unresolved.init(visionName:))
+        unresolved = response.unmatched.map { Unresolved(visionName: $0) }
+        // The camera's quantity estimates for unmatched names, kept so a
+        // librarian-healed row keeps its grams.
+        unmatchedVision = Dictionary(
+            response.items.filter { $0.attributes == nil }.map { ($0.vision.name, $0.vision) },
+            uniquingKeysWith: { a, _ in a })
     }
+
+    private var unmatchedVision: [String: VisionFood] = [:]
 
     // MARK: Derived
 
@@ -160,6 +177,44 @@ final class CapReviewModel {
         log("unmatched_resolved", foodId: food.id, visionName: item.visionName)
     }
 
+    // MARK: The librarian (SPEC §4 Coverage — unknown foods heal themselves)
+
+    /// Mark every unresolved name as in-generation ("Adding it to the garden…").
+    func markLibrarianPending() {
+        for idx in unresolved.indices { unresolved[idx].pending = true }
+    }
+
+    /// Fold the librarian's verdicts in: healed names become editable rows
+    /// (the server already linked the meal_item, so no persist here); failures
+    /// fall back to the manual "Pick a match" flow. Names the response didn't
+    /// cover (or a failed call, results == []) also drop back to manual.
+    func applyLibrarianResults(_ results: [CapLibrarianResult]) {
+        for result in results {
+            guard let idx = unresolved.firstIndex(where: { $0.visionName == result.name }) else { continue }
+            guard let food = result.food,
+                  ["added", "alias", "linked"].contains(result.status) else {
+                unresolved[idx].pending = false
+                continue
+            }
+            let vision = unmatchedVision[result.name]
+            unresolved.remove(at: idx)
+            guard !rows.contains(where: { $0.foodId == food.id }) else { continue }
+            rows.append(Row(
+                foodId: food.id,
+                name: food.canonicalName,
+                visionName: result.name,
+                source: .librarian,
+                isPlant: food.isPlant,
+                baseGrams: vision?.estGrams,
+                typicalServingG: food.typicalServingG,
+                fiberPerServingG: food.fiberPerServingG ?? 0,
+                householdMeasure: vision?.householdMeasure,
+                portionTier: vision?.portionTier ?? .serving
+            ))
+        }
+        for idx in unresolved.indices { unresolved[idx].pending = false }
+    }
+
     /// One-tap positive label for the whole scan.
     func confirmLooksRight() {
         guard !looksRightSent else { return }
@@ -170,6 +225,18 @@ final class CapReviewModel {
     func searchFoods(_ term: String) async -> [CapFoodSearchResult] {
         guard let repository else { return [] }
         return (try? await CapFoodSearchService(repository: repository).search(term)) ?? []
+    }
+
+    /// Delete the meal's photo (privacy, Fence 5). Food data stays.
+    func deletePhoto() async {
+        guard let repository, let userId, let mealId else { return }
+        do {
+            try await CapMealPersistence(repository: repository, userId: userId)
+                .deletePhoto(mealId: mealId)
+            photoRemoved = true
+        } catch {
+            errorText = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+        }
     }
 
     // MARK: IO
@@ -231,7 +298,104 @@ final class CapReviewModel {
     }
 }
 
-// MARK: - Panel view
+// MARK: - Compact summary card (the result screen's header; taps into the editor)
+
+struct CapReviewSummaryCard: View {
+    @Environment(\.theme) private var theme
+    let model: CapReviewModel
+    let onTap: () -> Void
+
+    var body: some View {
+        Button(action: onTap) {
+            Card {
+                HStack(spacing: theme.metrics.space3) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(model.plantCount == 1 ? "1 plant spotted" : "\(model.plantCount) plants spotted")
+                            .font(theme.typography.title(20))
+                            .foregroundStyle(theme.colors.textPrimary)
+                        Text(subtitle)
+                            .font(theme.typography.caption())
+                            .foregroundStyle(theme.colors.textSecondary)
+                    }
+                    Spacer()
+                    Image(systemName: "slider.horizontal.3")
+                        .font(.system(size: 16))
+                        .foregroundStyle(theme.colors.primary)
+                }
+            }
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("\(model.plantCount) plants spotted. \(subtitle)")
+        .accessibilityHint("Opens the meal editor")
+    }
+
+    private var subtitle: String {
+        var parts = ["~\(Int(model.mealFiberG.rounded()))g fiber"]
+        if !model.unresolved.isEmpty {
+            parts.append(model.unresolved.count == 1 ? "1 new to us" : "\(model.unresolved.count) new to us")
+        }
+        parts.append("tap to edit")
+        return parts.joined(separator: " · ")
+    }
+}
+
+// MARK: - The editor pop-up (sheet)
+
+struct CapReviewSheet: View {
+    @Environment(\.theme) private var theme
+    @Environment(\.dismiss) private var dismiss
+    @Bindable var model: CapReviewModel
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: theme.metrics.space4) {
+                    CapReviewPanel(model: model)
+                    photoRow
+                }
+                .padding(theme.metrics.space5)
+            }
+            .background(theme.colors.background.ignoresSafeArea())
+            .navigationTitle("Your meal")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { dismiss() }
+                }
+            }
+        }
+    }
+
+    /// Fence 5: this sheet is the photo's delete surface (photos are otherwise
+    /// permanent, private, disclosed).
+    @ViewBuilder
+    private var photoRow: some View {
+        if model.hadPhoto, model.canPersist {
+            Card {
+                HStack(spacing: theme.metrics.space3) {
+                    Image(systemName: model.photoRemoved ? "photo.badge.exclamationmark" : "photo")
+                        .font(.system(size: 20))
+                        .foregroundStyle(theme.colors.textSecondary)
+                    Text(model.photoRemoved ? "Photo removed" : "Photo saved to your private log")
+                        .font(theme.typography.caption())
+                        .foregroundStyle(theme.colors.textSecondary)
+                    Spacer()
+                    if !model.photoRemoved {
+                        Button(role: .destructive) {
+                            Task { await model.deletePhoto() }
+                        } label: {
+                            Text("Delete photo")
+                                .font(theme.typography.caption(weight: .semibold))
+                        }
+                        .foregroundStyle(theme.colors.error)
+                    }
+                }
+            }
+        }
+    }
+}
+
+// MARK: - The full editor panel (lives inside the sheet)
 
 struct CapReviewPanel: View {
     @Environment(\.theme) private var theme
@@ -401,23 +565,28 @@ private struct CapUnresolvedRowView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: theme.metrics.space2) {
             HStack(spacing: theme.metrics.space2) {
-                Image(systemName: "questionmark.circle")
+                Image(systemName: item.pending ? "sparkles" : "questionmark.circle")
                     .foregroundStyle(theme.colors.secondary)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(item.visionName)
                         .font(theme.typography.body(weight: .medium))
                         .foregroundStyle(theme.colors.textPrimary)
-                    Text("Spotted, but new to us — not counted yet.")
+                    Text(item.pending ? "New to us — adding it to the garden…"
+                                      : "Spotted, but new to us — not counted yet.")
                         .font(theme.typography.caption())
                         .foregroundStyle(theme.colors.textSecondary)
                 }
                 Spacer()
-                Button { searching.toggle() } label: {
-                    Text(searching ? "Close" : "Pick a match")
-                        .font(theme.typography.caption(weight: .semibold))
-                        .foregroundStyle(theme.colors.primary)
+                if item.pending {
+                    ProgressView()
+                } else {
+                    Button { searching.toggle() } label: {
+                        Text(searching ? "Close" : "Pick a match")
+                            .font(theme.typography.caption(weight: .semibold))
+                            .foregroundStyle(theme.colors.primary)
+                    }
+                    .accessibilityLabel("Pick a catalogue match for \(item.visionName)")
                 }
-                .accessibilityLabel("Pick a catalogue match for \(item.visionName)")
             }
             if searching {
                 TextField("Search foods", text: $term)

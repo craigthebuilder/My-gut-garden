@@ -194,6 +194,73 @@ struct CapFoodSearchService: Sendable {
     }
 }
 
+// MARK: - The librarian client (SPEC §4 "Coverage")
+
+/// One unmatched vision food handed to the librarian (name + the quantity the
+/// camera estimated, so the healed meal_item keeps its grams).
+struct CapLibrarianFoodInput: Sendable {
+    let name: String
+    let portionTier: String
+    let estGrams: Double?
+    let householdMeasure: String?
+}
+
+/// One librarian verdict: `linked`/`alias`/`added` carry the food's anchors so
+/// the review panel can slot the row in; `skipped` (not a food) and `failed`
+/// fall back to the manual "Pick a match" flow.
+struct CapLibrarianResult: Decodable, Sendable {
+    struct Anchors: Decodable, Sendable {
+        let id: String
+        let canonicalName: String
+        let isPlant: Bool
+        let typicalServingG: Double?
+        let fiberPerServingG: Double?
+    }
+    let name: String
+    let status: String
+    let food: Anchors?
+}
+
+/// Calls the `librarian` Edge Function after a meal persists: it generates a
+/// catalogue profile for each unknown food (verified=false, live instantly —
+/// owner decision 2026-07-08), links it into the meal server-side, and logs
+/// the 'librarian_added' ledger event. Best-effort; the scan flow never waits.
+struct CapLibrarianClient: Sendable {
+
+    private struct Envelope: Decodable { let results: [CapLibrarianResult] }
+
+    func submit(accessToken: String, mealId: String?,
+                foods: [CapLibrarianFoodInput]) async throws -> [CapLibrarianResult] {
+        var body: [String: Any] = [
+            "foods": foods.map { input -> [String: Any] in
+                var f: [String: Any] = ["name": input.name, "portion_tier": input.portionTier]
+                if let grams = input.estGrams { f["est_grams"] = grams }
+                if let measure = input.householdMeasure { f["household_measure"] = measure }
+                return f
+            }
+        ]
+        if let mealId { body["meal_id"] = mealId }
+
+        let url = SupabaseConfig.baseURL.appendingPathComponent("functions/v1/librarian")
+        var req = URLRequest(url: url)
+        req.httpMethod = "POST"
+        req.timeoutInterval = 120        // generation takes ~10-30s per batch
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.setValue(SupabaseConfig.anonKey, forHTTPHeaderField: "apikey")
+        req.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+        req.httpBody = try JSONSerialization.data(withJSONObject: body)
+
+        let (data, resp) = try await URLSession.shared.data(for: req)
+        guard let http = resp as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+            let message = String(data: data, encoding: .utf8) ?? ""
+            throw SupabaseError.server(status: (resp as? HTTPURLResponse)?.statusCode ?? -1, message: message)
+        }
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        return try decoder.decode(Envelope.self, from: data).results
+    }
+}
+
 // MARK: - Recognition feedback (the scan-accuracy ledger)
 
 /// Best-effort writer for `recognition_feedback` — every correction (and every

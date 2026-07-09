@@ -3,128 +3,316 @@
 # Source: USDA "eat the rainbow" groupings; visible pigment of the common form of the food.
 # Format: pipe-delimited. food|color
 food|color
+Acai Berry|blue_purple
+Adzuki Beans|red
+Agave Syrup|yellow
 Aged cheese|yellow
+Alfalfa Sprouts|green
+Allspice|white_brown
+Almond Milk|white_brown
 Almond|white_brown
+Amaranth|white_brown
+Apple Juice|yellow
 Apple|green
 Apple|red
+Apricot|orange
+Arborio Rice|white_brown
 Artichoke|green
 Arugula|green
 Asparagus|green
 Avocado|green
+Bagel|white_brown
+Bamboo Shoots|white_brown
+Banana Pepper|yellow
 Banana|yellow
 Barley|white_brown
 Basil|green
+Bay Leaf|green
+Bean Sprouts|white_brown
 Beet|red
 Bell pepper|red
+Black Rice|blue_purple
 Black bean|blue_purple
 Black pepper|white_brown
+Black-Eyed Peas|white_brown
 Blackberry|blue_purple
+Blue Cheese|white_brown
 Blueberry|blue_purple
 Bok choy|green
 Brazil nut|white_brown
+Brie|white_brown
+Broccoli Rabe|green
+Broccolini|green
 Broccoli|green
 Brown rice|white_brown
 Brussels sprouts|green
 Buckwheat|white_brown
+Bulgur|white_brown
+Burrata Cheese|white_brown
+Butter Lettuce|green
+Buttermilk|white_brown
 Butternut squash|orange
 Cabbage|green
+Cacao Nibs|white_brown
+Cantaloupe|orange
+Capers|green
+Caraway Seeds|white_brown
+Cardamom|white_brown
 Carrot|orange
 Cashew|white_brown
 Cauliflower|white_brown
+Cayenne Pepper|red
 Celery|green
+Chai Tea|orange
+Chanterelle Mushroom|orange
+Cheddar Cheese|orange
+Cherry|red
+Chestnut|white_brown
 Chia seed|white_brown
 Chickpea|white_brown
 Chicory root|white_brown
+Chili Powder|red
 Chili pepper|red
 Chives|green
 Cilantro|green
 Cinnamon|white_brown
+Clove|white_brown
+Cocoa Powder|white_brown
+Coconut Flakes|white_brown
+Coconut Milk|white_brown
+Coconut Water|white_brown
+Coconut|white_brown
 Collard greens|green
 Concord grape|blue_purple
+Condensed Milk|white_brown
+Coriander Seeds|white_brown
+Corn Flakes|yellow
+Corn Tortilla|yellow
 Corn|yellow
+Couscous|white_brown
 Cranberry|red
+Crawfish|white_brown
+Cremini Mushroom|white_brown
+Crème Fraîche|white_brown
 Cucumber|green
 Cumin|white_brown
+Curry Powder|yellow
+Dark Chocolate|white_brown
 Date|white_brown
+Dill|green
+Dragon Fruit|red
+Dried Apricot|orange
+Egg Noodles|white_brown
+Egg White|white_brown
 Eggplant|blue_purple
+Elderberry|blue_purple
+Endive|white_brown
+English Muffin|white_brown
+Enoki Mushroom|white_brown
+Farro|white_brown
+Fava Beans|green
+Fennel Seeds|green
 Fennel|white_brown
+Fenugreek Seeds|yellow
+Fermented Pickles|green
+Feta Cheese|white_brown
 Fig|blue_purple
+Fish Roe|orange
+Fish Roe|red
 Flaxseed|white_brown
+Flour Tortilla|white_brown
+Freekeh|green
+Garam Masala|orange
 Garlic|white_brown
 Ginger|white_brown
+Goat Cheese|white_brown
+Gochujang|red
+Goji Berry|red
+Gooseberry|green
+Gouda Cheese|yellow
+Granola|white_brown
+Grapefruit|red
+Grapefruit|yellow
 Grape|green
+Green Beans|green
+Green Olives|green
 Green banana|green
 Green banana|white_brown
 Green pea|green
 Green tea|green
+Grits|yellow
+Guava|red
+Habanero Pepper|orange
+Haddock|white_brown
+Halloumi|white_brown
+Hard Cider|yellow
+Harissa|red
 Hazelnut|white_brown
+Hearts of Palm|white_brown
+Hemp Seeds|white_brown
+Honeydew Melon|green
+Horseradish|white_brown
+Iceberg Lettuce|green
+Imitation Crab|white_brown
+Jackfruit|yellow
 Jerusalem artichoke|white_brown
+Kalamata Olives|blue_purple
 Kale|green
 Kefir|white_brown
 Kidney bean|red
 Kimchi|red
 Kiwi|green
+Kohlrabi|white_brown
 Kombucha|white_brown
 Kombu|green
+Labneh|white_brown
 Leek|white_brown
+Lemongrass|white_brown
 Lemon|yellow
 Lentil|white_brown
+Lima Beans|white_brown
+Lime|green
+Lychee|red
+Macadamia Nut|white_brown
+Mahi Mahi|white_brown
+Maitake Mushroom|white_brown
+Mandarin Orange|orange
 Mango|orange
+Milk Chocolate|white_brown
 Millet|yellow
 Mint|green
+Mirin|yellow
 Miso|white_brown
+Molasses|white_brown
+Muesli|white_brown
+Mulberry|blue_purple
+Mung Beans|green
+Mustard Seeds|yellow
+Naan|white_brown
+Napa Cabbage|white_brown
 Natto|white_brown
+Nectarine|orange
 Nori|green
 Nutmeg|white_brown
+Oat Milk|white_brown
 Oats|white_brown
+Octopus|white_brown
 Okra|green
+Olives|white_brown
 Onion|white_brown
+Orange Juice|orange
 Orange|orange
 Oregano|green
 Oyster mushroom|white_brown
+Paneer|white_brown
+Papaya|orange
+Paprika|red
 Parsley|green
 Parsnip|white_brown
+Passion Fruit|yellow
+Pasta|white_brown
+Peach|orange
 Peanut|white_brown
 Pear|green
 Pecan|white_brown
+Persimmon|orange
+Pine Nuts|white_brown
 Pineapple|yellow
+Pinto Beans|white_brown
 Pistachio|green
+Pita Bread|white_brown
+Plum|blue_purple
+Poblano Pepper|green
+Polenta|yellow
+Pollock|white_brown
 Pomegranate|red
+Popcorn|yellow
+Poppy Seeds|blue_purple
+Porcini Mushroom|white_brown
+Portobello Mushroom|white_brown
 Potato|white_brown
+Pretzels|white_brown
+Provolone Cheese|yellow
+Prune|blue_purple
 Pumpkin seed|green
 Pumpkin|orange
 Purple sweet potato|blue_purple
 Quinoa|white_brown
+Radicchio|red
 Radish|red
+Raisin|blue_purple
 Raspberry|red
+Rhubarb|red
+Rice Cakes|white_brown
+Rice Milk|white_brown
+Rice Noodles|white_brown
+Ricotta Cheese|white_brown
 Romaine lettuce|green
+Romanesco|green
 Rosemary|green
+Rutabaga|orange
 Rye|white_brown
+Saffron|yellow
+Sage|green
 Sauerkraut|white_brown
+Seitan|white_brown
+Serrano Pepper|green
 Sesame seed|white_brown
 Shallot|white_brown
 Shiitake mushroom|white_brown
+Skyr|white_brown
+Smoked Paprika|red
+Snow Peas|green
+Soba Noodles|white_brown
 Sorghum|white_brown
+Sour Cream|white_brown
 Sourdough bread|white_brown
+Soy Milk|white_brown
 Soybean|green
+Spelt|white_brown
 Spinach|green
+Split Peas|yellow
 Spring onion|green
+Star Anise|white_brown
 Strawberry|red
+String Cheese|white_brown
+Sugar Snap Peas|green
 Sumac|red
+Sun-Dried Tomato|red
+Sunflower Seed Butter|yellow
 Sunflower seed|white_brown
 Sweet potato|orange
+Swiss Cheese|white_brown
 Swiss chard|green
+Swordfish|white_brown
+Tarragon|green
+Teff|white_brown
 Tempeh|white_brown
 Thyme|green
 Tofu|white_brown
+Tomatillo|green
 Tomato|red
 Turmeric|yellow
 Turnip|white_brown
+Udon Noodles|white_brown
+Vanilla Bean|white_brown
+Vegetable Broth|yellow
 Wakame|green
 Walnut|white_brown
+Water Chestnut|white_brown
 Watercress|green
+Watermelon Radish|red
+Watermelon|red
+Whey Protein Powder|white_brown
+Whipped Cream|white_brown
+White Bread|white_brown
+White Rice|white_brown
 White bean|white_brown
 White mushroom|white_brown
+Whole Grain Bread|white_brown
+Whole Wheat Pasta|white_brown
 Whole wheat|white_brown
+Wild Rice|white_brown
 Yogurt|white_brown
+Za'atar|green
 Zucchini|green

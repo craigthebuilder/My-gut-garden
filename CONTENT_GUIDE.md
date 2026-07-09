@@ -82,6 +82,14 @@ should count toward the 30) → add a `food_colors` row for its rainbow group �
 optionally `food_phytochemicals` / `food_guild_feeds` / `food_fibers` rows.
 Then the pull command.
 
+**The librarian queue (2026-07-09):** most new foods now arrive on their own —
+when a scan hits an unknown food, the `librarian` Edge Function generates its
+full profile and inserts it **live with `verified = false`** (plants too).
+Your review loop: Studio → `foods` → filter `verified = false` → read
+`librarian_notes` (the generator's rationale + source hint) → amend anything
+off → set `verified = true`. Librarian foods flow into the CSVs on the next
+pull like any other catalogue row. No user-facing badge renders either way.
+
 ### The coach-mark tour specifically (a common thing to tweak)
 `data/tutorial_steps.csv`, `section_key = intro`, is the first-run walkthrough.
 Each row's `target_hint` is matched to a `.coachTarget("…")` in the Swift views;

@@ -35,7 +35,8 @@ struct ThrRecentMealsSection: View {
                         Button {
                             selected = ThrSelectedMeal(meal: meal, questions: questions[meal.id] ?? [])
                         } label: {
-                            ThrMealThumbCard(meal: meal, hasQuestion: !(questions[meal.id] ?? []).isEmpty)
+                            ThrMealThumbCard(appState: appState, meal: meal,
+                                             hasQuestion: !(questions[meal.id] ?? []).isEmpty)
                         }
                         .buttonStyle(.plain)
                     }
@@ -61,12 +62,13 @@ private struct ThrSelectedMeal: Identifiable {
 
 struct ThrMealThumbCard: View {
     @Environment(\.theme) private var theme
+    let appState: AppState
     let meal: MealRow
     var hasQuestion = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: theme.metrics.space1) {
-            ThrMealPhoto(photoUrl: meal.photoUrl)
+            ThrMealPhoto(appState: appState, photoUrl: meal.photoUrl)
                 .frame(width: 116, height: 116)
                 .clipShape(RoundedRectangle(cornerRadius: theme.metrics.radiusMedium, style: .continuous))
                 .overlay(alignment: .topTrailing) {
@@ -91,24 +93,36 @@ struct ThrMealThumbCard: View {
 
 /// The shared photo slot: the stored image when present, else a neutral
 /// placeholder (used identically for nil, expired, and never-photographed meals).
+///
+/// The meal-photos bucket is PRIVATE (per-user RLS, Fence 5), so a plain
+/// AsyncImage — which can't send the apikey/Authorization headers — failed on
+/// every photo and the rail showed nothing but placeholders (owner report,
+/// 2026-07-09). This loads through ThrMealPhotoLoader instead: authenticated
+/// fetch, one 401→token-refresh retry, downsampled + cached in memory.
 struct ThrMealPhoto: View {
     @Environment(\.theme) private var theme
+    let appState: AppState
     let photoUrl: String?
 
+    @State private var image: UIImage?
+    @State private var failed = false
+
     var body: some View {
-        if let photoUrl, let url = URL(string: photoUrl) {
-            AsyncImage(url: url) { phase in
-                switch phase {
-                case let .success(image):
-                    image.resizable().scaledToFill()
-                case .failure:
-                    placeholder
-                default:
-                    ZStack { placeholder; ProgressView() }
-                }
-            }
-        } else {
+        ZStack {
             placeholder
+            if let image {
+                Image(uiImage: image).resizable().scaledToFill()
+            } else if photoUrl != nil, !failed {
+                ProgressView()
+            }
+        }
+        .task(id: photoUrl) {
+            guard let photoUrl else { return }
+            if let loaded = await ThrMealPhotoLoader.shared.load(photoUrl, auth: appState.auth) {
+                image = loaded
+            } else {
+                failed = true
+            }
         }
     }
 
@@ -120,6 +134,56 @@ struct ThrMealPhoto: View {
                 .foregroundStyle(theme.colors.secondary.opacity(0.7))
         }
         .accessibilityHidden(true)
+    }
+}
+
+/// Authenticated image fetcher for the private meal-photos bucket, with an
+/// in-memory cache of downsampled images (full-size camera JPEGs are megabytes;
+/// the rail needs ~116pt). One instance app-wide so scrolling stays warm.
+@MainActor
+final class ThrMealPhotoLoader {
+    static let shared = ThrMealPhotoLoader()
+
+    private let cache = NSCache<NSString, UIImage>()
+    private init() { cache.countLimit = 120 }
+
+    func load(_ urlString: String, auth: AuthService) async -> UIImage? {
+        if let hit = cache.object(forKey: urlString as NSString) { return hit }
+        guard let url = URL(string: urlString) else { return nil }
+
+        guard var image = await fetch(url, token: auth.session?.accessToken) else {
+            // One retry after a token refresh (a stale JWT 401s against Storage).
+            guard let fresh = await auth.refreshSession(),
+                  let retried = await fetch(url, token: fresh) else { return nil }
+            let prepared = await downsample(retried)
+            cache.setObject(prepared, forKey: urlString as NSString)
+            return prepared
+        }
+        image = await downsample(image)
+        cache.setObject(image, forKey: urlString as NSString)
+        return image
+    }
+
+    private func fetch(_ url: URL, token: String?) async -> UIImage? {
+        guard let token else { return nil }
+        var req = URLRequest(url: url)
+        req.setValue(SupabaseConfig.anonKey, forHTTPHeaderField: "apikey")
+        req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        guard let (data, resp) = try? await URLSession.shared.data(for: req),
+              let http = resp as? HTTPURLResponse, (200..<300).contains(http.statusCode),
+              let image = UIImage(data: data) else { return nil }
+        return image
+    }
+
+    /// Downsample to display size (max ~800px) so the cache holds thumbnails,
+    /// not multi-megabyte camera frames.
+    private func downsample(_ image: UIImage) async -> UIImage {
+        let maxSide: CGFloat = 800
+        let largest = max(image.size.width, image.size.height)
+        guard largest > maxSide else { return image }
+        let scale = maxSide / largest
+        let target = CGSize(width: image.size.width * scale, height: image.size.height * scale)
+        return await image.byPreparingThumbnail(ofSize: target) ?? image
     }
 }
 
@@ -138,7 +202,7 @@ struct ThrMealDetailSheet: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: theme.metrics.space4) {
-                    ThrMealPhoto(photoUrl: meal.photoUrl)
+                    ThrMealPhoto(appState: appState, photoUrl: meal.photoUrl)
                         .frame(height: 200)
                         .frame(maxWidth: .infinity)
                         .clipShape(RoundedRectangle(cornerRadius: theme.metrics.radiusMedium, style: .continuous))

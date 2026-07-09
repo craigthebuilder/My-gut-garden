@@ -9,120 +9,227 @@
 #   matching the popular framing.
 # Format: pipe-delimited. name|scientific_name|plant_family|rarity_tier|description
 name|scientific_name|plant_family|rarity_tier|description
+Acai Berry|Euterpe oleracea|Arecaceae|uncommon|A small, dark-purple drupe harvested from tall acai palm trees native to the Amazon rainforest of South America. The edible pulp is thin around a large seed and is most commonly consumed as a frozen purée or powder outside its native region.
+Adzuki Beans|Vigna angularis|Fabaceae|uncommon|Small, deep-red beans with a white ridge along one side, prized across East Asia for their mildly sweet, nutty flavor. Commonly used in Japanese, Korean, and Chinese desserts and red bean paste.
+Agave|Agave tequilana|Asparagaceae|uncommon|A succulent native to Mexico whose core sap is processed into a sweet syrup with a high fructose content. The same plant family also gives us tequila and mezcal.
+Alfalfa Sprouts|Medicago sativa|Fabaceae|common|Tiny, delicate sprouts grown from alfalfa seeds with wispy white stems and small pale green leaves. They have a mild, grassy flavour and are commonly used as a topping for sandwiches and salads.
+Allspice|Pimenta dioica|Myrtaceae|uncommon|Allspice berries come from a tropical evergreen tree native to the Caribbean and Central America. The dried unripe berries have a complex aroma reminiscent of cloves, cinnamon, and nutmeg combined.
 Almond|Prunus dulcis|Rosaceae|uncommon|The skins carry polyphenols and the flesh carries fiber — a handful feeds more than you.
+Amaranth|Amaranthus cruentus|Amaranthaceae|uncommon|A broad-leaved annual plant cultivated for its tiny, protein-rich seeds, which range in color from cream to gold to dark red. Native to the Americas, its seeds are cooked like a porridge or popped like miniature popcorn.
 Apple|Malus domestica|Rosaceae|common|Pectin in the flesh, quercetin in the peel — the original portable prebiotic.
+Apricot|Prunus armeniaca|Rosaceae|common|A small, golden-orange stone fruit with velvety skin and sweet-tart flesh. Consumed fresh in season or dried for year-round use.
+Arborio Rice|Oryza sativa var. arborio|Poaceae|common|A short-grain Italian rice cultivar with a high amylopectin starch content, giving it a distinctive creamy texture when cooked. Widely used for risotto and rice pudding.
 Artichoke|Cynara cardunculus var. scolymus|Asteraceae|rare|Cynarin plus serious inulin — the fanciest prebiotic on the plate.
 Arugula|Eruca vesicaria|Brassicaceae|uncommon|The peppery bite IS the phytochemicals — erucin and friends, straight from the leaf.
 Asparagus|Asparagus officinalis|Asparagaceae|uncommon|Spring's prebiotic spear — fructans plus glutathione in a five-minute cook.
 Avocado|Persea americana|Lauraceae|uncommon|A fruit that eats like a fat — with more fiber per half than most salads.
+Bamboo Shoots|Phyllostachys edulis|Poaceae|uncommon|The young, tender new growth emerging from bamboo rhizomes, harvested before they become woody. They have a subtle, slightly nutty flavour and crunchy texture, and are a staple ingredient in many Asian cuisines.
 Banana|Musa acuminata|Musaceae|common|Ripe and sweet feeds you; the greener it is, the more it feeds your microbes.
+Banana Pepper|Capsicum annuum var. banana|Solanaceae|common|A long, tapered yellow-green mild chili pepper with a tangy, slightly sweet flavor and minimal heat (0–500 SHU). Frequently eaten fresh, pickled, or stuffed, and popular on sandwiches and pizzas.
 Barley|Hordeum vulgare|Poaceae|uncommon|Chewy, nutty, and even richer in beta-glucan than oats — soup's best upgrade.
 Basil|Ocimum basilicum|Lamiaceae|common|A handful of leaves is a legitimate plant — rosmarinic acid rides in the aroma.
+Bay Leaf|Laurus nobilis|Lauraceae|common|The dried or fresh leaf of the bay laurel tree, used whole to infuse soups, stews, and braises with a subtly floral, herbal flavor. Leaves are typically removed before serving.
+Bean Sprouts|Vigna radiata|Fabaceae|common|Germinated mung beans eaten in the early sprout stage, with a crunchy white shoot and small green seed head. A staple in Asian stir-fries and salads, offering a fresh, mild taste with satisfying crispness.
 Beet|Beta vulgaris|Amaranthaceae|uncommon|Betalains stain everything for a reason — pigment IS the payload. Roast, grate, or pickle.
 Bell pepper|Capsicum annuum|Solanaceae|common|One plant, three colors — red, yellow, and green peppers each lean into different carotenoids.
 Black bean|Phaseolus vulgaris|Fabaceae|uncommon|Dark skins mean anthocyanin cousins — pigment and fiber in the same spoonful.
 Black pepper|Piper nigrum|Piperaceae|common|Piperine — the everyday grind that helps other compounds (curcumin!) absorb.
+Black Rice|Oryza sativa var. indica|Poaceae|uncommon|A pigmented variety of Asian rice with a deep purple-black bran layer rich in anthocyanins, turning purple when cooked. It has a slightly nutty, chewy texture and subtly sweet flavor.
+Black-Eyed Peas|Vigna unguiculata|Fabaceae|common|A cream-colored legume with a distinctive black spot at its hilum, widely cultivated across Africa, Asia, and the American South. Eaten cooked in soups, stews, and rice dishes.
 Blackberry|Rubus fruticosus|Rosaceae|uncommon|So purple it's nearly black — that depth is anthocyanin density.
 Blueberry|Vaccinium corymbosum|Ericaceae|uncommon|Anthocyanins by the cupful — the berry your barrier-guarding crews adore.
 Bok choy|Brassica rapa subsp. chinensis|Brassicaceae|uncommon|A crucifer that cooks in minutes — crisp stems, tender greens, stir-fry's favorite vehicle.
 Brazil nut|Bertholletia excelsa|Lecythidaceae|rare|One or two a day covers selenium — a rare find that asks for restraint, not volume.
 Broccoli|Brassica oleracea var. italica|Brassicaceae|common|The famous one: sulforaphane's parent compound lives in these florets. Steam it lightly, chew it well.
+Broccoli Rabe|Brassica rapa subsp. ruvo|Brassicaceae|uncommon|A leafy, bitter cruciferous green with small broccoli-like florets and tender stems, closely related to turnip rather than true broccoli. Widely used in Italian and Chinese cooking, typically sautéed with garlic and olive oil to temper its assertive bitterness.
+Broccolini|Brassica oleracea × Brassica rapa|Brassicaceae|common|A hybrid cross between broccoli and Chinese kale (gai lan), featuring long slender stems and small florets with a mildly sweet, tender flavor. It is typically eaten lightly steamed, sautéed, or roasted.
 Brown rice|Oryza sativa|Poaceae|common|The bran layer is the point — and cooled leftover rice picks up resistant starch.
 Brussels sprouts|Brassica oleracea var. gemmifera|Brassicaceae|uncommon|Tiny cabbages with an outsized glucosinolate load. Roasting converts the skeptics.
 Buckwheat|Fagopyrum esculentum|Polygonaceae|rare|No wheat, no gluten — rutin-rich seeds that make noodles and pancakes.
+Bulgur Wheat|Triticum aestivum|Poaceae|common|Whole wheat kernels that have been parboiled, dried, and cracked, resulting in a quick-cooking whole grain with a mild, nutty flavor. Common in Middle Eastern dishes like tabbouleh and kibbeh.
+Butter Lettuce|Lactuca sativa var. butterhead|Asteraceae|common|A soft-leafed lettuce with loosely cupped, tender leaves and a mildly sweet flavour, named for its buttery texture. Varieties include Boston and Bibb, and it is commonly found in supermarkets and home gardens.
 Butternut squash|Cucurbita moschata|Cucurbitaceae|uncommon|Sweet orange flesh that carries beta-carotene through soups and roasts all winter.
 Cabbage|Brassica oleracea var. capitata|Brassicaceae|common|Cheap, keeps for weeks, and ferments into kimchi and sauerkraut — the most versatile crucifer in the guide.
+Cacao|Theobroma cacao|Malvaceae|uncommon|Tropical tree native to Central and South America whose seeds (cacao beans) are fermented, dried, and crushed into small crunchy nibs. Nibs retain the bean's full complement of fat, fiber, and bitter compounds before any sweetening.
+Cantaloupe|Cucumis melo var. cantalupensis|Cucurbitaceae|common|A netted-skin melon with fragrant, orange-fleshed interior and sweet, juicy pulp. Widely eaten fresh in slices or cubed as a summer fruit.
+Caper|Capparis spinosa|Capparaceae|uncommon|A spiny Mediterranean shrub whose unopened flower buds are pickled or salt-cured and used as a pungent condiment. The small, firm buds have an intensely briny, tangy flavour.
+Caraway|Carum carvi|Apiaceae|uncommon|Caraway is a biennial plant native to western Asia and Europe whose crescent-shaped seeds are used as a spice. The seeds have a distinctive warm, anise-like flavor with earthy undertones and are commonly used in rye breads and sauerkraut.
+Cardamom|Elettaria cardamomum|Zingiberaceae|uncommon|A spice derived from the seed pods of a tropical plant related to ginger, with an intensely aromatic, slightly floral and eucalyptus-like flavor. One of the most prized spices in South Asian, Middle Eastern, and Scandinavian cooking.
 Carrot|Daucus carota|Apiaceae|common|Beta-carotene's poster child, plus pectin — a gentle fiber your butyrate-makers appreciate.
 Cashew|Anacardium occidentale|Anacardiaceae|uncommon|Creamy enough to become sauce — a softer entry into daily nuts.
 Cauliflower|Brassica oleracea var. botrytis|Brassicaceae|common|A white-brown crucifer that roasts into sweetness — same glucosinolate family as broccoli, different fiber mix.
 Celery|Apium graveolens|Apiaceae|common|The quiet base of a thousand soups — apigenin and crunch, cheap diversity.
+Chai Tea|||common|A spiced beverage made by brewing black tea with a blend of aromatic spices such as cardamom, cinnamon, ginger, cloves, and black pepper, typically combined with milk and sweetener. Originated in South Asia and now enjoyed worldwide.
+Chanterelle Mushroom|Cantharellus cibarius|Cantharellaceae|uncommon|A prized wild mushroom with a golden-yellow, funnel-shaped cap and a fruity, peppery aroma. Found in temperate forests worldwide and beloved in European cuisine; rarely cultivated commercially.
+Cherry|Prunus avium|Rosaceae|common|Small, round stone fruits ranging from deep red to nearly black, with a sweet or tart flavor depending on variety. Eaten fresh, cooked, or preserved.
+Chestnut|Castanea sativa|Fagaceae|uncommon|A starchy, low-fat nut encased in a spiny husk, commonly roasted in autumn; unlike most nuts it is high in carbohydrates and low in fat.
 Chia seed|Salvia hispanica|Lamiaceae|uncommon|The gel is the fiber — mucilage that turns pudding-like and feeds gently.
 Chickpea|Cicer arietinum|Fabaceae|uncommon|GOS-rich and endlessly flexible — hummus, roasted, or straight into the stew.
 Chicory root|Cichorium intybus|Asteraceae|legendary|Where supplement-bottle inulin actually comes from — the deepest prebiotic cut in the guide.
 Chili pepper|Capsicum annuum var. glabriusculum|Solanaceae|uncommon|Capsaicin is the point — a little heat is a phytochemical dose.
+Chili Powder Blend|Capsicum annuum and blend|Solanaceae (primary)|common|A dried, ground spice blend made primarily from red chili peppers with added cumin, garlic, and oregano. Widely used in Tex-Mex and Latin American cooking.
 Chives|Allium schoenoprasum|Amaryllidaceae|uncommon|A sprinkle counts — the smallest allium still brings organosulfur compounds to the plate.
 Cilantro|Coriandrum sativum|Apiaceae|common|Love-it-or-soap — either way its leaf carries genuine phytochemical weight.
 Cinnamon|Cinnamomum verum|Lauraceae|uncommon|Tree bark, technically — proanthocyanidins in dessert's favorite spice.
+Clove|Syzygium aromaticum|Myrtaceae|uncommon|The dried flower bud of an evergreen tree native to the Maluku Islands, with an intensely warm, pungent, and slightly sweet aroma. A key spice in both sweet and savory dishes across Asian, African, and European cuisines.
+Coconut|Cocos nucifera|Arecaceae|common|The large seed of the coconut palm, encased in a fibrous husk, with hard white meat and a liquid-filled interior. Widely used in tropical cuisines both fresh and dried for its rich, fatty flesh.
 Collard greens|Brassica oleracea var. viridis|Brassicaceae|uncommon|The sturdy southern crucifer — slow-cooked or raw as a wrap, fiber either way.
 Concord grape|Vitis labrusca|Vitaceae|rare|The deep-purple American grape — juice-dark skins loaded with anthocyanins.
+Coriander|Coriandrum sativum|Apiaceae|common|Coriander seeds are the dried fruits of the coriander plant, widely cultivated across Asia, Europe, and the Americas. The seeds have a warm, citrusy, slightly nutty flavor quite distinct from the fresh leaves (cilantro).
 Corn|Zea mays|Poaceae|common|A whole grain in disguise — the fiber rides in the kernel skins.
 Cranberry|Vaccinium macrocarpon|Ericaceae|rare|A-type proanthocyanidins — the tart compounds behind its famous reputation.
+Cremini Mushroom|Agaricus bisporus|Agaricaceae|common|The intermediate-aged, brown-capped form of Agaricus bisporus, with a slightly deeper flavor than the white button mushroom. Widely available and versatile in cooking.
 Cucumber|Cucumis sativus|Cucurbitaceae|common|Mostly water, but the skin carries the fiber and the polyphenols — don't peel it.
 Cumin|Cuminum cyminum|Apiaceae|uncommon|The backbone of half the world's spice blends — seeds with real polyphenol content.
+Curry Powder Blend|Multi-species blend|Multiple families|common|A commercially standardized spice blend typically combining turmeric, coriander, cumin, fenugreek, and chili. Originally inspired by South Asian masala traditions for Western markets.
 Date|Phoenix dactylifera|Arecaceae|uncommon|Nature's caramel wrapped around real fiber — sweetness your microbes share.
+Dill|Anethum graveolens|Apiaceae|common|A feathery annual herb with slender, thread-like leaves and a distinctive anise-like aroma. Widely used in European and Middle Eastern cuisines as a fresh or dried flavoring.
+Dragon Fruit|Selenicereus undatus|Cactaceae|uncommon|A striking tropical cactus fruit with bright pink-red skin covered in green scale-like bracts and either white or deep magenta flesh dotted with tiny black seeds. It has a mild, slightly sweet flavor reminiscent of kiwi and pear.
+Durum Wheat|Triticum durum|Poaceae|common|A hard wheat species used to produce semolina, which is steamed and rolled into tiny granules to make couscous. It is a staple across North African and Middle Eastern cuisines.
 Eggplant|Solanum melongena|Solanaceae|uncommon|Nasunin lives in that deep-purple skin — keep it on.
+Elderberry|Sambucus nigra|Adoxaceae|uncommon|Tiny, deep-purple to black berries that grow in large clusters on elderberry shrubs across Europe and North America. Almost always cooked or processed before consumption due to mildly toxic compounds in the raw fruit.
+Endive|Cichorium endivia|Asteraceae|uncommon|A slightly bitter leafy vegetable related to chicory, available in tightly packed pale heads (Belgian/witloof) or loose curly-leaved forms (frisée/curly endive). Grown partly in darkness to reduce bitterness and widely used in European cuisine.
+Enoki Mushroom|Flammulina velutipes|Physalacriaceae|uncommon|Slender, long-stemmed white mushrooms with tiny caps, cultivated in the dark to produce their characteristic pale color. Popular in East Asian soups and hot pots with a mild, slightly crunchy texture.
+Farro|Triticum dicoccum|Poaceae|uncommon|An ancient hulled wheat species cultivated for thousands of years in the Fertile Crescent and still popular in Italian cooking. It has a pleasantly chewy texture and earthy, nutty taste.
+Fava Beans|Vicia faba|Fabaceae|common|One of the oldest cultivated legumes, with large, flat seeds enclosed in thick padded pods. Earthy and slightly bitter when mature, with a buttery texture after cooking and peeling of the outer skin.
 Fennel|Foeniculum vulgare|Apiaceae|rare|Anise-sweet bulb, feathery fronds — an Apiaceae rare that roasts into silk.
+Fenugreek|Trigonella foenum-graecum|Fabaceae|uncommon|Small, golden-brown seeds from an annual herb widely cultivated in the Mediterranean, Middle East, and South Asia. Both the seeds and leaves are used culinarily; the seeds have a slightly bitter, maple-like flavor.
 Fig|Ficus carica|Moraceae|rare|Ancient, jammy, and fiber-dense — fresh or dried, the seeds do the work.
 Flaxseed|Linum usitatissimum|Linaceae|uncommon|Lignans plus mucilage — grind them fresh or they pass through incognito.
+Freekeh|Triticum durum|Poaceae|uncommon|Young, green durum wheat harvested early and then roasted over fire, giving it a distinctive smoky, nutty flavor. It is a traditional grain in Middle Eastern and North African cuisines.
+Garam Masala Blend|Multi-species blend|Multiple families|common|A warming aromatic spice blend originating in South Asia, typically containing coriander, cumin, cardamom, black pepper, cinnamon, cloves, and nutmeg. Recipes vary widely by region and family tradition.
 Garlic|Allium sativum|Amaryllidaceae|common|Tiny clove, huge inulin payload — one of the best-fed guilds' favorite fuels, plus allicin when crushed.
 Ginger|Zingiber officinale|Zingiberaceae|uncommon|Gingerol brings the heat; a thumb of it in a stir-fry counts as a plant all its own.
+Gochujang|Capsicum annuum (fermented paste)|Solanaceae|uncommon|A Korean fermented condiment paste made from red chili powder, glutinous rice, fermented soybean powder, and salt. Deep red-orange in color with a thick, sticky texture.
+Goji Berry|Lycium barbarum|Solanaceae|uncommon|Small, bright red-orange berries native to China and the Himalayas, most often sold dried in Western markets. They have a mildly sweet-tart flavour and chewy texture resembling a small raisin.
+Gooseberry|Ribes uva-crispa|Grossulariaceae|uncommon|A small, tart berry that grows on thorny shrubs in temperate climates, ranging from pale green to deep red when ripe. Common in European gardens but less frequently eaten fresh in North America.
 Grape|Vitis vinifera|Vitaceae|common|Resveratrol headlines, but the skins and seeds carry a whole polyphenol cast.
+Grapefruit|Citrus × paradisi|Rutaceae|common|A large subtropical citrus fruit with a tart, slightly bitter flavor and juicy flesh ranging from pale yellow to deep red. It grows in clusters resembling grapes on the tree, which inspired its name.
 Green banana|Musa acuminata (unripe)|Musaceae|uncommon|Unripe means resistant starch — a distinct food from its yellow future self.
+Green Beans|Phaseolus vulgaris|Fabaceae|common|Immature pods of the common bean, harvested before seeds harden and eaten whole. Mild, slightly grassy in flavor, with a satisfying snap when fresh; among the most widely consumed vegetables worldwide.
 Green pea|Pisum sativum|Fabaceae|common|Little green protein-fiber spheres — the easiest legume to say yes to.
+Guava|Psidium guajava|Myrtaceae|uncommon|A tropical fruit with a thin green-to-yellow skin and pink or white flesh, notable for its distinctive sweet-tart aroma. Widely grown throughout Latin America, the Caribbean, and South Asia.
+Habanero Pepper|Capsicum chinense|Solanaceae|uncommon|A small, lantern-shaped chili pepper known for its intensely fruity aroma and extreme heat, rating 100,000–350,000 Scoville units. Habaneros are used sparingly in hot sauces, salsas, and marinades.
+Harissa|||uncommon|A North African chili paste made from roasted red peppers, hot chilies, garlic, and spices such as caraway and cumin. It is used as a condiment, marinade, or cooking sauce across Maghrebi cuisine.
 Hazelnut|Corylus avellana|Betulaceae|rare|Proanthocyanidin-rich, especially with skins on — beyond the chocolate-spread cameo.
+Hearts of Palm|Euterpe oleracea / Bactris gasipaes|Arecaceae|uncommon|The tender inner cylinder harvested from the growing tip of certain palm trees, most commonly peach palm or açaí palm. Pale ivory and mildly flavored, it is most often sold canned or jarred in brine.
+Hemp Seeds|Cannabis sativa|Cannabaceae|uncommon|Small, nutty-flavored seeds from the hemp plant, soft and chewy when shelled (hemp hearts), with a balanced omega-3 to omega-6 fatty acid profile.
+Honeydew Melon|Cucumis melo var. inodorus|Cucurbitaceae|common|A smooth, pale-green to white rinded melon with mild, very sweet green flesh. Often served fresh in fruit salads and is notable for its subtle floral sweetness.
+Horseradish|Armoracia rusticana|Brassicaceae|uncommon|A pungent root vegetable whose grated flesh releases sharp, sinus-clearing compounds. Used almost exclusively as a condiment or flavouring agent in small quantities rather than eaten as a vegetable on its own.
+Iceberg Lettuce|Lactuca sativa var. capitata|Asteraceae|common|A tightly packed, crisp-leafed lettuce with pale green outer leaves and a nearly white interior, known for its mild flavour and high water content. One of the most widely consumed salad greens in Western supermarkets.
+Jackfruit|Artocarpus heterophyllus|Moraceae|uncommon|The world's largest tree fruit, native to South and Southeast Asia, with a spiky green exterior and sweet, fibrous yellow flesh when ripe. Unripe green jackfruit has a neutral, meaty texture popular in plant-based cooking.
 Jerusalem artichoke|Helianthus tuberosus|Asteraceae|legendary|The single richest common source of inulin — a legendary feed for the deep-fiber guilds. Start small.
 Kale|Brassica oleracea var. sabellica|Brassicaceae|uncommon|Lutein and glucosinolates in a leaf sturdy enough to massage. The darker the leaf, the more it carries.
 Kidney bean|Phaseolus vulgaris var. nanus|Fabaceae|uncommon|Chili's backbone — resistant starch and GOS that survive a long simmer.
 Kimchi|Brassica rapa (fermented)|Brassicaceae|rare|Cabbage transformed — live cultures plus the fiber it started with. A probiotic and a plant in one.
 Kiwi|Actinidia deliciosa|Actinidiaceae|uncommon|Actinidin, vitamin C, and a fiber combo studied for keeping things moving.
+Kohlrabi|Brassica oleracea var. gongylodes|Brassicaceae|uncommon|A bulbous stem vegetable of the cabbage family with a crisp, mild, slightly sweet flesh that can be eaten raw or cooked. Its alien-looking round bulb sprouts long-stemmed leaves and comes in green or purple varieties.
 Kombu|Saccharina japonica|Laminariaceae|legendary|The umami kelp of dashi — glutamates plus ocean fibers, a legendary find.
 Kombucha|Camellia sinensis (fermented)|Theaceae|rare|Tea plus a culture — tangy, lightly fizzy, and a gentle way to add a fermented find to any day.
 Leek|Allium ampeloprasum|Amaryllidaceae|uncommon|A gentler, sweeter allium — the white base carries the fructans your microbes queue up for.
 Lemon|Citrus x limon|Rutaceae|common|Zest before you juice — the peel oils carry limonene the juice never sees.
+Lemongrass|Cymbopogon citratus|Poaceae|uncommon|A tall tropical grass with pale, fibrous stalks that release a bright citrus-lemon aroma when bruised or sliced. Widely used in Southeast Asian cuisines in soups, curries, and teas.
 Lentil|Lens culinaris|Fabaceae|uncommon|The fastest-cooking legume, dense in GOS and folate — a guild feast in 25 minutes.
+Lima Beans|Phaseolus lunatus|Fabaceae|common|A large, flat legume seed with a creamy, starchy texture and mild buttery flavor when cooked. Grown widely in tropical and subtropical regions and consumed both fresh and dried.
+Lime|Citrus aurantiifolia|Rutaceae|common|A small, round to oval citrus fruit with thin green skin and intensely tart, aromatic juice. Widely used as a culinary souring agent and garnish across tropical and subtropical cuisines worldwide.
+Lychee|Litchi chinensis|Sapindaceae|uncommon|A small tropical fruit with a rough, red-pink shell enclosing translucent, juicy white flesh and a single large seed. Originally from southern China, it has a delicate floral sweetness and is popular fresh, dried, or in beverages.
+Macadamia Nut|Macadamia integrifolia|Proteaceae|uncommon|A round, hard-shelled nut native to Australia, prized for its rich, buttery flavor and exceptionally high monounsaturated fat content.
+Maitake Mushroom|Grifola frondosa|Meripilaceae|uncommon|A large, fan-shaped wild and cultivated mushroom with overlapping fronds and a rich, woodsy flavor. Native to northeast Japan and eastern North America, now increasingly found in specialty grocers.
+Mandarin Orange|Citrus reticulata|Rutaceae|common|A small, easy-to-peel citrus fruit with sweet, juicy segments and a loose, thin rind. It encompasses a wide range of cultivars including tangerines, clementines, and satsumas that are popular as convenient snacks.
 Mango|Mangifera indica|Anacardiaceae|uncommon|Mangiferin plus carotenoids — sunshine that counts toward your orange.
 Millet|Panicum miliaceum|Poaceae|rare|An ancient, gentle grain — a rare find that cooks like couscous.
 Mint|Mentha spicata|Lamiaceae|common|Menthol freshness that turns water, yogurt, and salads into another plant point.
 Miso|Glycine max (fermented)|Fabaceae|rare|Soybeans aged into savory depth — stir into warm (not boiling) broth to keep the cultures with you.
+Molasses|||common|A thick, dark syrup that is a byproduct of refining sugarcane or sugar beets into table sugar. It retains significant minerals and a robust bittersweet flavor.
+Mulberry|Morus nigra / Morus alba|Moraceae|uncommon|Elongated, clustered berries resembling blackberries, produced by mulberry trees in colors ranging from white and pink to deep purple-black depending on species. They have a sweet-tart flavour and are perishable fresh, so often found dried or as juice.
+Mung Bean|Vigna radiata|Fabaceae|uncommon|Small, olive-green legume widely cultivated across South and East Asia, eaten whole, split, or sprouted. The seeds have a mild, slightly sweet flavor and cook to a soft texture.
+Mustard|Sinapis alba / Brassica juncea|Brassicaceae|common|Tiny, round seeds from mustard plants in the Brassica family, available in yellow, brown, and black varieties. They are used whole as a spice or ground into condiment pastes and powders across global cuisines.
+Napa Cabbage|Brassica rapa subsp. pekinensis|Brassicaceae|common|A pale, elongated cabbage with crinkled, tender leaves and a mild, slightly sweet flavour. Widely used across East Asian cuisines raw in salads or cooked in soups and stir-fries.
 Natto|Glycine max (fermented, Bacillus subtilis)|Fabaceae|legendary|The boldest ferment in the guide — sticky, pungent, and famous for vitamin K2. A legendary badge of honor.
+Nectarine|Prunus persica var. nucipersica|Rosaceae|common|A smooth-skinned variant of the peach with a slightly firmer, more aromatic flesh in shades of yellow or white. Often eaten fresh out of hand in summer.
 Nori|Pyropia yezoensis|Bangiaceae|rare|The sushi wrap is a sea vegetable — minerals and fibers land plants can't offer.
 Nutmeg|Myristica fragrans|Myristicaceae|rare|A grating is plenty — warm spice with its own phytochemical signature.
 Oats|Avena sativa|Poaceae|common|Beta-glucan's home field — the breakfast that feeds your propionate-makers.
 Okra|Abelmoschus esculentus|Malvaceae|rare|That silkiness is mucilage — a soothing gel fiber your butyrate-makers ferment happily.
+Olive|Olea europaea|Oleaceae|common|A small stone fruit from the ancient Mediterranean olive tree, consumed whole after curing with salt or brine. The flesh is rich in monounsaturated fat and ranges from mild to intensely savory depending on variety and cure.
 Onion|Allium cepa|Amaryllidaceae|common|The everyday prebiotic: fructans plus quercetin in the papery layers. The workhorse of gut gardens.
 Orange|Citrus x sinensis|Rutaceae|common|Eat it, don't juice it — hesperidin and pectin live in the segments and pith.
 Oregano|Origanum vulgare|Lamiaceae|uncommon|One of the highest polyphenol densities of any herb, dried or fresh.
 Oyster mushroom|Pleurotus ostreatus|Pleurotaceae|rare|Velvety, quick-cooking, and one of the richer beta-glucan mushrooms.
+Papaya|Carica papaya|Caricaceae|uncommon|A large tropical fruit with smooth orange-yellow flesh, black seeds, and a sweet, musky flavor. Native to Central America, it is now grown across tropical regions and is recognized by its tall, single-stemmed herbaceous plant.
 Parsley|Petroselinum crispum|Apiaceae|common|Not a garnish — one of the densest apigenin sources you can buy.
 Parsnip|Pastinaca sativa|Apiaceae|rare|Carrot's pale, sweeter cousin — more fiber per bite and criminally underused.
+Passion Fruit|Passiflora edulis|Passifloraceae|uncommon|A small, round to oval tropical fruit with a tough purple or yellow rind enclosing aromatic, seedy pulp with a sweet-tart flavor. The plant is a climbing vine known for its elaborate, ornate flowers.
+Peach|Prunus persica|Rosaceae|common|A soft, fuzzy stone fruit with golden-yellow to reddish skin and sweet, juicy flesh. Enjoyed fresh in summer or cooked in pies and preserves.
 Peanut|Arachis hypogaea|Fabaceae|common|Botanically a legume, culturally a nut — resveratrol in the skins.
 Pear|Pyrus communis|Rosaceae|common|Gritty texture is stone cells plus pectin — gentle fiber in dessert clothing.
 Pecan|Carya illinoinensis|Juglandaceae|rare|Among the highest polyphenol loads of any nut — pie undersells it.
+Persimmon|Diospyros kaki|Ebenaceae|uncommon|A smooth-skinned, orange autumn fruit ranging from tomato-shaped (Fuyu) to acorn-shaped (Hachiya) with sweet, honey-like flesh when ripe. Native to China, it is widely cultivated across East Asia and the Mediterranean.
+Pine Nuts|Pinus pinea|Pinaceae|uncommon|Edible seeds harvested from the cones of several pine species, small and tear-drop shaped with a mild, buttery flavor used widely in Mediterranean cuisine.
 Pineapple|Ananas comosus|Bromeliaceae|uncommon|Bromelain lives in the core — the part most people throw away.
+Pinto Beans|Phaseolus vulgaris|Fabaceae|common|A speckled beige-and-brown bean that is one of the most popular legumes in North America and Latin America. When cooked, the mottled pattern fades and the bean becomes creamy and earthy in flavor.
 Pistachio|Pistacia vera|Anacardiaceae|uncommon|Green from lutein — one of the few nuts with meaningful carotenoids.
+Plum|Prunus domestica / Prunus salicina|Rosaceae|common|A juicy stone fruit with smooth skin ranging from deep purple to red or yellow, and sweet-tart flesh. Plums grow on deciduous trees and are enjoyed fresh, dried (as prunes), or cooked into preserves.
+Poblano Pepper|Capsicum annuum var. poblano|Solanaceae|uncommon|A mild to moderately hot dark-green chili pepper originating from Puebla, Mexico. When dried, it becomes the ancho chile; fresh, it is commonly roasted, stuffed, or used in sauces.
 Pomegranate|Punica granatum|Lythraceae|rare|Ellagitannins your microbes convert to urolithin A — the mitochondria crews' favorite fruit.
+Poppy Seed|Papaver somniferum|Papaveraceae|uncommon|Tiny, slate-blue seeds harvested from the opium poppy pod, widely used in baking and cooking across European and South Asian cuisines. They have a mild, nutty flavor and a characteristic crunch.
+Porcini Mushroom|Boletus edulis|Boletaceae|uncommon|A thick-stemmed, brown-capped wild mushroom with a deeply savory, nutty flavor highly prized in Italian and French cooking. Sold fresh in season and widely available dried year-round.
+Portobello Mushroom|Agaricus bisporus|Agaricaceae|common|The fully matured, large-capped form of Agaricus bisporus, with a meaty, dense texture and earthy umami flavor. A staple in supermarkets worldwide, often used as a meat substitute.
 Potato|Solanum tuberosum|Solanaceae|common|The humble spud turns prebiotic when cooked then COOLED — potato salad is resistant-starch food.
 Pumpkin|Cucurbita pepo|Cucurbitaceae|uncommon|Carotenoid-dense flesh and seeds worth roasting — two finds in one gourd.
 Pumpkin seed|Cucurbita pepo var. styriaca|Cucurbitaceae|uncommon|Zinc, magnesium, and a satisfying crunch — roast the ones from your own pumpkin.
 Purple sweet potato|Ipomoea batatas (purple cultivars)|Convolvulaceae|rare|The orange classic gone violet — anthocyanins in a tuber. Okinawan tables swear by it; cool it after cooking for resistant starch too.
 Quinoa|Chenopodium quinoa|Amaranthaceae|uncommon|A seed posing as a grain — complete protein plus saponins in the rinse water.
+Radicchio|Cichorium intybus var. foliosum|Asteraceae|uncommon|A compact, round or elongated head of deep-red and white leaves with a distinctly bitter, slightly spicy flavour, commonly used raw in salads or grilled in Italian cooking. Its vivid colour comes from anthocyanins concentrated in the leaf tissues.
 Radish|Raphanus sativus|Brassicaceae|common|A crunchy, peppery crucifer you can eat in seconds — the easy way to sneak a fourth plant into lunch.
 Raspberry|Rubus idaeus|Rosaceae|uncommon|Eight grams of fiber a cup — the highest-fiber berry on the shelf.
+Rhubarb|Rheum rhabarbarum|Polygonaceae|uncommon|A perennial vegetable grown for its tart, celery-like stalks which range from green to deep red; only the stalks are edible, as the leaves contain toxic oxalates. Commonly used in desserts and preserves in Western cooking.
 Romaine lettuce|Lactuca sativa|Asteraceae|common|More than crunch: water, folate, and a gentle fiber that makes salads a habit.
+Romanesco|Brassica oleracea var. botrytis|Brassicaceae|uncommon|A striking chartreuse brassica with a fractal spiral head of pointed florets, tasting milder and nuttier than broccoli or cauliflower. Often found at farmers' markets and specialty grocers.
 Rosemary|Salvia rosmarinus|Lamiaceae|uncommon|Carnosic acid in needle form — a woody herb that survives every roast.
+Rutabaga|Brassica napus subsp. rapifera|Brassicaceae|uncommon|A large, round root vegetable with yellowish flesh and purple-tinged skin, produced by crossing a turnip with a wild cabbage. It has a slightly sweet, earthy flavour and is commonly boiled or roasted.
 Rye|Secale cereale|Poaceae|rare|Dense, dark, and prebiotic — real rye bread feeds crews that white loaves never reach.
+Saffron|Crocus sativus|Iridaceae|rare|The dried stigmas of the saffron crocus flower, hand-harvested and prized as the world's most expensive spice by weight. Imparts a distinctive golden-yellow color and subtle floral, honey-like aroma to dishes.
+Sage|Salvia officinalis|Lamiaceae|common|A woody perennial herb with soft, silvery-green leaves and a pungent, earthy aroma. A staple seasoning in Mediterranean and European cooking, often paired with poultry and stuffings.
 Sauerkraut|Brassica oleracea (fermented)|Brassicaceae|uncommon|The simplest ferment there is: cabbage, salt, time. Choose the refrigerated kind — that's where the cultures live.
+Serrano Pepper|Capsicum annuum var. serrano|Solanaceae|uncommon|A small, bright green chili pepper notably hotter than jalapeños (10,000–25,000 SHU), with a crisp, grassy flavor. Commonly used fresh in salsas, guacamole, and pico de gallo across Mexican cuisine.
 Sesame seed|Sesamum indicum|Pedaliaceae|uncommon|Sesamin lignans in every sprinkle — tahini is its grown-up form.
 Shallot|Allium cepa var. aggregatum|Amaryllidaceae|uncommon|Onion's refined cousin, denser in polyphenols per bite than most of the allium family.
 Shiitake mushroom|Lentinula edodes|Omphalotaceae|uncommon|Lentinan — a beta-glucan studied for decades — plus real umami depth.
+Snow Peas|Pisum sativum var. saccharatum|Fabaceae|common|A flat-podded pea variety eaten whole — pod and immature seeds together — before the seeds fully develop. The delicate pod is crisp and mildly sweet, commonly used raw or lightly stir-fried.
 Sorghum|Sorghum bicolor|Poaceae|rare|The heirloom cereal with tannins and a pop — it even puffs like popcorn.
 Soybean|Glycine max|Fabaceae|uncommon|The isoflavone legume — edamame is its freshest, simplest form.
+Spelt|Triticum spelta|Poaceae|uncommon|An ancient hulled wheat species with a tough outer husk, cultivated in Europe for millennia. It has a mildly sweet, nutty flavor and is used in breads, pasta, and whole-grain dishes.
 Spinach|Spinacia oleracea|Amaranthaceae|common|Lutein, folate, and chlorophyll that wilts into anything. The gateway green.
+Split Peas|Pisum sativum|Fabaceae|common|Dried, hulled, and split field peas that come in green or yellow varieties. They dissolve readily when cooked, making them a base ingredient in soups and porridges across many cuisines.
 Spring onion|Allium fistulosum|Amaryllidaceae|common|Two plants in one: prebiotic white bulb, chlorophyll-rich green tops. Use the whole thing.
+Star Anise|Illicium verum|Schisandraceae|uncommon|Star anise is the star-shaped dried fruit of a small evergreen tree native to southern China and Vietnam. Its intensely sweet, licorice-like flavor comes primarily from the compound anethole.
 Strawberry|Fragaria x ananassa|Rosaceae|common|Ellagic acid with universal appeal — the easiest red of the week.
+Sugar Snap Peas|Pisum sativum var. macrocarpon|Fabaceae|common|A cross between snow peas and garden peas, featuring plump, round pods with fully developed sweet seeds inside, both eaten together. Noticeably sweeter and crunchier than snow peas due to higher sugar content.
 Sumac|Rhus coriaria|Anacardiaceae|legendary|The lemony crimson dust of Middle Eastern kitchens — a legendary polyphenol find.
 Sunflower seed|Helianthus annuus|Asteraceae|uncommon|Vitamin E and chlorogenic acid by the handful — the lunchbox classic holds up.
 Sweet potato|Ipomoea batatas|Convolvulaceae|uncommon|Orange flesh, carotenoids, and a fiber mix that lands gently. Cool it after cooking for resistant starch.
 Swiss chard|Beta vulgaris subsp. vulgaris|Amaranthaceae|rare|Rainbow stems, beet's leafy cousin — betalains and magnesium in one dramatic leaf.
+Tarragon|Artemisia dracunculus|Asteraceae|uncommon|A slender perennial herb with narrow, glossy leaves and a subtle anise-licorice flavor. French tarragon is prized in classic European cuisine, particularly in sauces and vinaigrettes.
+Teff|Eragrostis tef|Poaceae|uncommon|A tiny ancient grain native to the Horn of Africa, where it is most commonly ground into flour for injera flatbread. The minute seeds range from ivory to dark brown and have a mild, earthy, slightly molasses-like flavor when cooked.
 Tempeh|Glycine max (fermented)|Fabaceae|rare|Whole soybeans bound by fungal fermentation — the fiber survives, unlike in most soy foods.
 Thyme|Thymus vulgaris|Lamiaceae|uncommon|Thymol in tiny leaves — a pinch across the week quietly adds up.
+Tomatillo|Physalis philadelphica|Solanaceae|uncommon|A small, round, green fruit encased in a papery husk, native to Mexico and widely used in Latin American cooking. Tomatillos have a tart, slightly citrusy flavor and firm texture, commonly used fresh or cooked in salsas.
 Tomato|Solanum lycopersicum|Solanaceae|common|Lycopene central — and cooking concentrates it. Sauce counts.
 Turmeric|Curcuma longa|Zingiberaceae|rare|Curcumin's home. Pair with black pepper — its piperine helps curcumin along.
 Turnip|Brassica rapa subsp. rapa|Brassicaceae|uncommon|Old-world staple, two foods in one: peppery root plus greens that outdo it nutritionally.
+Vanilla|Vanilla planifolia|Orchidaceae|uncommon|The cured seed pod of a tropical climbing orchid, native to Mexico. One of the most widely used flavoring ingredients in the world, recognized by its rich, sweet, and complex aromatic profile.
+Vegetable Broth|||common|A light liquid made by simmering assorted vegetables such as onion, carrot, and celery in water. Widely used as a cooking base and soup foundation.
 Wakame|Undaria pinnatifida|Alariaceae|rare|The silky seaweed in miso soup — fucoidan, a fiber unique to the ocean.
 Walnut|Juglans regia|Juglandaceae|uncommon|Ellagitannins that your microbes turn into urolithins — the brainy-looking nut earns it.
+Water Chestnut|Eleocharis dulcis|Cyperaceae|uncommon|A crisp, mildly sweet aquatic corm grown in paddy fields and marshes across Asia. It retains a pleasantly crunchy texture even after cooking and is widely used in stir-fries and dumplings.
 Watercress|Nasturtium officinale|Brassicaceae|rare|Gram for gram one of the most nutrient-dense leaves known — a rare find worth hunting.
+Watermelon|Citrullus lanatus|Cucurbitaceae|common|A large vine fruit with crisp, deep-red flesh and a high water content, enclosed in a thick green rind. A quintessential summer refreshment eaten fresh.
+Watermelon Radish|Raphanus sativus var. longipinnatus|Brassicaceae|uncommon|A large heirloom daikon-type radish with a pale green exterior that reveals a vivid magenta-pink interior, resembling a miniature watermelon. Crisp and mildly peppery, it is commonly sliced raw into salads or pickled.
 White bean|Phaseolus vulgaris var. albus|Fabaceae|uncommon|Creamy, mild, and one of the highest-fiber foods per cup in the whole guide.
 White mushroom|Agaricus bisporus|Agaricaceae|common|Fungi, not botanically a plant — but beta-glucans earn it a guide page and your 30.
+White Rice|Oryza sativa|Poaceae|common|The milled and polished grain of the rice plant, with bran and germ removed, resulting in a mild-flavored, white, starchy staple. It is one of the most widely consumed grains globally.
 Whole wheat|Triticum aestivum|Poaceae|common|Arabinoxylan — wheat bran's signature fiber — is one of the most overlooked guild feeds.
+Wild Rice|Zizania palustris|Poaceae|uncommon|An aquatic grass native to North American lakes and rivers, producing long, dark, slender grains with a nutty, earthy flavor. Not closely related to common rice despite the name.
+Za'atar Blend|Origanum syriacum and blend|Multiple families|uncommon|A Middle Eastern spice blend built around dried thyme or wild oregano (Origanum syriacum), mixed with toasted sesame seeds, sumac, and salt. Used as a condiment, dip, and seasoning across the Levant region.
 Zucchini|Cucurbita pepo var. cylindrica|Cucurbitaceae|common|Mild, fast, and shreds invisibly into sauces — an easy diversity point.

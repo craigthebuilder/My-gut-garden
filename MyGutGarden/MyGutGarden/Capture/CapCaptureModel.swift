@@ -205,34 +205,50 @@ final class CapCaptureModel {
             capturedAt: capturedAt
         )
 
-        // The edit-first review panel (owner, 2026-07-08): corrections are the
-        // FIRST thing on the result screen, and each one feeds the accuracy
-        // ledger. Offline (no repo) the panel still renders for the demo, it
-        // just can't persist or log.
+        // The review model behind the "N plants spotted — tap to edit" card
+        // and its pop-up editor (owner shape, 2026-07-09). Every correction
+        // feeds the accuracy ledger. Offline (no repo) it still renders for
+        // the demo, it just can't persist or log.
         reviewModel = CapReviewModel(
             response: response,
             annotationFoodIds: annotationFoodIds,
+            photoURL: photoURL,
             repository: appState.repository,
             userId: appState.auth.session?.user?.id,
             mealId: persistedMealId
         )
 
         phase = .confirmed
+
+        runLibrarian()
     }
 
-    // MARK: - Edit (non-blocking, opened from the confirmed screen)
-
-    /// True once a meal is persisted (offline meals can't be edited).
-    var canEditMeal: Bool { persistedMealId != nil && appState.repository != nil }
-
-    /// Build the editor for the just-logged meal. Hidden-ingredient prompts no
-    /// longer resurface there — the key questions live on Recent Meals instead.
-    func makeEditModel() -> CapEditMealModel? {
-        guard let repo = appState.repository,
-              let userId = appState.auth.session?.user?.id,
-              let mealId = persistedMealId else { return nil }
-        return CapEditMealModel(repository: repo, userId: userId, mealId: mealId)
+    /// SPEC §4 Coverage: hand any unknown foods to the librarian, which
+    /// generates their catalogue profiles (verified=false, live instantly) and
+    /// links them into the just-persisted meal server-side. Fire-and-forget —
+    /// the result screen is already up; rows heal in when the verdicts land.
+    private func runLibrarian() {
+        guard let review = reviewModel, let response, !response.unmatched.isEmpty,
+              let token = appState.auth.session?.accessToken,
+              let mealId = persistedMealId else { return }
+        let inputs: [CapLibrarianFoodInput] = response.items.compactMap { item in
+            guard item.attributes == nil else { return nil }
+            return CapLibrarianFoodInput(name: item.vision.name,
+                                         portionTier: item.vision.portionTier.rawValue,
+                                         estGrams: item.vision.estGrams,
+                                         householdMeasure: item.vision.householdMeasure)
+        }
+        guard !inputs.isEmpty else { return }
+        review.markLibrarianPending()
+        Task {
+            let results = (try? await CapLibrarianClient()
+                .submit(accessToken: token, mealId: mealId, foods: inputs)) ?? []
+            review.applyLibrarianResults(results)
+        }
     }
+
+    // "Edit this meal" + its standalone sheet are retired (owner, 2026-07-09):
+    // the CapReviewSheet pop-up is the one editor for a just-logged meal.
 
     // MARK: - Review/edit interactions (retained for the edit flow)
 

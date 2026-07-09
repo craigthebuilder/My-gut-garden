@@ -19,7 +19,7 @@ struct CapResultScreen: View {
     @Bindable var model: CapCaptureModel
     let presenter: (any MealInsightPresenting)?
 
-    @State private var editModel: CapEditMealModel?
+    @State private var showReview = false
     @State private var allergyAcknowledged = false
 
     /// The LOUD allergy gate blocks the overview until acknowledged (rule #1).
@@ -34,11 +34,12 @@ struct CapResultScreen: View {
                     VStack(alignment: .leading, spacing: theme.metrics.space5) {
                         CapAllergyBanner(alerts: model.allergyAlerts)      // persistent reminder at top
                         CapSensitivityNotice(flags: model.sensitivityFlags) // soft, in-overview
-                        // Edit-FIRST (owner, 2026-07-08): what we saw + one-tap
-                        // fixes lead the screen. Unmatched names resolve inline
-                        // here, so the old separate note is absorbed.
+                        // Owner shape (2026-07-09): a compact "N plants
+                        // spotted — tap to edit" header; the full editor
+                        // (sliders, unmatched, add-a-food, photo delete)
+                        // lives in the pop-up it opens.
                         if let review = model.reviewModel {
-                            CapReviewPanel(model: review)
+                            CapReviewSummaryCard(model: review) { showReview = true }
                         }
                         insight
                         actions
@@ -49,8 +50,10 @@ struct CapResultScreen: View {
             }
             dismissButton
         }
-        .sheet(item: $editModel) { editor in
-            CapEditMealView(model: editor) { editModel = nil }
+        .sheet(isPresented: $showReview) {
+            if let review = model.reviewModel {
+                CapReviewSheet(model: review)
+            }
         }
     }
 
@@ -112,57 +115,18 @@ struct CapResultScreen: View {
         }
     }
 
+    // "Edit this meal" is retired (owner, 2026-07-09) — the review pop-up
+    // opened from the summary card replaces it entirely.
     private var actions: some View {
-        VStack(spacing: theme.metrics.space2) {
-            if model.canEditMeal {
-                SecondaryButton(title: "Edit this meal", systemImage: "slider.horizontal.3") {
-                    editModel = model.makeEditModel()
-                }
-            }
-            SecondaryButton(title: "Snap another", systemImage: "camera.fill") {
-                model.reset()
-            }
+        SecondaryButton(title: "Snap another", systemImage: "camera.fill") {
+            model.reset()
         }
     }
 }
 
-// MARK: - Unmatched foods ("when unsure, flag it", SPEC §4)
-
-/// The camera named these but the catalogue couldn't resolve them, so they are
-/// NOT counted — say so instead of dropping them silently (owner testing find,
-/// 2026-07-07: "the model identified purple sweet potato but the app didn't log
-/// it"). The full vision result is stored on the meal, so the owner's
-/// unmatched-gap query (TESTING_GUIDE.md) picks these up for catalogue fixes.
-struct CapUnmatchedNote: View {
-    @Environment(\.theme) private var theme
-    let names: [String]
-
-    var body: some View {
-        if !names.isEmpty {
-            VStack(alignment: .leading, spacing: theme.metrics.space2) {
-                HStack(spacing: theme.metrics.space2) {
-                    Image(systemName: "questionmark.circle")
-                        .foregroundStyle(theme.colors.secondary)
-                    Text("Spotted, but new to us")
-                        .font(theme.typography.body(weight: .semibold))
-                        .foregroundStyle(theme.colors.textPrimary)
-                }
-                Text(names.joined(separator: ", "))
-                    .font(theme.typography.body())
-                    .foregroundStyle(theme.colors.textPrimary)
-                Text("The catalogue doesn't know these yet, so they aren't counted. They've been noted — or add a close match yourself via \u{201C}Edit this meal\u{201D}.")
-                    .font(theme.typography.caption())
-                    .foregroundStyle(theme.colors.textSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .padding(theme.metrics.space4)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(theme.colors.secondary.opacity(0.1),
-                        in: RoundedRectangle(cornerRadius: theme.metrics.radiusMedium, style: .continuous))
-            .accessibilityElement(children: .combine)
-        }
-    }
-}
+// The old standalone "Spotted, but new to us" note is retired: unmatched names
+// now live inside the review pop-up, where the librarian heals them in place
+// (or the user picks a match manually).
 
 // MARK: - LOUD allergy banner (flag_tier=allergy only, §9 / rule #1)
 

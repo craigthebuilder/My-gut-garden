@@ -6,83 +6,176 @@
 # Source: framework §4 (guild feeds_copy) and §5 (fiber->guild table); polyphenol/lignan/isoflavone food sources per Phenol-Explorer.
 # Format: pipe-delimited. food|guild|relevance
 food|guild|relevance
+Acai Berry|anti_inflammatory_arsenal|moderate
+Acai Berry|tumor_preventors|minor
+Adzuki Beans|anti_inflammatory_arsenal|minor
+Adzuki Beans|base_layer|primary
 Almond|stone_breakers|minor
+Amaranth|base_layer|moderate
 Apple|anti_inflammatory_arsenal|primary
 Asparagus|base_layer|moderate
 Asparagus|vitamin_lab|minor
+Bamboo Shoots|base_layer|minor
 Barley|appetite_crew|primary
 Beet|stone_breakers|moderate
 Beet|vitamin_lab|minor
+Black Rice|anti_inflammatory_arsenal|moderate
 Black bean|base_layer|moderate
+Black-Eyed Peas|base_layer|primary
+Black-Eyed Peas|recycling_engine|moderate
 Blackberry|knights_of_the_wall|moderate
 Blackberry|mitochondria_boosters|moderate
 Blueberry|knights_of_the_wall|moderate
 Blueberry|mitochondria_boosters|minor
+Broccoli Rabe|tumor_preventors|moderate
+Broccolini|tumor_preventors|moderate
 Broccoli|vitamin_lab|moderate
 Brown rice|anti_inflammatory_arsenal|moderate
 Brown rice|locksmith|moderate
+Bulgur|base_layer|moderate
+Buttermilk|knights_of_the_wall|minor
+Cacao Nibs|anti_inflammatory_arsenal|moderate
+Capers|anti_inflammatory_arsenal|minor
 Carrot|anti_inflammatory_arsenal|moderate
+Chanterelle Mushroom|base_layer|moderate
+Cherry|anti_inflammatory_arsenal|minor
+Chestnut|base_layer|minor
 Chia seed|anti_inflammatory_arsenal|moderate
 Chickpea|base_layer|moderate
 Chicory root|base_layer|primary
 Chicory root|recycling_engine|minor
+Cocoa Powder|anti_inflammatory_arsenal|moderate
+Coconut|base_layer|minor
 Concord grape|knights_of_the_wall|primary
 Cranberry|knights_of_the_wall|primary
+Cremini Mushroom|base_layer|moderate
+Dark Chocolate|anti_inflammatory_arsenal|moderate
+Dragon Fruit|base_layer|minor
+Dried Apricot|anti_inflammatory_arsenal|minor
+Elderberry|anti_inflammatory_arsenal|minor
+Elderberry|tumor_preventors|moderate
+Endive|base_layer|moderate
+Endive|locksmith|minor
+Enoki Mushroom|base_layer|moderate
+Farro|base_layer|moderate
+Fava Beans|base_layer|primary
+Fava Beans|recycling_engine|minor
+Fenugreek Seeds|knights_of_the_wall|moderate
+Fermented Pickles|base_layer|minor
+Fermented Pickles|knights_of_the_wall|moderate
 Flaxseed|anti_inflammatory_arsenal|moderate
 Flaxseed|tumor_preventors|primary
+Freekeh|base_layer|primary
 Garlic|base_layer|primary
 Garlic|recycling_engine|minor
+Gochujang|anti_inflammatory_arsenal|minor
+Goji Berry|anti_inflammatory_arsenal|moderate
+Gooseberry|tumor_preventors|minor
+Granola|base_layer|moderate
+Grapefruit|tumor_preventors|minor
+Green Olives|anti_inflammatory_arsenal|minor
 Green banana|anti_inflammatory_arsenal|moderate
 Green banana|locksmith|primary
 Green tea|knights_of_the_wall|primary
+Guava|knights_of_the_wall|moderate
+Guava|tumor_preventors|minor
+Habanero Pepper|anti_inflammatory_arsenal|minor
+Halibut|anti_inflammatory_arsenal|minor
+Hemp Seeds|anti_inflammatory_arsenal|moderate
+Herring|anti_inflammatory_arsenal|primary
+Jackfruit|knights_of_the_wall|minor
 Jerusalem artichoke|base_layer|primary
+Kalamata Olives|anti_inflammatory_arsenal|minor
 Kale|vitamin_lab|moderate
+Kohlrabi|tumor_preventors|minor
+Labneh|knights_of_the_wall|minor
 Leek|base_layer|moderate
 Lentil|base_layer|moderate
 Lentil|locksmith|minor
+Lima Beans|base_layer|primary
+Lima Beans|recycling_engine|minor
+Maitake Mushroom|base_layer|primary
+Mandarin Orange|vitamin_lab|minor
 Miso|estrogen_regulators|moderate
+Muesli|base_layer|moderate
+Mulberry|anti_inflammatory_arsenal|moderate
+Mung Beans|base_layer|primary
+Mung Beans|recycling_engine|moderate
+Mustard Seeds|tumor_preventors|minor
+Napa Cabbage|tumor_preventors|minor
 Natto|estrogen_regulators|primary
 Natto|vitamin_lab|moderate
+Oat Milk|locksmith|minor
 Oats|anti_inflammatory_arsenal|primary
 Oats|appetite_crew|primary
 Oats|locksmith|minor
 Oats|mood_regulators|moderate
 Okra|anti_inflammatory_arsenal|moderate
+Olives|anti_inflammatory_arsenal|minor
 Onion|base_layer|primary
 Onion|recycling_engine|minor
 Orange|anti_inflammatory_arsenal|minor
 Oyster mushroom|appetite_crew|moderate
+Papaya|anti_inflammatory_arsenal|minor
 Parsley|vitamin_lab|minor
+Passion Fruit|appetite_crew|minor
 Pear|anti_inflammatory_arsenal|moderate
+Persimmon|appetite_crew|minor
+Pinto Beans|base_layer|primary
+Pinto Beans|recycling_engine|moderate
+Plum|anti_inflammatory_arsenal|minor
+Poblano Pepper|anti_inflammatory_arsenal|minor
 Pomegranate|knights_of_the_wall|primary
 Pomegranate|mitochondria_boosters|primary
+Popcorn|base_layer|moderate
+Porcini Mushroom|base_layer|moderate
+Portobello Mushroom|base_layer|moderate
 Potato|anti_inflammatory_arsenal|moderate
 Potato|locksmith|moderate
+Prune|anti_inflammatory_arsenal|minor
+Prune|recycling_engine|moderate
 Pumpkin seed|mood_regulators|moderate
 Purple sweet potato|knights_of_the_wall|moderate
+Radicchio|anti_inflammatory_arsenal|minor
+Radicchio|base_layer|moderate
+Raisin|anti_inflammatory_arsenal|minor
 Raspberry|knights_of_the_wall|moderate
 Raspberry|mitochondria_boosters|moderate
+Rhubarb|recycling_engine|minor
 Romaine lettuce|vitamin_lab|moderate
+Romanesco|tumor_preventors|moderate
+Rutabaga|tumor_preventors|minor
 Rye|appetite_crew|moderate
 Rye|tumor_preventors|moderate
 Sesame seed|mood_regulators|moderate
 Sesame seed|tumor_preventors|moderate
 Shallot|base_layer|moderate
 Shiitake mushroom|appetite_crew|moderate
+Skyr|knights_of_the_wall|moderate
+Soy Milk|base_layer|minor
 Soybean|base_layer|moderate
 Soybean|estrogen_regulators|primary
 Soybean|mood_regulators|moderate
+Spelt|base_layer|moderate
 Spinach|stone_breakers|moderate
 Spinach|vitamin_lab|moderate
+Split Peas|base_layer|primary
+Split Peas|recycling_engine|moderate
 Spring onion|base_layer|minor
 Strawberry|mitochondria_boosters|moderate
+Sun-Dried Tomato|tumor_preventors|moderate
 Sunflower seed|mood_regulators|moderate
 Swiss chard|stone_breakers|moderate
 Swiss chard|vitamin_lab|minor
+Teff|base_layer|moderate
 Tempeh|estrogen_regulators|primary
 Tofu|estrogen_regulators|moderate
 Tofu|mood_regulators|moderate
 Walnut|mitochondria_boosters|primary
+Watermelon Radish|tumor_preventors|minor
 White mushroom|appetite_crew|moderate
+Whole Grain Bread|base_layer|minor
+Whole Wheat Pasta|base_layer|moderate
 Whole wheat|appetite_crew|moderate
 Whole wheat|base_layer|minor
+Wild Rice|base_layer|moderate

@@ -17,3 +17,5 @@ beta_glucan|false|moderate|soluble|Soluble fiber of oats, barley and mushrooms. 
 arabinoxylan|false|moderate|insoluble|Major fiber of whole wheat, rye and bran. Commonly overlooked; feeds Base Layer and Appetite Crew.
 psyllium|false|low|soluble|Husk fiber. Poorly fermented, so it bulks mechanically rather than feeding much.
 mucilage|false|moderate|soluble|Gel fiber of chia, flax and okra. Fermentable; soothes and feeds butyrate producers.
+sorbitol|true|high|soluble|Polyol (the P in FODMAP). Stone fruits (plum, prune, cherry, apricot), apple, pear. Osmotic and fast-fermenting.
+mannitol|true|high|soluble|Polyol. Mushrooms, cauliflower, celery. Osmotic and fast-fermenting.

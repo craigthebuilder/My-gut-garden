@@ -4,26 +4,49 @@
 # Source: USDA Database for the Flavonoid Content of Foods; USDA carotenoid tables; Phenol-Explorer.
 # Format: pipe-delimited. food|phytochemical
 food|phytochemical
+Acai Berry|anthocyanin
+Acai Berry|resveratrol
+Adzuki Beans|anthocyanin
+Adzuki Beans|catechin
+Alfalfa Sprouts|kaempferol
+Allspice|eugenol
+Allspice|quercetin
 Almond|beta_sitosterol
+Apple Juice|chlorogenic_acid
+Apple Juice|quercetin
 Apple|chlorogenic_acid
 Apple|quercetin
+Apricot|beta_carotene
+Apricot|beta_cryptoxanthin
+Apricot|chlorogenic_acid
 Arugula|glucosinolate
 Asparagus|asparagoside
 Avocado|beta_sitosterol
+Banana Pepper|beta_carotene
+Banana Pepper|quercetin
 Basil|chlorophyll
 Basil|linalool
+Bay Leaf|eugenol
+Bean Sprouts|kaempferol
 Beet|betanidin
 Beet|betanin
 Beet|isobetanin
 Beet|vulgaxanthin
 Bell pepper|beta_cryptoxanthin
 Bell pepper|capsaicin
+Black Rice|anthocyanin
 Black pepper|chavicine
 Black pepper|piperine
+Black-Eyed Peas|kaempferol
 Blackberry|anthocyanin
 Blackberry|ellagic_acid
 Blueberry|anthocyanin
 Bok choy|glucosinolate
+Broccoli Rabe|glucosinolate
+Broccoli Rabe|lutein
+Broccoli Rabe|sulforaphane
+Broccolini|kaempferol
+Broccolini|sulforaphane
 Broccoli|brassicasterol
 Broccoli|glucosinolate
 Broccoli|lutein
@@ -31,67 +54,230 @@ Broccoli|pheophytin
 Broccoli|sulforaphane
 Brussels sprouts|glucosinolate
 Brussels sprouts|sulforaphane
+Butter Lettuce|beta_carotene
 Butternut squash|beta_carotene
 Cabbage|glucosinolate
+Cacao Nibs|caffeine
+Cacao Nibs|catechin
+Cantaloupe|beta_carotene
+Cantaloupe|beta_cryptoxanthin
+Capers|kaempferol
+Capers|quercetin
+Caraway Seeds|kaempferol
+Caraway Seeds|quercetin
+Cardamom|linalool
 Carrot|alpha_carotene
 Carrot|beta_carotene
 Cauliflower|glucosinolate
+Cayenne Pepper|beta_carotene
+Cayenne Pepper|capsaicin
+Chai Tea|eugenol
+Chai Tea|linalool
+Chanterelle Mushroom|beta_carotene
+Cherry|anthocyanin
+Cherry|ellagic_acid
+Cherry|quercetin
+Chestnut|ellagic_acid
+Chestnut|quercetin
 Chickpea|chickpea_saponin
+Chili Powder|beta_carotene
+Chili Powder|capsaicin
 Chili pepper|capsaicin
 Chives|kaempferol
 Cinnamon|chlorogenic_acid
 Cinnamon|eugenol
+Clove|eugenol
+Clove|kaempferol
+Cocoa Powder|catechin
+Cocoa Powder|epigallocatechin_gallate
+Cola|caffeine
 Collard greens|chlorophyll
 Collard greens|lutein
 Concord grape|anthocyanin
 Concord grape|resveratrol
+Coriander Seeds|linalool
+Coriander Seeds|quercetin
+Corn Tortilla|beta_carotene
 Corn|zeaxanthin
 Cranberry|anthocyanin
+Curry Powder|beta_carotene
+Curry Powder|curcumin
+Dark Chocolate|catechin
+Dark Chocolate|resveratrol
+Dill|kaempferol
+Dill|quercetin
+Dragon Fruit|anthocyanin
+Dragon Fruit|betanin
+Dried Apricot|beta_carotene
+Dried Apricot|chlorogenic_acid
 Eggplant|anthocyanin
 Eggplant|solanine
+Elderberry|anthocyanin
+Elderberry|quercetin
+Endive|kaempferol
+Endive|quercetin
+Farro|beta_sitosterol
+Fava Beans|kaempferol
+Fava Beans|quercetin
+Fennel Seeds|kaempferol
+Fennel Seeds|quercetin
 Fig|anthocyanin
 Flaxseed|secoisolariciresinol
+Freekeh|beta_carotene
+Freekeh|lutein
+Garam Masala|eugenol
+Garam Masala|piperine
 Garlic|allicin
 Garlic|diallyl_disulfide
 Garlic|s_allyl_cysteine
+Gochujang|capsaicin
+Goji Berry|beta_carotene
+Goji Berry|zeaxanthin
+Gooseberry|anthocyanin
+Gooseberry|quercetin
+Granola|avenasterol
+Granola|quercetin
+Grapefruit|hesperidin
+Grapefruit|lycopene
+Grapefruit|naringenin
 Grape|resveratrol
+Green Beans|beta_carotene
+Green Beans|lutein
+Green Beans|quercetin
+Green Olives|beta_sitosterol
+Green Olives|quercetin
 Green tea|caffeine
 Green tea|catechin
 Green tea|epigallocatechin_gallate
+Guava|beta_carotene
+Guava|lycopene
+Guava|quercetin
+Habanero Pepper|beta_carotene
+Habanero Pepper|capsaicin
+Hard Cider|quercetin
+Harissa|beta_carotene
+Harissa|capsaicin
+Hemp Seeds|beta_sitosterol
+Honeydew Melon|lutein
+Horseradish|glucosinolate
+Horseradish|sulforaphane
+Jackfruit|beta_carotene
+Jackfruit|quercetin
+Kalamata Olives|anthocyanin
+Kalamata Olives|beta_sitosterol
 Kale|chlorophyll_b
 Kale|kaempferol
 Kale|lutein
 Kale|sulforaphane
+Kohlrabi|glucosinolate
+Kohlrabi|kaempferol
 Kombucha|catechin
 Leek|kaempferol
+Lemongrass|limonene
+Lemongrass|linalool
 Lemon|hesperidin
+Lima Beans|kaempferol
+Lime|hesperidin
+Lime|limonene
+Lychee|kaempferol
+Lychee|quercetin
+Macadamia Nut|beta_sitosterol
+Mandarin Orange|beta_cryptoxanthin
+Mandarin Orange|hesperidin
+Mandarin Orange|naringenin
 Mango|beta_carotene
+Milk Chocolate|catechin
 Mint|menthol
 Miso|genistein
+Muesli|avenasterol
+Muesli|quercetin
+Mulberry|anthocyanin
+Mulberry|resveratrol
+Mung Beans|kaempferol
+Mung Beans|quercetin
+Mustard Seeds|glucosinolate
+Mustard Seeds|quercetin
+Napa Cabbage|glucosinolate
+Napa Cabbage|kaempferol
+Nectarine|beta_carotene
+Nectarine|chlorogenic_acid
+Nectarine|quercetin
 Oats|avenacoside
 Oats|avenasterol
 Oats|beta_sitosterol
+Olives|beta_sitosterol
+Olives|quercetin
 Onion|quercetin
 Onion|s_allyl_cysteine
+Orange Juice|hesperidin
+Orange Juice|naringenin
 Orange|beta_cryptoxanthin
 Orange|hesperidin
 Oregano|carnosic_acid
+Papaya|beta_carotene
+Papaya|beta_cryptoxanthin
+Papaya|lycopene
+Paprika|beta_carotene
+Paprika|beta_cryptoxanthin
+Paprika|capsaicin
 Parsley|kaempferol
+Passion Fruit|beta_carotene
+Passion Fruit|quercetin
+Peach|beta_carotene
+Peach|chlorogenic_acid
+Peach|quercetin
+Persimmon|beta_carotene
+Persimmon|catechin
+Pine Nuts|beta_sitosterol
 Pineapple|naringenin
+Pinto Beans|kaempferol
+Pinto Beans|quercetin
 Pistachio|lutein
+Plum|anthocyanin
+Plum|chlorogenic_acid
+Poblano Pepper|beta_carotene
+Poblano Pepper|capsaicin
+Poblano Pepper|quercetin
+Polenta|beta_carotene
+Polenta|lutein
 Pomegranate|ellagic_acid
 Pomegranate|punicalagin
+Popcorn|beta_carotene
+Popcorn|lutein
 Potato|solanine
+Prune|anthocyanin
+Prune|chlorogenic_acid
 Pumpkin|beta_carotene
 Purple sweet potato|anthocyanin
 Quinoa|quinoa_saponin
+Radicchio|anthocyanin
+Radicchio|quercetin
 Radish|glucosinolate
+Raisin|quercetin
+Raisin|resveratrol
 Raspberry|anthocyanin
 Raspberry|ellagic_acid
+Rhubarb|anthocyanin
+Rhubarb|quercetin
 Romaine lettuce|lutein
+Romanesco|glucosinolate
+Romanesco|kaempferol
+Romanesco|sulforaphane
 Rosemary|alpha_pinene
 Rosemary|carnosic_acid
+Rutabaga|beta_carotene
+Rutabaga|glucosinolate
+Sage|carnosic_acid
+Sage|quercetin
+Serrano Pepper|capsaicin
+Serrano Pepper|quercetin
 Sesame seed|secoisolariciresinol
+Smoked Paprika|beta_carotene
+Smoked Paprika|capsaicin
+Snow Peas|beta_carotene
+Snow Peas|kaempferol
+Snow Peas|lutein
+Soy Milk|genistein
 Soybean|genistein
 Soybean|stigmasterol
 Spinach|chlorophyll
@@ -99,18 +285,38 @@ Spinach|chlorophyll_a
 Spinach|chlorophyllin
 Spinach|lutein
 Spinach|zeaxanthin
+Split Peas|kaempferol
+Star Anise|kaempferol
+Star Anise|quercetin
 Strawberry|anthocyanin
 Strawberry|ellagic_acid
+Sugar Snap Peas|beta_carotene
+Sugar Snap Peas|kaempferol
+Sugar Snap Peas|lutein
 Sumac|ellagic_acid
+Sun-Dried Tomato|chlorogenic_acid
+Sun-Dried Tomato|lycopene
 Sunflower seed|beta_sitosterol
 Sunflower seed|campesterol
 Sweet potato|beta_carotene
 Swiss chard|betanin
 Swiss chard|indicaxanthin
 Swiss chard|lutein
+Tarragon|kaempferol
+Tarragon|quercetin
 Tempeh|genistein
 Tofu|genistein
+Tomatillo|beta_carotene
+Tomatillo|quercetin
 Tomato|lycopene
 Turmeric|curcumin
 Walnut|ellagic_acid
 Watercress|glucosinolate
+Watermelon Radish|anthocyanin
+Watermelon Radish|glucosinolate
+Watermelon|beta_carotene
+Watermelon|lycopene
+Wild Rice|anthocyanin
+Wild Rice|lutein
+Za'atar|kaempferol
+Za'atar|quercetin

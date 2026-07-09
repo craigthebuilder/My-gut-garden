@@ -38,6 +38,7 @@ enum CapItemSource: String, Sendable, Equatable {
     case manual                              // the user corrected an unmatched item
     case hiddenConfirmed = "hidden_confirmed" // the user confirmed an always-ask prompt
     case annotation                          // Batch C: from the user's snapchat-style note (re-prompt)
+    case librarian                           // the librarian generated the food + linked it (SPEC §4 Coverage)
 }
 
 /// One row destined for `meal_items` (SPEC §5). Contract v2: `estGrams` is the
