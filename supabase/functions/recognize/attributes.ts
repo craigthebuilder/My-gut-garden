@@ -13,7 +13,8 @@ export interface FoodAttributes {
   canonical_name: string;
   is_plant: boolean;
   plant: { name: string; rarity_tier: string } | null;
-  is_fermented: boolean;
+  is_fermented: boolean;         // PROCESS tag → Fermented Finds collection
+  has_live_cultures: boolean;    // live cultures → the 3 P's "probiotic" P
   // v2: grams of one typical serving — the anchor that turns the model's
   // est_grams into a portion ratio (client slider math + est_fiber_g trigger).
   typical_serving_g: number | null;
@@ -109,6 +110,7 @@ function toAttributes(row: FoodRow): FoodAttributes {
     is_plant: row.is_plant,
     plant: row.plant ?? null,
     is_fermented: row.is_fermented,
+    has_live_cultures: row.has_live_cultures ?? false,
     typical_serving_g: row.typical_serving_g ?? null,
     fibers: (row.food_fibers ?? []).map((ff: FoodRow) => ({
       name: ff.fibers?.name,
@@ -132,7 +134,7 @@ function toAttributes(row: FoodRow): FoodAttributes {
 }
 
 const FOOD_SELECT = `
-  id, canonical_name, aliases, is_plant, is_fermented, common_hidden_in, categories, typical_serving_g,
+  id, canonical_name, aliases, is_plant, is_fermented, has_live_cultures, common_hidden_in, categories, typical_serving_g,
   plant:plants(name, rarity_tier),
   food_fibers(relative_amount, est_grams_per_serving, fibers(name, fermentability)),
   food_colors(color_id),

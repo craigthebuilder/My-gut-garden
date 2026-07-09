@@ -167,7 +167,9 @@ final class ThrHomeModel {
             if !attrs.fibers.isEmpty || !attrs.guildFeeds.isEmpty {
                 todayThreePs.prebiotic = max(todayThreePs.prebiotic, amount)
             }
-            if attrs.isFermented {
+            // Probiotic = LIVE cultures, not mere fermentation (owner report,
+            // 2026-07-09) — must match FoodAttributeJoin.threePs.
+            if attrs.hasLiveCultures {
                 todayThreePs.probiotic = max(todayThreePs.probiotic, amount)
             }
             if attrs.phytochemicals.contains(where: { $0.category == "polyphenol" }) || attrs.colors.contains("blue_purple") {
@@ -414,6 +416,15 @@ final class ThrHomeModel {
             if !questions.isEmpty { out[meal.id] = questions }
         }
         keyQuestions = out
+    }
+
+    /// A quick-check was answered in the meal detail sheet: drop it from the
+    /// live dict so the Recent-Meals ⚠︎ clears immediately (owner report,
+    /// 2026-07-09: the badge outlived the answer). The DB write happened in
+    /// the sheet; the next computeKeyQuestions pass agrees with this.
+    func markQuestionAnswered(mealId: String, questionId: String) {
+        keyQuestions[mealId]?.removeAll { $0.id == questionId }
+        if keyQuestions[mealId]?.isEmpty == true { keyQuestions[mealId] = nil }
     }
 
     /// This + recent weeks of per-color amounts for the rainbow tap-in chart.

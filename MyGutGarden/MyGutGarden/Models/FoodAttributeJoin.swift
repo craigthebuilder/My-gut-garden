@@ -11,7 +11,9 @@
 import Foundation
 
 /// The three P's hit by a meal (SPEC §11a). Prebiotic = fiber that feeds a
-/// guild; Probiotic = a fermented food; Polyphenol = a polyphenol/anthocyanin.
+/// guild; Probiotic = a LIVE-CULTURE food (not merely fermented — owner report,
+/// 2026-07-09: aged Parmesan is fermented but carries no live cultures);
+/// Polyphenol = a polyphenol/anthocyanin.
 struct ThreePs: Sendable, Equatable {
     var prebiotic: Bool
     var probiotic: Bool
@@ -40,7 +42,8 @@ enum FoodAttributeJoin {
 
     static func threePs(for attributes: [FoodAttributes]) -> ThreePs {
         let prebiotic = attributes.contains { !$0.fibers.isEmpty || !$0.guildFeeds.isEmpty }
-        let probiotic = attributes.contains(where: \.isFermented)
+        // Live cultures, NOT mere fermentation (Fermented Finds keeps isFermented).
+        let probiotic = attributes.contains(where: \.hasLiveCultures)
         let polyphenol = attributes.contains { food in
             food.phytochemicals.contains { $0.category == "polyphenol" }
                 || food.colors.contains("blue_purple")

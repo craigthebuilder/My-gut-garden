@@ -223,7 +223,8 @@ struct ThrRootView: View {
     @ViewBuilder private var recentMealsSection: some View {
         if !model.recentMeals.isEmpty {
             ThrRecentMealsSection(appState: appState, meals: model.recentMeals,
-                                  questions: model.keyQuestions)
+                                  questions: model.keyQuestions,
+                                  onQuestionAnswered: model.markQuestionAnswered)
         }
     }
 

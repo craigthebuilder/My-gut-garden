@@ -149,7 +149,7 @@ struct ThrPokedexView: View {
             : "Start your lifetime collection"
     }
     private var fermentedSubtitle: String {
-        model.fermentedFinds.isEmpty ? "Probiotic foods you've logged" : "\(model.fermentedFinds.count) found"
+        model.fermentedFinds.isEmpty ? "Fermented foods you've logged" : "\(model.fermentedFinds.count) found"
     }
 }
 

@@ -23,6 +23,9 @@ struct ThrRecentMealsSection: View {
     /// The one-or-two KEY hidden-ingredient questions per meal id (⚠︎ badge;
     /// answered in the pop-up). Owner rework, 2026-07-02 round 2.
     var questions: [String: [ThrMealKeyQuestion]] = [:]
+    /// Called (mealId, questionId) when the sheet answers a quick check, so
+    /// the owner of `questions` prunes it and the ⚠︎ clears immediately.
+    var onQuestionAnswered: (String, String) -> Void = { _, _ in }
 
     @State private var selected: ThrSelectedMeal?
 
@@ -45,7 +48,8 @@ struct ThrRecentMealsSection: View {
             }
         }
         .sheet(item: $selected) { wrapper in
-            ThrMealDetailSheet(appState: appState, meal: wrapper.meal, questions: wrapper.questions)
+            ThrMealDetailSheet(appState: appState, meal: wrapper.meal, questions: wrapper.questions,
+                               onQuestionAnswered: { onQuestionAnswered(wrapper.meal.id, $0) })
         }
     }
 }
@@ -195,6 +199,8 @@ struct ThrMealDetailSheet: View {
     let appState: AppState
     let meal: MealRow
     var questions: [ThrMealKeyQuestion] = []
+    /// Bubbles an answered quick-check (question id) up so the ⚠︎ badge clears.
+    var onQuestionAnswered: (String) -> Void = { _ in }
 
     @State private var model: ThrMealDetailModel?
 
@@ -274,7 +280,10 @@ struct ThrMealDetailSheet: View {
 
     private func quickAnswer(_ title: String, question: ThrMealKeyQuestion, wasPresent: Bool) -> some View {
         Button {
-            Task { await model?.answer(question, wasPresent: wasPresent) }
+            Task {
+                await model?.answer(question, wasPresent: wasPresent)
+                onQuestionAnswered(question.id)
+            }
         } label: {
             Text(title)
                 .font(theme.typography.body(weight: .medium))

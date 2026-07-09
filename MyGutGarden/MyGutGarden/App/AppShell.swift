@@ -67,9 +67,14 @@ private struct ShellHome: View {
                 Tab("Field Guide", systemImage: "book", value: AppTab.fieldGuide) {
                     NavigationStack { ThrPokedexView(appState: appState, latestMeal: nil) }
                 }
-                if appState.progression.isTier2Unlocked {
-                    Tab("Garden", systemImage: "map", value: AppTab.garden) {
+                // Always visible (owner, 2026-07-09): week one shows a locked
+                // tease instead of hiding the tab — new users should see the
+                // garden exists and what opens it.
+                Tab("Garden", systemImage: "map", value: AppTab.garden) {
+                    if appState.progression.isTier2Unlocked {
                         GuildRootView(repository: appState.repository, progression: appState.progression)
+                    } else {
+                        ShellGardenLocked()
                     }
                 }
                 Tab("You", systemImage: "person", value: AppTab.you) { ShellSettings(appState: appState) }
@@ -105,10 +110,11 @@ private struct ShellHome: View {
             await appState.coach.loadCompleted(appState)
             await appState.coach.startIfNeeded("intro", appState: appState)
         }
-        // First visit to the Garden tab starts its own tour (owner, round 2 —
-        // rainbow + phytochemicals start theirs from inside their views).
+        // First visit to the (unlocked) Garden tab starts its own tour (owner,
+        // round 2 — rainbow + phytochemicals start theirs from inside their
+        // views). The locked tease has no tour targets, so don't start it there.
         .onChange(of: tab) { _, newTab in
-            if newTab == .garden {
+            if newTab == .garden, appState.progression.isTier2Unlocked {
                 Task { await appState.coach.startIfNeeded("garden", appState: appState) }
             }
         }
@@ -465,6 +471,74 @@ private struct ShellSettings: View {
         }
         .accessibilityLabel("Gas comfort")
         .accessibilityValue(current.label)
+    }
+}
+
+// MARK: - Locked garden (week one; owner, 2026-07-09)
+
+/// What the Garden tab shows before tier 2 unlocks: a tease, never a wall.
+/// Gain-framed (what's coming + how it opens), no countdowns, no shame —
+/// every plant already counts, the gates just aren't open yet.
+private struct ShellGardenLocked: View {
+    @Environment(\.theme) private var theme
+
+    var body: some View {
+        ScrollView {
+            VStack(spacing: theme.metrics.space5) {
+                ZStack(alignment: .bottomTrailing) {
+                    Image(systemName: "map.fill")
+                        .font(.system(size: 72))
+                        .foregroundStyle(theme.colors.primary.opacity(0.25))
+                    Image(systemName: "lock.fill")
+                        .font(.system(size: 26))
+                        .foregroundStyle(theme.colors.secondary)
+                        .padding(theme.metrics.space2)
+                        .background(theme.colors.surface, in: Circle())
+                }
+                .padding(.top, theme.metrics.space6)
+                .accessibilityHidden(true)
+
+                VStack(spacing: theme.metrics.space2) {
+                    Text("Your garden is taking root")
+                        .font(theme.typography.title())
+                        .foregroundStyle(theme.colors.textPrimary)
+                    Text("A living map of the microbe crews your plants feed — worlds, districts, and guilds that bloom as you eat. It opens after your first week.")
+                        .font(theme.typography.body())
+                        .foregroundStyle(theme.colors.textSecondary)
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .padding(.horizontal, theme.metrics.space5)
+
+                Card {
+                    VStack(alignment: .leading, spacing: theme.metrics.space3) {
+                        SectionHeader(title: "How the gates open")
+                        HStack(alignment: .top, spacing: theme.metrics.space3) {
+                            Image(systemName: "camera.fill")
+                                .foregroundStyle(theme.colors.primary)
+                            Text("Snap meals on 5 different days this week — or land a 30-plant week early.")
+                                .font(theme.typography.body())
+                                .foregroundStyle(theme.colors.textPrimary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        HStack(alignment: .top, spacing: theme.metrics.space3) {
+                            Image(systemName: "leaf.fill")
+                                .foregroundStyle(theme.colors.primary)
+                            Text("Everything you eat already counts — your crews are getting fed while the map grows in.")
+                                .font(theme.typography.body())
+                                .foregroundStyle(theme.colors.textPrimary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                }
+                .padding(.horizontal, theme.metrics.space5)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.bottom, theme.metrics.space6)
+        }
+        .background(theme.colors.background.ignoresSafeArea())
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Garden, locked. Opens after your first week of logging.")
     }
 }
 

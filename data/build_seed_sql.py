@@ -363,25 +363,26 @@ w()
 
 # ---- foods (FK -> plants; histamine_level column was dropped in single-mode) ---
 w("-- ---- foods — ON CONFLICT (canonical_name); plant_id via plants join --")
-w("insert into foods (canonical_name, aliases, is_plant, plant_id, is_fermented, common_hidden_in, categories, protein_tier, energy_tier, typical_serving_g)")
-w("select v.canonical_name, v.aliases, v.is_plant, p.id, v.is_fermented, v.common_hidden_in, v.categories, v.protein_tier, v.energy_tier, v.typical_serving_g::numeric")
+w("insert into foods (canonical_name, aliases, is_plant, plant_id, is_fermented, has_live_cultures, common_hidden_in, categories, protein_tier, energy_tier, typical_serving_g)")
+w("select v.canonical_name, v.aliases, v.is_plant, p.id, v.is_fermented, v.has_live_cultures, v.common_hidden_in, v.categories, v.protein_tier, v.energy_tier, v.typical_serving_g::numeric")
 w("from (values")
 vals = []
 for r in foods:
     vals.append("  (" + ", ".join([
         s(r["canonical_name"]), arr(split_list(r["aliases"])), b(r["is_plant"]),
-        s(r["plant_name"]), b(r["is_fermented"]),
+        s(r["plant_name"]), b(r["is_fermented"]), b(r.get("has_live_cultures", "false")),
         arr(split_list(r["common_hidden_in"])), arr(split_list(r["categories"])),
         s(r["protein_tier"]), s(r["energy_tier"]), num(r["typical_serving_g"]),
     ]) + ")")
 w(",\n".join(vals))
-w(") as v(canonical_name, aliases, is_plant, plant_name, is_fermented, common_hidden_in, categories, protein_tier, energy_tier, typical_serving_g)")
+w(") as v(canonical_name, aliases, is_plant, plant_name, is_fermented, has_live_cultures, common_hidden_in, categories, protein_tier, energy_tier, typical_serving_g)")
 w("left join plants p on p.name = v.plant_name")
 w("on conflict (canonical_name) do update set")
 w("  aliases = excluded.aliases,")
 w("  is_plant = excluded.is_plant,")
 w("  plant_id = excluded.plant_id,")
 w("  is_fermented = excluded.is_fermented,")
+w("  has_live_cultures = excluded.has_live_cultures,")
 w("  common_hidden_in = excluded.common_hidden_in,")
 w("  categories = excluded.categories,")
 w("  protein_tier = excluded.protein_tier,")

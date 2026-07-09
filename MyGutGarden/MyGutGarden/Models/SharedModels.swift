@@ -235,7 +235,12 @@ struct FoodAttributes: Codable, Sendable, Hashable {
     let canonicalName: String
     let isPlant: Bool
     let plant: PlantRef?
-    let isFermented: Bool
+    let isFermented: Bool            // PROCESS tag → Fermented Finds collection
+    /// Live cultures reaching the gut → the 3 P's "probiotic" P. Distinct from
+    /// isFermented: aged/baked/alcoholic ferments (Parmesan, sourdough, wine)
+    /// are fermented but carry NO live cultures (owner report, 2026-07-09).
+    /// Optional-decode so older payloads default to not-probiotic.
+    var hasLiveCultures: Bool = false
     /// Grams of one typical serving (RD-fenced placeholder) — the anchor that
     /// turns `estGrams` into a portion ratio for the live ~fiber math.
     let typicalServingG: Double?

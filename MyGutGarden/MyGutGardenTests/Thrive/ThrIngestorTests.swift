@@ -19,6 +19,7 @@ private enum Fix {
         isPlant: Bool = true,
         rarity: RarityTier = .common,
         isFermented: Bool = false,
+        hasLiveCultures: Bool = false,
         fibers: [FiberAttr] = [],
         colors: [String] = [],
         phytos: [PhytochemicalAttr] = [],
@@ -30,6 +31,7 @@ private enum Fix {
             isPlant: isPlant,
             plant: isPlant ? PlantRef(name: name, rarityTier: rarity) : nil,
             isFermented: isFermented,
+            hasLiveCultures: hasLiveCultures,
             typicalServingG: nil,
             fibers: fibers,
             colors: colors,
@@ -154,7 +156,7 @@ struct ThrIngestorMealTests {
     func threePsAllThree() {
         let ctx = Fix.context([
             Fix.attr(name: "Oats", fibers: [Fix.fiber("beta_glucan")]),          // prebiotic
-            Fix.attr(name: "Kimchi", isFermented: true),                          // probiotic
+            Fix.attr(name: "Kimchi", isFermented: true, hasLiveCultures: true),   // probiotic (live cultures)
             Fix.attr(name: "Blueberry", colors: ["blue_purple"],
                      phytos: [PhytochemicalAttr(name: "anthocyanin", category: "polyphenol")]), // polyphenol
         ])
@@ -162,6 +164,16 @@ struct ThrIngestorMealTests {
         #expect(p.prebiotic && p.probiotic && p.polyphenol)
         #expect(p.allThree)
         #expect(p.count == 3)
+    }
+
+    @Test("threePs: a fermented food WITHOUT live cultures is not probiotic")
+    func fermentedButNotProbiotic() {
+        // Owner report, 2026-07-09: aged Parmesan is fermented but carries no
+        // live cultures, so it must NOT tick the probiotic P.
+        let ctx = Fix.context([
+            Fix.attr(name: "Parmesan", isPlant: false, isFermented: true, hasLiveCultures: false),
+        ])
+        #expect(!ingestor.threePs(for: ctx).probiotic)
     }
 
     @Test("threePs: a guild-feeding food counts as prebiotic even without listed fibers")

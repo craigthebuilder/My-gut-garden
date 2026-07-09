@@ -66,7 +66,7 @@ final class RecognitionService {
           "attributes": {
             "food_id": "demo-garlic", "canonical_name": "Garlic", "is_plant": true, "typical_serving_g": 6,
             "plant": { "name": "Garlic", "rarity_tier": "common" },
-            "is_fermented": false,
+            "is_fermented": false, "has_live_cultures": false,
             "fibers": [
               { "name": "inulin", "relative_amount": "primary", "fermentability": "high", "est_grams_per_serving": 2.0 },
               { "name": "fos", "relative_amount": "moderate", "fermentability": "high", "est_grams_per_serving": 1.0 }
@@ -81,7 +81,7 @@ final class RecognitionService {
           "attributes": {
             "food_id": "demo-oats", "canonical_name": "Oats", "is_plant": true, "typical_serving_g": 240,
             "plant": { "name": "Oats", "rarity_tier": "common" },
-            "is_fermented": false,
+            "is_fermented": false, "has_live_cultures": false,
             "fibers": [
               { "name": "beta_glucan", "relative_amount": "primary", "fermentability": "moderate", "est_grams_per_serving": 3.0 },
               { "name": "arabinoxylan", "relative_amount": "minor", "fermentability": "moderate", "est_grams_per_serving": 0.8 }
@@ -99,7 +99,7 @@ final class RecognitionService {
           "attributes": {
             "food_id": "demo-spinach", "canonical_name": "Spinach", "is_plant": true, "typical_serving_g": 60,
             "plant": { "name": "Spinach", "rarity_tier": "common" },
-            "is_fermented": false,
+            "is_fermented": false, "has_live_cultures": false,
             "fibers": [{ "name": "pectin", "relative_amount": "minor", "fermentability": "moderate", "est_grams_per_serving": 0.6 }],
             "colors": ["green"],
             "phytochemicals": [{ "name": "lutein", "class": "carotenoid" }, { "name": "chlorophyll", "class": "chlorophyll" }],
@@ -111,7 +111,7 @@ final class RecognitionService {
           "attributes": {
             "food_id": "demo-blueberry", "canonical_name": "Blueberry", "is_plant": true, "typical_serving_g": 75,
             "plant": { "name": "Blueberry", "rarity_tier": "uncommon" },
-            "is_fermented": false,
+            "is_fermented": false, "has_live_cultures": false,
             "fibers": [{ "name": "pectin", "relative_amount": "minor", "fermentability": "moderate", "est_grams_per_serving": 0.5 }],
             "colors": ["blue_purple"],
             "phytochemicals": [{ "name": "anthocyanin", "class": "polyphenol" }],

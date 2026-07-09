@@ -214,7 +214,7 @@ All tutorial copy is **curated seed data** (`tutorial_steps`), never runtime-gen
 | **Plant** | 1 | Variety | 30/week, presence-based, rarity tiers |
 | **Rainbow** | 1 | Color (polyphenol/carotenoid proxy) | Eat-the-rainbow; missing + weak colors, click-in education |
 | **Phytochemical** | 2 | Compound classes collected | Food-ID → database lookup; category → compound → detail |
-| **Fermented Finds** | Cross | Probiotic intake | Daily tally + nudge, celebrated |
+| **Fermented Finds** | Cross | Fermented-food exploration (`is_fermented`) | Daily tally + nudge, celebrated |
 | **Microbiome Garden** | 2 | *Feeding* beneficial bacteria | Volume × frequency; **bloom** when fed; **worlds → districts → guilds** |
 
 **Make the distinction legible:** the **Plant** pokédex measures **variety** (one garlic counts); the **Garden** measures **feeding** (one garlic barely moves it). Different units, not a bug.
@@ -263,7 +263,7 @@ The daily fiber goal is **14 g fiber per 1,000 kcal** of estimated energy needs 
 - The **only surfaced goal number is `fiber_goal_g` in grams.**
 - Height/weight are never shown back as a weight-loss frame anywhere.
 
-**Daily surfaced goals:** fiber goal (g, once unlocked) · progress toward 30 plants this week · eat-the-rainbow (missing/weak colors, tap to learn) · 3 P's.
+**Daily surfaced goals:** fiber goal (g, once unlocked) · progress toward 30 plants this week · eat-the-rainbow (missing/weak colors, tap to learn) · 3 P's. **The 3 P's "probiotic" P means LIVE CULTURES** (`foods.has_live_cultures`), NOT mere fermentation (owner report, 2026-07-09: aged Parmesan / sourdough / wine are `is_fermented` but carry no live cultures — they belong to Fermented Finds, not the probiotic P). Live-culture list is Fence 4.
 
 ---
 

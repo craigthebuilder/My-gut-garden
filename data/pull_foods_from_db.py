@@ -107,23 +107,31 @@ foods = fetch("foods", order="canonical_name")
 food_name = {f["id"]: f["canonical_name"] for f in foods}
 
 # histamine_level was DROPPED from the DB in single-mode; the CSV keeps it as
-# documentation only — carry the existing values through by name.
+# documentation only — carry the existing values through by name. Read by
+# HEADER (not a fixed index) so added columns never shift the lookup.
 histamine = {}
 foods_src = os.path.join(HERE, "foods.csv")
 if os.path.exists(foods_src):
+    header = None
     for line in open(foods_src, encoding="utf-8"):
         if line.startswith("#") or "|" not in line:
             continue
         parts = line.rstrip("\n").split("|")
-        if len(parts) >= 6 and parts[0] != "canonical_name":
-            histamine[parts[0]] = parts[5]
+        if parts[0] == "canonical_name":
+            header = parts
+            continue
+        if header and "histamine_level" in header:
+            hi = header.index("histamine_level")
+            if hi < len(parts):
+                histamine[parts[0]] = parts[hi]
 
 write_csv("foods.csv",
-          "canonical_name|aliases|is_plant|plant_name|is_fermented|histamine_level|common_hidden_in|categories|protein_tier|energy_tier|typical_serving_g", [
+          "canonical_name|aliases|is_plant|plant_name|is_fermented|has_live_cultures|histamine_level|common_hidden_in|categories|protein_tier|energy_tier|typical_serving_g", [
     "|".join([cell(f["canonical_name"]), lst(f.get("aliases")),
               "true" if f["is_plant"] else "false",
               cell(plant_name.get(f.get("plant_id"))),
               "true" if f["is_fermented"] else "false",
+              "true" if f.get("has_live_cultures") else "false",
               histamine.get(f["canonical_name"], ""),
               lst(f.get("common_hidden_in")), lst(f.get("categories")),
               cell(f.get("protein_tier") or "none"), cell(f.get("energy_tier") or "low"),

@@ -28,6 +28,9 @@ enum SupabaseError: LocalizedError {
     case server(status: Int, message: String)
     case emailConfirmationRequired
     case invalidCredentials
+    case accountExists
+    case weakPassword(String)
+    case emailRejected
 
     var errorDescription: String? {
         switch self {
@@ -39,6 +42,12 @@ enum SupabaseError: LocalizedError {
             return "Check your email to confirm your account, then sign in."
         case .invalidCredentials:
             return "Incorrect email or password."
+        case .accountExists:
+            return "There's already an account for this email — use Sign in above (or Sign in with Apple, if that's how it was created)."
+        case let .weakPassword(detail):
+            return detail.isEmpty ? "That password is too short — use at least 6 characters." : detail
+        case .emailRejected:
+            return "That email address doesn't look deliverable — double-check it."
         }
     }
 }
@@ -72,6 +81,11 @@ struct SupabaseClient {
         return (data, http)
     }
 
+    /// GoTrue's machine-readable `error_code` ("user_already_exists", …).
+    private func extractErrorCode(_ data: Data) -> String {
+        ((try? JSONSerialization.jsonObject(with: data) as? [String: Any])?["error_code"] as? String) ?? ""
+    }
+
     private func extractMessage(_ data: Data) -> String {
         if let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
             for key in ["error_description", "msg", "message", "error"] {
@@ -85,6 +99,8 @@ struct SupabaseClient {
 
     /// Email + password sign up. Returns a session, or throws
     /// `.emailConfirmationRequired` when the project requires confirmation.
+    /// GoTrue's realistic rejections map to actionable copy (owner report,
+    /// 2026-07-09: a raw "Request failed (422)" reads as "signup is broken").
     func signUp(email: String, password: String) async throws -> SupabaseSession {
         let (data, http) = try await request(
             path: "auth/v1/signup",
@@ -92,7 +108,16 @@ struct SupabaseClient {
             bearer: anonKey
         )
         guard (200..<300).contains(http.statusCode) else {
-            throw SupabaseError.server(status: http.statusCode, message: extractMessage(data))
+            switch extractErrorCode(data) {
+            case "user_already_exists", "email_exists":
+                throw SupabaseError.accountExists
+            case "weak_password":
+                throw SupabaseError.weakPassword(extractMessage(data))
+            case "email_address_invalid", "email_address_not_authorized":
+                throw SupabaseError.emailRejected
+            default:
+                throw SupabaseError.server(status: http.statusCode, message: extractMessage(data))
+            }
         }
         if let session = try? decoder.decode(SupabaseSession.self, from: data),
            !session.accessToken.isEmpty {

@@ -126,6 +126,7 @@ interface GeneratedFood {
   existing_plant_name: string | null;
   plant: { name: string; scientific_name: string | null; plant_family: string | null; rarity_tier: string; description: string } | null;
   is_fermented: boolean;
+  has_live_cultures: boolean;
   categories: string[];
   typical_serving_g: number;
   protein_tier: string;
@@ -157,6 +158,7 @@ For each new_food, generate its full profile. HONESTY RULES:
 - guild_feeds: ONLY these internal_names, 0-2 max, only for clearly prebiotic/fermented foods: ${vocab.guilds.map((g) => g.internal_name).join(", ")}. relevance: minor|moderate|primary.
 - colors: the food's rainbow group(s), ONLY from: ${vocab.colors.join(", ")}. Plant foods get exactly one usually; non-plants may have none.
 - categories: ONLY from: ${vocab.categories.join(", ")}. Include every allergen tag that applies (gluten/wheat/dairy/lactose/egg/fish/shellfish/soy/sesame/peanut/tree_nut) — these drive user allergy warnings, so err toward including a true allergen tag and NEVER invent one.
+- is_fermented vs has_live_cultures: is_fermented = made by fermentation (drives a collection). has_live_cultures = TRUE only when the food delivers LIVE/ACTIVE cultures to the gut (raw or traditionally unpasteurized: yogurt, kefir, kimchi, sauerkraut, kombucha, natto, tempeh, miso, live sour cream/buttermilk). FALSE for aged/cooked/baked/alcoholic ferments (all aged cheeses like parmesan/cheddar, sourdough bread, dark chocolate, wine/beer/cider/sake). When unsure, FALSE.
 - is_plant + plant: whole plant foods count toward plant diversity. If the plant already exists in this list use existing_plant_name EXACTLY: ${vocab.plants.map((p) => p.name).join(", ")}. Otherwise provide a new plant entry: name (title case), scientific_name, plant_family, rarity_tier (common|uncommon|rare|legendary by how often it appears in ordinary Western diets), and a friendly 1-2 sentence field-guide description (no health claims).
 - typical_serving_g: grams of one typical serving (1-2000).
 - protein_tier/energy_tier: none|low|moderate|high density tiers (energy_tier minimum "low").
@@ -164,7 +166,7 @@ For each new_food, generate its full profile. HONESTY RULES:
 - No health claims anywhere. Never invent a compound, fiber type, guild, color, or category outside the lists. When nothing on a list fits, OMIT — an empty array is always valid and always better than a made-up value.
 
 Respond with STRICT JSON ONLY (no prose, no fences): an array, one object per input, shape:
-[{"input_name": "...", "decision": "alias_of_existing|new_food|not_a_food", "alias_of": "string|null", "food": {"canonical_name": "...", "aliases": [], "is_plant": true, "existing_plant_name": null, "plant": {"name": "...", "scientific_name": null, "plant_family": null, "rarity_tier": "uncommon", "description": "..."}, "is_fermented": false, "categories": [], "typical_serving_g": 100, "protein_tier": "none", "energy_tier": "low", "colors": [], "fibers": [{"name": "pectin", "relative_amount": "primary", "est_grams_per_serving": 2.0}], "phytochemicals": [], "guild_feeds": [], "notes": "..."} | null}]`;
+[{"input_name": "...", "decision": "alias_of_existing|new_food|not_a_food", "alias_of": "string|null", "food": {"canonical_name": "...", "aliases": [], "is_plant": true, "existing_plant_name": null, "plant": {"name": "...", "scientific_name": null, "plant_family": null, "rarity_tier": "uncommon", "description": "..."}, "is_fermented": false, "has_live_cultures": false, "categories": [], "typical_serving_g": 100, "protein_tier": "none", "energy_tier": "low", "colors": [], "fibers": [{"name": "pectin", "relative_amount": "primary", "est_grams_per_serving": 2.0}], "phytochemicals": [], "guild_feeds": [], "notes": "..."} | null}]`;
 }
 
 async function callModel(apiKey: string, system: string, user: string): Promise<unknown> {
@@ -263,6 +265,7 @@ async function insertFood(service: SupabaseClient, vocab: Vocab, food: Generated
     is_plant: food.is_plant,
     plant_id: plantId,
     is_fermented: food.is_fermented,
+    has_live_cultures: food.has_live_cultures ?? false,
     common_hidden_in: [],
     categories: food.categories ?? [],
     protein_tier: food.protein_tier,

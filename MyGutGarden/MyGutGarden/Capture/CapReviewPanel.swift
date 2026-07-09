@@ -31,7 +31,10 @@ final class CapReviewModel {
         let name: String                 // catalogue canonical name
         let visionName: String?          // what the model called it (feedback provenance)
         let source: CapItemSource
-        let isPlant: Bool
+        // "Counts toward plant diversity" = has a plant entry, NOT the broader
+        // is_plant (owner report, 2026-07-09: olive oil / sugar / coffee are
+        // plant-derived but shouldn't inflate "N plants spotted").
+        let countsAsPlant: Bool
         let baseGrams: Double?           // the model's estimate — the slider's 1× anchor
         let typicalServingG: Double?
         let fiberPerServingG: Double
@@ -105,7 +108,7 @@ final class CapReviewModel {
                 name: attrs.canonicalName,
                 visionName: item.vision.name,
                 source: annotationFoodIds.contains(attrs.foodId) ? .annotation : .vision,
-                isPlant: attrs.isPlant,
+                countsAsPlant: attrs.plant != nil,
                 baseGrams: item.vision.estGrams,
                 typicalServingG: attrs.typicalServingG,
                 fiberPerServingG: attrs.fiberPerServingG,
@@ -125,7 +128,7 @@ final class CapReviewModel {
 
     // MARK: Derived
 
-    var plantCount: Int { Set(rows.filter(\.isPlant).map(\.foodId)).count }
+    var plantCount: Int { Set(rows.filter(\.countsAsPlant).map(\.foodId)).count }
     var mealFiberG: Double { rows.reduce(0) { $0 + $1.estFiberNowG } }
     var canPersist: Bool { repository != nil && userId != nil && mealId != nil }
 
@@ -204,7 +207,10 @@ final class CapReviewModel {
                 name: food.canonicalName,
                 visionName: result.name,
                 source: .librarian,
-                isPlant: food.isPlant,
+                // The librarian pairs is_plant with a real plant row (its
+                // validator rejects a plant food without one), so isPlant is a
+                // safe "counts toward diversity" here.
+                countsAsPlant: food.isPlant,
                 baseGrams: vision?.estGrams,
                 typicalServingG: food.typicalServingG,
                 fiberPerServingG: food.fiberPerServingG ?? 0,
@@ -248,14 +254,14 @@ final class CapReviewModel {
         struct AnchorRow: Decodable, Sendable {
             struct Fiber: Decodable, Sendable { let estGramsPerServing: Double? }
             let id: String
-            let isPlant: Bool
+            let plantId: String?
             let typicalServingG: Double?
             let foodFibers: [Fiber]?
         }
         var anchor: AnchorRow?
         if let repository {
             let fetched: [AnchorRow]? = try? await repository.select(
-                "foods", columns: "id,is_plant,typical_serving_g,food_fibers(est_grams_per_serving)",
+                "foods", columns: "id,plant_id,typical_serving_g,food_fibers(est_grams_per_serving)",
                 filters: ["id": "eq.\(food.id)"], limit: 1)
             anchor = fetched?.first
         }
@@ -264,7 +270,7 @@ final class CapReviewModel {
             name: food.canonicalName,
             visionName: visionName,
             source: source,
-            isPlant: anchor?.isPlant ?? true,
+            countsAsPlant: anchor?.plantId != nil,
             baseGrams: nil,                              // user-added: anchor on the typical serving
             typicalServingG: anchor?.typicalServingG,
             fiberPerServingG: anchor?.foodFibers?.compactMap(\.estGramsPerServing).reduce(0, +) ?? 0,
@@ -482,7 +488,7 @@ private struct CapReviewRowView: View {
                             Text(row.name)
                                 .font(theme.typography.body(weight: .medium))
                                 .foregroundStyle(theme.colors.textPrimary)
-                            if row.isPlant {
+                            if row.countsAsPlant {
                                 Image(systemName: "leaf.fill")
                                     .font(.system(size: 10))
                                     .foregroundStyle(theme.colors.primary)
