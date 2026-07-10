@@ -42,6 +42,7 @@ struct ThrRootView: View {
                         dashboardSection
                             .coachTarget("dashboard")
                             .id("dashboard")
+                        dailyCheckInButton      // right under the dashboard (owner, 2026-07-10)
                         recipeSection
                             .coachTarget("trythis")
                             .id("trythis")
@@ -269,13 +270,17 @@ struct ThrRootView: View {
 
     // MARK: - Explore (check-in + tab routes + the deeper surfaces)
 
+    /// The prominent daily-check-in entry, now directly under the dashboard.
+    private var dailyCheckInButton: some View {
+        PrimaryButton(title: "Log your daily check-in", systemImage: "square.and.pencil") {
+            showDailyCheckin = true
+        }
+        .coachTarget("checkin")
+        .id("checkin")
+    }
+
     private var exploreSection: some View {
         VStack(spacing: theme.metrics.space4) {
-            PrimaryButton(title: "Log your daily check-in", systemImage: "square.and.pencil") {
-                showDailyCheckin = true
-            }
-            .coachTarget("checkin")
-            .id("checkin")
             Card {
                 VStack(spacing: theme.metrics.space2) {
                     // Tab routes: these go straight to the tab, never a pushed copy.

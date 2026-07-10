@@ -32,13 +32,17 @@ final class MggGardenLockedTest: XCTestCase {
         let garden = app.tabBars.buttons["Garden"]
         XCTAssertTrue(garden.waitForExistence(timeout: 20), "no tab bar / not onboarded")
 
-        // Tap Garden. If a coach overlay is intercepting taps, this hits the dim
-        // instead of switching tabs — the locked view then never appears.
-        garden.tap()
-        sleep(1)
-        garden.tap()   // a second tap in case the first advanced a coach step
-
+        // Tap Garden until the locked view appears. A launch pop-up (daily
+        // check-in / guardian) can cover the tab bar, so the first tap only
+        // dismisses it; a coach step can also intercept. Tap outside first, then
+        // the tab — a real freeze (the bug) never reaches the locked view.
         let locked = app.staticTexts["Your garden is taking root"]
+        for _ in 0..<8 {
+            if locked.exists { break }
+            app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.05)).tap()  // dismiss any scrim
+            garden.tap()
+            sleep(1)
+        }
         XCTAssertTrue(locked.waitForExistence(timeout: 12),
                       "Garden tab did not show the locked view — blocked/frozen")
 

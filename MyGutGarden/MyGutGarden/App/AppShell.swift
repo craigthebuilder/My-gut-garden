@@ -92,6 +92,13 @@ private struct ShellHome: View {
                 CoachMarkOverlay(controller: appState.coach, appState: appState,
                                  anchors: anchors,
                                  onNavigate: { hint in
+                    // Only the INTRO tour walks across tabs. Section tours
+                    // (plants, rainbow, phytochemicals, fermented, garden…) fire
+                    // when the user is ALREADY on that screen, so navigating would
+                    // yank them away from their own anchor and break the tour —
+                    // e.g. "plants" maps to Today but its anchor lives in the
+                    // Field Guide's Plant Garden (owner report, 2026-07-10).
+                    guard appState.coach.sectionKey == "intro" else { return }
                     if let destination = Self.tab(forCoachHint: hint,
                                                   gardenUnlocked: appState.progression.isTier2Unlocked) {
                         tab = destination
@@ -586,7 +593,7 @@ private struct ShellAuthGate: View {
         ScrollView {
             VStack(alignment: .leading, spacing: theme.metrics.space5) {
                 VStack(alignment: .leading, spacing: theme.metrics.space2) {
-                    Text(mode == .signIn ? "My Gut Garden" : "Create your account")
+                    Text(mode == .signIn ? "Relish" : "Create your account")
                         .font(theme.typography.display())
                         .foregroundStyle(theme.colors.primary)
                     Text(mode == .signIn ? "Grow a garden you can feed."

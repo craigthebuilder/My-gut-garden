@@ -17,7 +17,7 @@ final class MggSignupTest: XCTestCase {
         // Two-step (2026-07-10): the landing's "Create account" navigates to a
         // DEDICATED create screen; the create screen's "Create account" submits.
         XCTAssertTrue(app.textFields["Email"].waitForExistence(timeout: 25), "auth gate did not appear")
-        XCTAssertTrue(app.staticTexts["My Gut Garden"].exists, "did not start on the sign-in landing")
+        XCTAssertTrue(app.staticTexts["Relish"].exists, "did not start on the sign-in landing")
         app.buttons["Create account"].tap()   // → the create-account screen
         XCTAssertTrue(app.staticTexts["Create your account"].waitForExistence(timeout: 5),
                       "Create account did not open the dedicated create screen")

@@ -435,7 +435,9 @@ Deno.serve(async (req) => {
   if (!inputs.length) return json({ results: [] });
 
   const byName = foodByName(vocab);
-  const results: unknown[] = [];
+  // Keyed by input name so a retry OVERWRITES a prior failure instead of adding
+  // a duplicate result row.
+  const resultByName = new Map<string, unknown>();
   const userClient = body.mode === "seed" ? null : createClient(supabaseUrl, anonKey, {
     global: { headers: { Authorization: authHeader } },
     auth: { persistSession: false },
@@ -461,72 +463,98 @@ Deno.serve(async (req) => {
     });
   }
 
+  /**
+   * Generate + resolve a set of unknown foods. Returns the inputs that genuinely
+   * FAILED (LLM/validation/insert errors) — NOT the legitimate `skipped`
+   * (not-a-food) ones — so the caller can retry them. Generation is stochastic,
+   * so a single bad roll can fail an otherwise-fine food; without a retry that
+   * food stays "new to us" forever (owner report, 2026-07-10: a chicken-patty
+   * scan recurred across accounts because one validation failure was never
+   * re-attempted).
+   */
+  async function processPending(items: InputFood[]): Promise<InputFood[]> {
+    const failed: InputFood[] = [];
+    for (let i = 0; i < items.length; i += BATCH) {
+      const batch = items.slice(i, i + BATCH);
+      let decisions: Decision[] = [];
+      try {
+        decisions = await callModel(anthropicKey, generationSystemPrompt(vocab),
+          `Input food names:\n${batch.map((f) => f.name).join("\n")}`) as Decision[];
+      } catch (err) {
+        for (const f of batch) {
+          resultByName.set(f.name, { name: f.name, status: "failed", error: String(err) });
+          failed.push(f);
+        }
+        continue;
+      }
+      const decisionFor = new Map(decisions.map((d) => [norm(d.input_name ?? ""), d]));
+
+      for (const input of batch) {
+        const d = decisionFor.get(norm(input.name));
+        try {
+          if (!d || d.decision === "not_a_food") {
+            resultByName.set(input.name, { name: input.name, status: "skipped" });
+            continue;
+          }
+          if (d.decision === "alias_of_existing" && d.alias_of) {
+            const target = byName.get(norm(d.alias_of));
+            if (!target) {
+              resultByName.set(input.name, { name: input.name, status: "failed", error: "alias target unknown" });
+              failed.push(input); continue;
+            }
+            const aliasNorm = input.name.toLowerCase().trim();
+            if (![target.canonical_name.toLowerCase(), ...(target.aliases ?? [])].includes(aliasNorm)) {
+              await service.from("foods").update({ aliases: [...(target.aliases ?? []), aliasNorm] })
+                .eq("id", target.id);
+            }
+            await linkToMeal(target.id, input);
+            resultByName.set(input.name, { name: input.name, status: "alias", food: await anchors(service, target.id) });
+            continue;
+          }
+          if (d.decision === "new_food" && d.food) {
+            const problem = validate(d.food, vocab);
+            if (problem) {
+              resultByName.set(input.name, { name: input.name, status: "failed", error: problem });
+              failed.push(input); continue;
+            }
+            if (byName.get(norm(d.food.canonical_name))) {
+              const winner = byName.get(norm(d.food.canonical_name))!;
+              await linkToMeal(winner.id, input);
+              resultByName.set(input.name, { name: input.name, status: "linked", food: await anchors(service, winner.id) });
+              continue;
+            }
+            const inserted = await insertFood(service, vocab, d.food);
+            byName.set(norm(inserted.canonical_name), { ...vocab.foods[vocab.foods.length - 1] });
+            for (const a of d.food.aliases ?? []) byName.set(norm(a), vocab.foods[vocab.foods.length - 1]);
+            await linkToMeal(inserted.id, input);
+            resultByName.set(input.name, { name: input.name, status: "added", food: await anchors(service, inserted.id) });
+            continue;
+          }
+          resultByName.set(input.name, { name: input.name, status: "skipped" });
+        } catch (err) {
+          resultByName.set(input.name, { name: input.name, status: "failed", error: String(err) });
+          failed.push(input);
+        }
+      }
+    }
+    return failed;
+  }
+
   // Pass 1: names that already resolve (raced additions, aliases) just link.
   const pending: InputFood[] = [];
   for (const input of inputs) {
     const hit = byName.get(norm(input.name));
     if (hit) {
       await linkToMeal(hit.id, input);
-      results.push({ name: input.name, status: "linked", food: await anchors(service, hit.id) });
+      resultByName.set(input.name, { name: input.name, status: "linked", food: await anchors(service, hit.id) });
     } else {
       pending.push(input);
     }
   }
 
-  // Pass 2: generate in batches.
-  for (let i = 0; i < pending.length; i += BATCH) {
-    const batch = pending.slice(i, i + BATCH);
-    let decisions: Decision[] = [];
-    try {
-      decisions = await callModel(anthropicKey, generationSystemPrompt(vocab),
-        `Input food names:\n${batch.map((f) => f.name).join("\n")}`) as Decision[];
-    } catch (err) {
-      for (const f of batch) results.push({ name: f.name, status: "failed", error: String(err) });
-      continue;
-    }
-    const decisionFor = new Map(decisions.map((d) => [norm(d.input_name ?? ""), d]));
+  // Pass 2 + ONE retry for foods that failed on a bad roll.
+  const failedOnce = await processPending(pending);
+  if (failedOnce.length) await processPending(failedOnce);
 
-    for (const input of batch) {
-      const d = decisionFor.get(norm(input.name));
-      try {
-        if (!d || d.decision === "not_a_food") {
-          results.push({ name: input.name, status: "skipped" });
-          continue;
-        }
-        if (d.decision === "alias_of_existing" && d.alias_of) {
-          const target = byName.get(norm(d.alias_of));
-          if (!target) { results.push({ name: input.name, status: "failed", error: "alias target unknown" }); continue; }
-          const aliasNorm = input.name.toLowerCase().trim();
-          if (![target.canonical_name.toLowerCase(), ...(target.aliases ?? [])].includes(aliasNorm)) {
-            await service.from("foods").update({ aliases: [...(target.aliases ?? []), aliasNorm] })
-              .eq("id", target.id);
-          }
-          await linkToMeal(target.id, input);
-          results.push({ name: input.name, status: "alias", food: await anchors(service, target.id) });
-          continue;
-        }
-        if (d.decision === "new_food" && d.food) {
-          const problem = validate(d.food, vocab);
-          if (problem) { results.push({ name: input.name, status: "failed", error: problem }); continue; }
-          if (byName.get(norm(d.food.canonical_name))) {
-            const winner = byName.get(norm(d.food.canonical_name))!;
-            await linkToMeal(winner.id, input);
-            results.push({ name: input.name, status: "linked", food: await anchors(service, winner.id) });
-            continue;
-          }
-          const inserted = await insertFood(service, vocab, d.food);
-          byName.set(norm(inserted.canonical_name), { ...vocab.foods[vocab.foods.length - 1] });
-          for (const a of d.food.aliases ?? []) byName.set(norm(a), vocab.foods[vocab.foods.length - 1]);
-          await linkToMeal(inserted.id, input);
-          results.push({ name: input.name, status: "added", food: await anchors(service, inserted.id) });
-          continue;
-        }
-        results.push({ name: input.name, status: "skipped" });
-      } catch (err) {
-        results.push({ name: input.name, status: "failed", error: String(err) });
-      }
-    }
-  }
-
-  return json({ results });
+  return json({ results: [...resultByName.values()] });
 });
