@@ -60,13 +60,14 @@ final class ThrDailyTrendModel {
             filters: ["meal_id": "in.\(mealList)"]), !items.isEmpty else { isLoaded = true; return }
 
         // Classification sets for every food involved (same rules as the Today
-        // model: prebiotic = fiber or guild feed; probiotic = fermented;
+        // model: prebiotic = fiber or guild feed; probiotic = LIVE cultures
+        // (has_live_cultures, NOT mere fermentation — owner 2026-07-09);
         // polyphenol = polyphenol-class compound or blue/purple).
         let foodIds = Set(items.map(\.foodId))
         let list = "(" + foodIds.joined(separator: ",") + ")"
         async let fibersT: [FoodIdRow] = (try? await repo.select("food_fibers", columns: "food_id", filters: ["food_id": "in.\(list)"])) ?? []
         async let guildsT: [FoodIdRow] = (try? await repo.select("food_guild_feeds", columns: "food_id", filters: ["food_id": "in.\(list)"])) ?? []
-        async let fermentsT: [IdRow] = (try? await repo.select("foods", columns: "id", filters: ["id": "in.\(list)", "is_fermented": "eq.true"])) ?? []
+        async let fermentsT: [IdRow] = (try? await repo.select("foods", columns: "id", filters: ["id": "in.\(list)", "has_live_cultures": "eq.true"])) ?? []
         async let polyIdsT: [IdRow] = (try? await repo.select("phytochemicals", columns: "id", filters: ["class": "eq.polyphenol"])) ?? []
         async let foodPhytosT: [ThrFoodPhytoRow] = (try? await repo.select("food_phytochemicals", columns: "food_id,phytochemical_id", filters: ["food_id": "in.\(list)"])) ?? []
         async let colorsT: [ThrFoodColorRow] = (try? await repo.select("food_colors", columns: "food_id,color_id", filters: ["food_id": "in.\(list)"])) ?? []

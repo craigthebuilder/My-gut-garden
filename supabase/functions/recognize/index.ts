@@ -80,7 +80,14 @@ Deno.serve(async (req) => {
       .download(body.storage_path);
     if (error) return json({ error: `storage download failed: ${error.message}` }, 400);
     const buf = new Uint8Array(await data.arrayBuffer());
-    imageBase64 = btoa(String.fromCharCode(...buf));
+    // Chunk the byte→string build: `String.fromCharCode(...buf)` spreads the whole
+    // array as args and overflows the call stack for multi-hundred-KB images.
+    let binary = "";
+    const CHUNK = 0x8000;
+    for (let i = 0; i < buf.length; i += CHUNK) {
+      binary += String.fromCharCode(...buf.subarray(i, i + CHUNK));
+    }
+    imageBase64 = btoa(binary);
   }
 
   // --- read the caller's food flags under their own auth (RLS-scoped) ---

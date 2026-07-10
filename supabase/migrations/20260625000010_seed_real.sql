@@ -19,6 +19,17 @@
 -- file omits an explicit BEGIN/COMMIT (matches the repo's other migrations).
 -- =====================================================================
 
+alter table fibers add column if not exists fermentability text
+  check (fermentability is null or fermentability in ('low', 'moderate', 'high'));
+alter table fibers add column if not exists solubility text
+  check (solubility is null or solubility in ('soluble', 'insoluble', 'resistant'));
+alter table foods add column if not exists has_live_cultures boolean not null default false;
+alter table foods add column if not exists typical_serving_g numeric;
+alter table foods add column if not exists protein_tier text not null default 'none'
+  check (protein_tier in ('none', 'low', 'moderate', 'high'));
+alter table foods add column if not exists energy_tier text not null default 'low'
+  check (energy_tier in ('none', 'low', 'moderate', 'high'));
+
 -- ---- colors (rainbow groups) — ON CONFLICT (id) ----------------------
 insert into colors (id, meaning_copy, what_it_does_copy) values
   ('red', 'Lycopene, anthocyanins and ellagic acid', 'Polyphenols linked to heart and circulation; some feed mucus-barrier crews'),

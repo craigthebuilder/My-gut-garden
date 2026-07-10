@@ -39,12 +39,24 @@ final class AppState {
     /// so it must NOT be used as the completion marker.
     var isOnboarded: Bool { profile?.onboardedAt != nil }
 
+    /// Set the instant the user finishes/skips the intro story, so the shell
+    /// advances THIS session even if the DB write is deferred or fails offline
+    /// (otherwise a dropped connection at that moment traps them on the story
+    /// with no way forward — 2026-07-09 review).
+    private var introStoryDismissedThisSession = false
+
     /// The 3-frame intro story plays once, AFTER onboarding and BEFORE the setup
     /// tour (owner, 2026-07-09). Gated on `intro_seen_at` being nil.
-    var needsIntroStory: Bool { isOnboarded && (profile?.introSeenAt == nil) }
+    var needsIntroStory: Bool {
+        isOnboarded && profile?.introSeenAt == nil && !introStoryDismissedThisSession
+    }
 
-    /// Stamp the story as seen and refresh, so the shell advances to the app+tour.
+    /// Stamp the story as seen and refresh. Advances the UI immediately (local
+    /// flag) so the user is never stuck; the DB write persists it across launches
+    /// (best-effort — a failed write just means the story may reappear once on a
+    /// future online launch, never a dead end).
     func markIntroStorySeen() async {
+        introStoryDismissedThisSession = true
         guard let repo = repository, let uid = profile?.id else { return }
         try? await repo.update("users", set: ["intro_seen_at": .date(Date())],
                                filters: ["id": "eq.\(uid)"])

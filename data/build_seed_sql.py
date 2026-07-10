@@ -270,6 +270,23 @@ w("-- file omits an explicit BEGIN/COMMIT (matches the repo's other migrations).
 w("-- =====================================================================")
 w()
 
+# Forward-compat guards (2026-07-09 review): this file is REGENERATED in place and
+# now inserts columns that LATER migrations add, so a fresh `db reset` / CI rebuild
+# would fail here with "column does not exist". Provision them first, matching the
+# later migrations' definitions EXACTLY (so their `add column if not exists` become
+# no-ops and fresh-DB == prod). Idempotent.
+w("alter table fibers add column if not exists fermentability text")
+w("  check (fermentability is null or fermentability in ('low', 'moderate', 'high'));")
+w("alter table fibers add column if not exists solubility text")
+w("  check (solubility is null or solubility in ('soluble', 'insoluble', 'resistant'));")
+w("alter table foods add column if not exists has_live_cultures boolean not null default false;")
+w("alter table foods add column if not exists typical_serving_g numeric;")
+w("alter table foods add column if not exists protein_tier text not null default 'none'")
+w("  check (protein_tier in ('none', 'low', 'moderate', 'high'));")
+w("alter table foods add column if not exists energy_tier text not null default 'low'")
+w("  check (energy_tier in ('none', 'low', 'moderate', 'high'));")
+w()
+
 # ---- colors -------------------------------------------------------------------
 w("-- ---- colors (rainbow groups) — ON CONFLICT (id) ----------------------")
 w("insert into colors (id, meaning_copy, what_it_does_copy) values")
@@ -480,6 +497,13 @@ w2("-- /data/build_seed_sql.py. Do not hand-edit; edit the CSVs + regenerate.")
 w2("-- Idempotent (ON CONFLICT / delete+insert). 🔒 FENCE 4/8: claim_risk rows are")
 w2("-- RD-REVIEW-REQUIRED placeholder copy. Curated, never runtime-generated (rule #9).")
 w2("-- =====================================================================")
+w2()
+
+# Forward-compat guards (2026-07-09 review): this regenerated file inserts recipe
+# columns that LATER migrations add; provision them first so a fresh DB rebuild
+# doesn't fail here. Matches the later migrations exactly; idempotent.
+w2("alter table recipes add column if not exists ingredients text[] not null default '{}';")
+w2("alter table recipes add column if not exists suggest_protein boolean not null default false;")
 w2()
 
 w2('-- ---- worlds — ON CONFLICT ("order") ---------------------------------')

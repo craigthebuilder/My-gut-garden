@@ -157,28 +157,33 @@ final class ThrMealPhotoLoader {
         if let hit = cache.object(forKey: urlString as NSString) { return hit }
         guard let url = URL(string: urlString) else { return nil }
 
-        guard var image = await fetch(url, token: auth.session?.accessToken) else {
-            // One retry after a token refresh (a stale JWT 401s against Storage).
-            guard let fresh = await auth.refreshSession(),
-                  let retried = await fetch(url, token: fresh) else { return nil }
-            let prepared = await downsample(retried)
-            cache.setObject(prepared, forKey: urlString as NSString)
-            return prepared
+        let (image0, status) = await fetch(url, token: auth.session?.accessToken)
+        var image = image0
+        if image == nil {
+            // Refresh + retry ONLY on 401 (a stale JWT) — a network blip or a
+            // 404 (deleted object) shouldn't burn a token refresh (2026-07-09).
+            guard status == 401, let fresh = await auth.refreshSession() else { return nil }
+            image = await fetch(url, token: fresh).0
+            guard image != nil else { return nil }
         }
-        image = await downsample(image)
-        cache.setObject(image, forKey: urlString as NSString)
-        return image
+        let prepared = await downsample(image!)
+        cache.setObject(prepared, forKey: urlString as NSString)
+        return prepared
     }
 
-    private func fetch(_ url: URL, token: String?) async -> UIImage? {
-        guard let token else { return nil }
+    /// - Returns: the decoded image (nil on any failure) + the HTTP status (0 on
+    ///   transport error) so the caller can refresh only on 401.
+    private func fetch(_ url: URL, token: String?) async -> (UIImage?, Int) {
+        guard let token else { return (nil, 0) }
         var req = URLRequest(url: url)
         req.setValue(SupabaseConfig.anonKey, forHTTPHeaderField: "apikey")
         req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         guard let (data, resp) = try? await URLSession.shared.data(for: req),
-              let http = resp as? HTTPURLResponse, (200..<300).contains(http.statusCode),
-              let image = UIImage(data: data) else { return nil }
-        return image
+              let http = resp as? HTTPURLResponse else { return (nil, 0) }
+        guard (200..<300).contains(http.statusCode), let image = UIImage(data: data) else {
+            return (nil, http.statusCode)
+        }
+        return (image, http.statusCode)
     }
 
     /// Downsample to display size (max ~800px) so the cache holds thumbnails,
@@ -367,12 +372,21 @@ final class ThrQuickCheckModel {
                                    filters: ["id": "eq.\(meal.id)"])
         }
         if wasPresent {
-            try? await repo.insertVoid("meal_items", [
-                "meal_id": .string(meal.id),
-                "food_id": .string(question.foodId),
-                "portion_tier": .string(PortionTier.serving.rawValue),
-                "source": .string("hidden_confirmed"),
-            ])
+            // Don't double-count: only add the food if the meal doesn't already
+            // contain it (the user may have added it via the editor, or answered
+            // an overlapping prompt) — 2026-07-09 review.
+            struct ItemIdRow: Decodable { let foodId: String }
+            let existing: [ItemIdRow] = (try? await repo.select(
+                "meal_items", columns: "food_id",
+                filters: ["meal_id": "eq.\(meal.id)", "food_id": "eq.\(question.foodId)"])) ?? []
+            if existing.isEmpty {
+                try? await repo.insertVoid("meal_items", [
+                    "meal_id": .string(meal.id),
+                    "food_id": .string(question.foodId),
+                    "portion_tier": .string(PortionTier.serving.rawValue),
+                    "source": .string("hidden_confirmed"),
+                ])
+            }
         }
         pending.removeAll { $0.id == question.id }
     }

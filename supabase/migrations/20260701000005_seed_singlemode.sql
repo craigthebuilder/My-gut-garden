@@ -6,6 +6,9 @@
 -- RD-REVIEW-REQUIRED placeholder copy. Curated, never runtime-generated (rule #9).
 -- =====================================================================
 
+alter table recipes add column if not exists ingredients text[] not null default '{}';
+alter table recipes add column if not exists suggest_protein boolean not null default false;
+
 -- ---- worlds — ON CONFLICT ("order") ---------------------------------
 insert into worlds ("order", name, unlock_rule_key, intro_copy) values
   (1, 'The Core', 'core_default', 'The crews almost everyone hosts — your gut''s backbone. Feed them a variety of plants and watch them bloom.'),

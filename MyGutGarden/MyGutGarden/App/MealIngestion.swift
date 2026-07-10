@@ -124,12 +124,13 @@ struct MealIngestion {
             return GuildBloomSnapshot(districtOrder: order, isBlooming: blooming, hasEverBloomed: row.hasEverBloomed)
         }
 
-        // Tier-2 gate (§13): first full week, hit 30 once OR logged ≥5 days.
-        // (Approximation: distinct logged days ≈ meal count; exact daily counters
-        // are a follow-up, see consolidation notes.)
+        // Tier-2 gate (§13): first full week, hit 30 once OR logged on ≥5 days.
+        // Count DISTINCT calendar days (by captured_at date), NOT meal count —
+        // otherwise 5 meals in a single day would open the garden early for a
+        // brand-new user (2026-07-09 review).
         let summaries = (try? await repository.select("weekly_summaries") as [WeeklySummaryRow]) ?? []
-        let mealIds = (try? await repository.select("meals", columns: "id") as [MealIdRow]) ?? []
-        let loggedDays = mealIds.count
+        let mealDays = (try? await repository.select("meals", columns: "captured_at") as [MealDayRow]) ?? []
+        let loggedDays = Set(mealDays.map { String($0.capturedAt.prefix(10)) }).count
         let isTier2 = summaries.contains(where: \.hit30) || loggedDays >= GameConfig.shared.tier2MinLoggedDaysFirstWeek
         let cumulativeTier2Days = isTier2 ? max(loggedDays, GameConfig.shared.tier2MinLoggedDaysFirstWeek) : 0
 
@@ -256,4 +257,4 @@ struct MealIngestion {
 }
 
 /// Tiny row for counting logged meals.
-struct MealIdRow: Decodable, Sendable { let id: String }
+struct MealDayRow: Decodable, Sendable { let capturedAt: String }

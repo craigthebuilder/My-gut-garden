@@ -65,9 +65,13 @@ const CATEGORY_VOCAB = [
   "cruciferous", "dairy", "egg", "fermented", "fish", "fodmap", "fruit",
   "gluten", "gluten_free", "grain", "herb_spice", "high_histamine", "lactose",
   "leafy_green", "legume", "meat", "mushroom", "nightshade", "nut", "oil",
-  "polyphenol_rich", "poultry", "prebiotic", "processed_meat", "red_meat",
-  "root_vegetable", "seaweed", "seed", "sesame", "shellfish", "snack", "soy",
-  "squash", "sweetener", "tree_nut", "vegetable", "wheat", "whole_grain",
+  // `peanut` is an ALLERGEN tag (drives a LOUD allergy flag) — it MUST be here
+  // or validate() rejects peanut foods / the model drops the tag (safety hole,
+  // 2026-07-09 review).
+  "peanut", "polyphenol_rich", "poultry", "prebiotic", "processed_meat",
+  "red_meat", "root_vegetable", "seaweed", "seed", "sesame", "shellfish",
+  "snack", "soy", "squash", "sweetener", "tree_nut", "vegetable", "wheat",
+  "whole_grain",
 ];
 
 async function loadVocab(service: SupabaseClient): Promise<Vocab> {
@@ -91,6 +95,19 @@ async function loadVocab(service: SupabaseClient): Promise<Vocab> {
     foods: foods.data ?? [],
     categories: CATEGORY_VOCAB,
   };
+}
+
+// Decode a (gateway-verified) JWT's `role` + `sub` with base64URL safety.
+// Returns empties on any malformed token.
+function jwtClaims(token: string): { role: string; sub: string } {
+  try {
+    let b64 = (token.split(".")[1] ?? "").replace(/-/g, "+").replace(/_/g, "/");
+    b64 += "=".repeat((4 - (b64.length % 4)) % 4);
+    const p = JSON.parse(atob(b64));
+    return { role: (p.role as string) ?? "", sub: (p.sub as string) ?? "" };
+  } catch {
+    return { role: "", sub: "" };
+  }
 }
 
 // Same normalization family as the recognize matcher (plural-tolerant).
@@ -345,14 +362,17 @@ Deno.serve(async (req) => {
 
   const authHeader = req.headers.get("Authorization") ?? "";
   const token = authHeader.replace(/^Bearer\s+/i, "");
-  let role = "", userId = "";
-  try {
-    const payload = JSON.parse(atob(token.split(".")[1]));
-    role = payload.role ?? "";
-    userId = payload.sub ?? "";
-  } catch {
-    return json({ error: "invalid token" }, 401);
-  }
+
+  // The function runs with verify_jwt ON, so the platform gateway rejects any
+  // token not signed by the project secret BEFORE it reaches here (a forged
+  // `role: service_role` never arrives). So the decoded claims of a token that
+  // DID arrive are trustworthy. Decode role + sub with base64URL safety so
+  // legitimate tokens (which contain -/_ and may drop padding) don't spuriously
+  // 401 (2026-07-09 review — the prior plain-atob decode could throw). Batch
+  // modes require role=service_role; per-user writes are RLS-scoped anyway.
+  const claims = jwtClaims(token);
+  const isServiceRole = claims.role === "service_role";
+  const userId = claims.sub;
 
   let body: { mode?: string; names?: string[]; limit?: number; meal_id?: string; foods?: InputFood[] };
   try {
@@ -369,7 +389,7 @@ Deno.serve(async (req) => {
   // function stays stateless, and honestly-zero-fiber foods (meats, oils)
   // simply come back with an empty array and never loop.
   if (body.mode === "backfill_fibers") {
-    if (role !== "service_role") return json({ error: "service role required" }, 403);
+    if (!isServiceRole) return json({ error: "service role required" }, 403);
     const wanted = new Set((body.names ?? []).map(norm));
     const { data: linked } = await service.from("food_fibers").select("food_id");
     const has = new Set((linked ?? []).map((r: { food_id: string }) => r.food_id));
@@ -405,7 +425,7 @@ Deno.serve(async (req) => {
   // ---- seed + user modes share the generation core ----
   let inputs: InputFood[];
   if (body.mode === "seed") {
-    if (role !== "service_role") return json({ error: "service role required" }, 403);
+    if (!isServiceRole) return json({ error: "service role required" }, 403);
     inputs = (body.names ?? []).map((n) => ({ name: n }));
   } else {
     if (!userId) return json({ error: "auth required" }, 401);

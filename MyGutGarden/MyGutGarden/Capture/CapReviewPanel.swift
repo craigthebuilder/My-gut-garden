@@ -49,12 +49,19 @@ final class CapReviewModel {
         /// food has neither a model estimate nor a serving anchor.
         var gramsNow: Double? { (baseGrams ?? typicalServingG).map { $0 * multiplier } }
 
-        /// Portion ratio for live math — same rules as the DB trigger.
+        /// Portion ratio for live math — same rules as the DB trigger, so the
+        /// live "~Ng" always matches what persists + reloads.
         var ratio: Double {
             if let grams = gramsNow, let typical = typicalServingG, typical > 0 {
                 return PortionMath.ratio(estGrams: grams, typicalServingG: typical, tier: portionTier)
             }
-            return PortionMath.ratio(estGrams: nil, typicalServingG: nil, tier: portionTier) * multiplier
+            // Anchorless (no grams, no serving size): the slider can only nudge
+            // the COARSE tier — quantize so the live number equals what the DB
+            // recomputes from portion_tier (2026-07-09 review: else the ~g the
+            // user drags disagrees with the value on reopen).
+            let raw = PortionMath.ratio(estGrams: nil, typicalServingG: nil, tier: portionTier) * multiplier
+            return PortionMath.ratio(estGrams: nil, typicalServingG: nil,
+                                     tier: PortionMath.tier(forRatio: raw))
         }
 
         var estFiberNowG: Double { fiberPerServingG * ratio }
@@ -337,13 +344,24 @@ final class CapReviewModel {
         ))
     }
 
+    /// Serializes wholesale meal-item writes. Each persist is a delete-then-
+    /// reinsert of ALL items; two running concurrently (rapid slider commits +
+    /// add/remove) could interleave and drop rows. Chaining each write after the
+    /// prior one guarantees ordered, non-overlapping writes, last snapshot wins
+    /// (2026-07-09 review).
+    private var persistTask: Task<Void, Never>?
+    private var persistGeneration = 0
+
     /// Replace the meal's items wholesale (same path the edit sheet uses).
     private func persistItems() {
         guard let repository, let userId, let mealId else { return }
         let items = rows.map(\.mealItem)
+        persistGeneration += 1
+        let gen = persistGeneration
         isSaving = true
-        Task {
-            defer { isSaving = false }
+        let previous = persistTask
+        persistTask = Task {
+            await previous?.value                 // wait out any in-flight write
             do {
                 try await CapMealPersistence(repository: repository, userId: userId)
                     .updateItems(mealId: mealId, items: items)
@@ -351,6 +369,7 @@ final class CapReviewModel {
             } catch {
                 errorText = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
             }
+            if gen == persistGeneration { isSaving = false }  // no newer write queued
         }
     }
 

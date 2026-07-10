@@ -328,7 +328,10 @@ final class ThrHomeModel {
         let list = "(" + ids.joined(separator: ",") + ")"
         async let fibers: [ThrFoodIdRow]   = (try? await repo.select("food_fibers", columns: "food_id", filters: ["food_id": "in.\(list)"])) ?? []
         async let guilds: [ThrFoodIdRow]   = (try? await repo.select("food_guild_feeds", columns: "food_id", filters: ["food_id": "in.\(list)"])) ?? []
-        async let ferments: [ThrIdRow]     = (try? await repo.select("foods", columns: "id", filters: ["id": "in.\(list)", "is_fermented": "eq.true"])) ?? []
+        // Probiotic P = LIVE cultures, not mere fermentation (owner, 2026-07-09):
+        // aged Parmesan / sourdough / wine are is_fermented but carry no live
+        // cultures. MUST match FoodAttributeJoin.threePs + applyLatestMeal.
+        async let ferments: [ThrIdRow]     = (try? await repo.select("foods", columns: "id", filters: ["id": "in.\(list)", "has_live_cultures": "eq.true"])) ?? []
         async let polyIds: [ThrIdRow]      = (try? await repo.select("phytochemicals", columns: "id", filters: ["class": "eq.polyphenol"])) ?? []
         async let foodPhytos: [ThrFoodPhytoRow] = (try? await repo.select("food_phytochemicals", columns: "food_id,phytochemical_id", filters: ["food_id": "in.\(list)"])) ?? []
         let (fib, gld, frm, ply, fph) = await (fibers, guilds, ferments, polyIds, foodPhytos)

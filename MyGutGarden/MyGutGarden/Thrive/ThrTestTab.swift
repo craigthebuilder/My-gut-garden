@@ -971,6 +971,9 @@ struct YouCheckInPrefsSheet: View {
         }
         .task {
             await load()
+            // Don't stack dim layers: only run the sheet-local tour if the shell
+            // tour isn't already showing underneath (2026-07-09 review).
+            guard !appState.coach.isShowing else { return }
             await coach.loadCompleted(appState)
             await coach.startIfNeeded("customize", appState: appState)
         }
