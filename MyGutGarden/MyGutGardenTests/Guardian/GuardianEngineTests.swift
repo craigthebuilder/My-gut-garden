@@ -224,6 +224,53 @@ struct GuardianEngineTests {
         #expect(GuardianEngine.overcame(days: [Self.day(0, heavy: ["garlic"])], flags: flags) == nil)
     }
 
+    // MARK: Job 2b — care escalation (watching → "worth a check?"). 🔒 Fence 3.
+
+    @Test func escalatesAWatchedFoodWithSevereRepeatedReactions() {
+        let flags = [GuardianFlag(foodId: "shrimp", foodName: "Shrimp", tier: .watching)]
+        let days = (0..<Self.cfg.guardianCareMinOccurrences).map {
+            Self.day($0, discomfort: Self.cfg.guardianCareDiscomfort, heavy: ["shrimp"])
+        }
+        #expect(GuardianEngine.careEscalation(days: days, flags: flags, foodNames: ["shrimp": "Shrimp"])
+                == .couldBeAllergy(foodName: "Shrimp", foodId: "shrimp"))
+    }
+
+    @Test func careNeverEscalatesAnUnwatchedFood() {
+        // An unflagged food reacting severely is attribution's job (suggest a
+        // watch), NEVER a jump straight to the allergy care prompt.
+        let days = (0..<3).map { Self.day($0, discomfort: 3, heavy: ["shrimp"]) }
+        #expect(GuardianEngine.careEscalation(days: days, flags: [], foodNames: ["shrimp": "Shrimp"]) == nil)
+    }
+
+    @Test func careRequiresSevereNotMerelyModerateDays() {
+        let flags = [GuardianFlag(foodId: "shrimp", foodName: "Shrimp", tier: .watching)]
+        let days = (0..<3).map { Self.day($0, discomfort: 2, heavy: ["shrimp"]) }  // moderate, below care bar
+        #expect(GuardianEngine.careEscalation(days: days, flags: flags, foodNames: ["shrimp": "Shrimp"]) == nil)
+    }
+
+    @Test func careIgnoresConfounderDays() {
+        let flags = [GuardianFlag(foodId: "shrimp", foodName: "Shrimp", tier: .watching)]
+        let days = (0..<3).map { Self.day($0, discomfort: 3, confounder: true, heavy: ["shrimp"]) }
+        #expect(GuardianEngine.careEscalation(days: days, flags: flags, foodNames: ["shrimp": "Shrimp"]) == nil)
+    }
+
+    @Test func careStaysQuietInCooldown() {
+        let flags = [GuardianFlag(foodId: "shrimp", foodName: "Shrimp", tier: .watching)]
+        let days = (0..<3).map { Self.day($0, discomfort: 3, heavy: ["shrimp"]) }
+        #expect(GuardianEngine.careEscalation(days: days, flags: flags,
+                                              foodNames: ["shrimp": "Shrimp"], inCooldown: true) == nil)
+    }
+
+    @Test func decidePrefersCareEscalationOverANewWatch() {
+        // A watched food reacting severely outranks suggesting a NEW watch.
+        let flags = [GuardianFlag(foodId: "shrimp", foodName: "Shrimp", tier: .watching)]
+        let days = (0..<3).map { Self.day($0, discomfort: 3, heavy: ["shrimp", "crab"]) }
+        let d = GuardianEngine.decide(goal: GuardianGoalState(goalG: nil, targetG: 40, unlocked: false),
+                                      days: days, flags: flags,
+                                      foodNames: ["shrimp": "Shrimp", "crab": "Crab"])
+        #expect(d.prompt == .couldBeAllergy(foodName: "Shrimp", foodId: "shrimp"))
+    }
+
     // MARK: decide() precedence — a gain (titration) is offered before a suggestion
 
     @Test func decidePrefersTitrationOverANewSuggestion() {

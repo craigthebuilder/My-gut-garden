@@ -116,6 +116,42 @@ enum GuardianEngine {
         return .suggestWatching(foodName: foodNames[foodId] ?? "this food", foodId: foodId)
     }
 
+    // MARK: Job 2b — care-prompt escalation (Fence 3). Watching → "worth a check?"
+
+    /// SUGGEST raising a food with a doctor/allergist when a food the user is
+    /// ALREADY WATCHING keeps correlating with SEVERE discomfort. This is the
+    /// careful escalation from `watching` toward `allergy` — a HIGHER bar than a
+    /// new watch (severe off-days only, and enough of them). Wellness-only, NEVER
+    /// a diagnosis: the app only asks "worth checking with a doctor?" and the user
+    /// authors the allergy flag on confirm. Cooldown-limited so it never nags.
+    /// 🔒 FENCE 3 (RD-REVIEW-REQUIRED): thresholds + the care-prompt framing.
+    static func careEscalation(days: [GuardianDay], flags: [GuardianFlag],
+                               foodNames: [String: String],
+                               inCooldown: Bool = false) -> GuardianPrompt? {
+        guard !inCooldown else { return nil }
+        // Only escalate foods already being WATCHED — never jump unflagged → allergy.
+        let watching = flags.filter { $0.tier == .watching }
+        guard !watching.isEmpty else { return nil }
+        let watchedIds = Set(watching.map(\.foodId))
+
+        // SEVERE off-days only (discomfort ≥ care threshold), never confounded.
+        let severeDays = days.filter { $0.discomfort >= cfg.guardianCareDiscomfort && !$0.hasConfounder }
+        guard !severeDays.isEmpty else { return nil }
+
+        var counts: [String: Int] = [:]
+        for d in severeDays {
+            for f in d.heavyFoodIds where watchedIds.contains(f) { counts[f, default: 0] += 1 }
+        }
+        // Eligible = a watched food present in quantity across ≥ threshold severe days.
+        let candidate: String? = counts
+            .filter { $0.value >= cfg.guardianCareMinOccurrences }
+            .sorted { a, b in a.value != b.value ? a.value > b.value : a.key < b.key }
+            .first?.key
+        guard let foodId = candidate,
+              let flag = watching.first(where: { $0.foodId == foodId }) else { return nil }
+        return .couldBeAllergy(foodName: flag.foodName, foodId: foodId)
+    }
+
     // MARK: Job 3 — "you've overcome it" demotion (a gain).
 
     /// Offer to bring a `sensitivity` food back when it's been eaten with no trouble
@@ -143,7 +179,8 @@ enum GuardianEngine {
     static func decide(goal: GuardianGoalState, days: [GuardianDay],
                        flags: [GuardianFlag], foodNames: [String: String],
                        comfort: GasComfort = .balanced,
-                       balanceSignals: GuardianBalance = .empty) -> GuardianDecision {
+                       balanceSignals: GuardianBalance = .empty,
+                       careInCooldown: Bool = false) -> GuardianDecision {
         if let p = fiberTitration(goal: goal, days: days, comfort: comfort) {
             return GuardianDecision(prompt: p, rationale: "sustained comfort at/above goal")
         }
@@ -152,6 +189,11 @@ enum GuardianEngine {
         }
         if let p = adaptationCheck(days: days, comfort: comfort) {
             return GuardianDecision(prompt: p, rationale: "discomfort after a fast-fermenting day → adaptation first")
+        }
+        // A watched food strongly + repeatedly reacting outranks suggesting a NEW
+        // watch (§11 care escalation), but still comes AFTER adaptation-first (§17).
+        if let p = careEscalation(days: days, flags: flags, foodNames: foodNames, inCooldown: careInCooldown) {
+            return GuardianDecision(prompt: p, rationale: "watched food recurs across severe off-days → care prompt")
         }
         if let p = attribution(days: days, flags: flags, foodNames: foodNames) {
             return GuardianDecision(prompt: p, rationale: "food recurs across off-days")

@@ -135,6 +135,16 @@ struct GameConfig: Sendable {
     let guardianMinPortionToCount: PortionTier = .serving  // RD-REVIEW: portion that counts as "a lot"
     let guardianConfounderDownweight: Double = 0.4         // RD-REVIEW: down-weight confounder-heavy days
 
+    // MARK: Guardian care-prompt escalation (§11, §15 Fence 3). 🔒 RD-REVIEW-REQUIRED.
+    // The "could this be an allergy? — worth raising with a doctor/allergist" prompt.
+    // ONLY escalates a food the user is ALREADY WATCHING (never unflagged→allergy),
+    // requires a STRONGER pattern than a new watch (SEVERE off-days), stays
+    // wellness-only + user-confirmed (never a diagnosis), and is cooldown-limited
+    // so it never nags on a sensitive topic.
+    let guardianCareDiscomfort = 3                 // RD-REVIEW: only SEVERE off-days count (0–3 scale)
+    let guardianCareMinOccurrences = 3             // RD-REVIEW: severe off-days with the watched food before suggesting
+    let carePromptCooldownDays = 21                // RD-REVIEW: at most one care prompt per this window
+
     // MARK: Field-guide gap insights (tunable, not fenced)
     let phytoGapInsightDays = 30                   // "not eaten lycopene in over a month"
 }

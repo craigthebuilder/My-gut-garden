@@ -62,15 +62,27 @@ struct GuardianRunner {
                                                   typicalServingByFood: foodRef.servingG,
                                                   promptedAt: profile.balancePromptedAt, asOf: asOf)
 
+        // Care-prompt cooldown: at most one "could this be an allergy?" per window,
+        // so a clinical-adjacent suggestion never nags (Fence 3).
+        let careInCooldown = profile.carePromptedAt.map {
+            (Calendar.current.date(byAdding: .day, value: GameConfig.shared.carePromptCooldownDays, to: $0) ?? $0) > asOf
+        } ?? false
+
         let decision = GuardianEngine.decide(goal: goal, days: days, flags: flags,
                                              foodNames: foodNames, comfort: comfort,
-                                             balanceSignals: balanceSignals)
+                                             balanceSignals: balanceSignals,
+                                             careInCooldown: careInCooldown)
         if let prompt = decision.prompt {
             // A balance prompt is informational; stamp the cooldown as it surfaces
             // so it never nags (SPEC §17).
             if case .balance = prompt {
                 try? await repository.update("users",
                     set: ["balance_prompted_at": .date(asOf)], filters: ["id": "eq.\(userId)"])
+            }
+            // The care prompt stamps its own (longer) cooldown so it stays quiet.
+            if case .couldBeAllergy = prompt {
+                try? await repository.update("users",
+                    set: ["care_prompted_at": .date(asOf)], filters: ["id": "eq.\(userId)"])
             }
             appState.guardianPrompt(prompt)
         }
@@ -137,17 +149,19 @@ struct GuardianRunner {
         let goal: GuardianGoalState
         let comfort: GasComfort
         let balancePromptedAt: Date?
+        let carePromptedAt: Date?
     }
 
     private func profileState() async -> ProfileState {
         let rows: [GuardianGoalRow] = (try? await repository.select(
-            "users", columns: "fiber_goal_g,fiber_target_g,fiber_goal_state,gas_comfort,balance_prompted_at")) ?? []
+            "users", columns: "fiber_goal_g,fiber_target_g,fiber_goal_state,gas_comfort,balance_prompted_at,care_prompted_at")) ?? []
         let r = rows.first
         return ProfileState(
             goal: GuardianGoalState(goalG: r?.fiberGoalG, targetG: r?.fiberTargetG,
                                     unlocked: r?.fiberGoalState == "unlocked"),
             comfort: r?.gasComfort.flatMap(GasComfort.init(rawValue:)) ?? .balanced,
-            balancePromptedAt: r?.balancePromptedAt.flatMap(Self.parseISO)
+            balancePromptedAt: r?.balancePromptedAt.flatMap(Self.parseISO),
+            carePromptedAt: r?.carePromptedAt.flatMap(Self.parseISO)
         )
     }
 
@@ -246,6 +260,7 @@ struct GuardianMealItemRow: Decodable, Sendable {
 private struct GuardianGoalRow: Decodable {
     let fiberGoalG: Int?; let fiberTargetG: Int?; let fiberGoalState: String
     var gasComfort: String? = nil; var balancePromptedAt: String? = nil
+    var carePromptedAt: String? = nil
 }
 private struct GuardianFoodNameRow: Decodable {
     let id: String; let canonicalName: String
