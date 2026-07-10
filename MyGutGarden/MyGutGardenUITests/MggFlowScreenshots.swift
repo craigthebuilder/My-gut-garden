@@ -121,9 +121,23 @@ final class MggFlowScreenshots: XCTestCase {
         snap(app, "A09-thanks-for-telling-us")
         tapIfExists(app.buttons["I understand, continue"], timeout: 4, settle: 2)
 
-        // Summary → Start growing → home + the spotlight intro tour
+        // Q6 (2026-07-09): name your gut gardener → Continue with the default.
+        snap(app, "A09b-name-gardener")
+        tapIfExists(app.buttons["Continue"], timeout: 4, settle: 2)
+
+        // Summary → Start growing → the 3-frame story → home + the intro tour
         snap(app, "A10-summary")
         tapIfExists(app.buttons["Start growing"], timeout: 6, settle: 4)
+
+        // The intro story (why → catch → meet the gardener) plays before the
+        // tour; skip/swipe through it until the tab bar appears.
+        for _ in 0..<6 {
+            if app.tabBars.buttons["Today"].exists { break }
+            if app.buttons["Skip intro"].exists { app.buttons["Skip intro"].tap() }
+            else if app.buttons["Let's grow"].exists { app.buttons["Let's grow"].tap() }
+            else if app.buttons["Next"].exists { app.buttons["Next"].tap() }
+            sleep(1)
+        }
         XCTAssertTrue(app.tabBars.buttons["Today"].waitForExistence(timeout: 20),
                       "onboarding did not land on the tab bar")
         sleep(3)

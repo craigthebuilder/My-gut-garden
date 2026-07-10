@@ -20,6 +20,11 @@ struct AppShell: View {
                 OnbRootView(appState: appState, onFinished: {
                     Task { await appState.refreshProfile() }
                 })
+            } else if appState.needsIntroStory {
+                // After onboarding, before the setup tour (owner, 2026-07-09).
+                OnbStoryView(gardenerName: appState.profile?.gardenerDisplayName ?? "Sprout") {
+                    Task { await appState.markIntroStorySeen() }
+                }
             } else {
                 ShellHome(appState: appState)
             }
@@ -72,9 +77,10 @@ private struct ShellHome: View {
                 // garden exists and what opens it.
                 Tab("Garden", systemImage: "map", value: AppTab.garden) {
                     if appState.progression.isTier2Unlocked {
-                        GuildRootView(repository: appState.repository, progression: appState.progression)
+                        GuildRootView(repository: appState.repository, progression: appState.progression,
+                                      gardenerName: appState.profile?.gardenerDisplayName ?? "Sprout")
                     } else {
-                        ShellGardenLocked()
+                        ShellGardenLocked(gardenerName: appState.profile?.gardenerDisplayName ?? "Sprout")
                     }
                 }
                 Tab("You", systemImage: "person", value: AppTab.you) { ShellSettings(appState: appState) }
@@ -481,6 +487,7 @@ private struct ShellSettings: View {
 /// every plant already counts, the gates just aren't open yet.
 private struct ShellGardenLocked: View {
     @Environment(\.theme) private var theme
+    var gardenerName: String = "Sprout"
 
     var body: some View {
         ScrollView {
@@ -502,7 +509,7 @@ private struct ShellGardenLocked: View {
                     Text("Your garden is taking root")
                         .font(theme.typography.title())
                         .foregroundStyle(theme.colors.textPrimary)
-                    Text("A living map of the microbe crews your plants feed — worlds, districts, and guilds that bloom as you eat. It opens after your first week.")
+                    Text("A living map of the microbe crews your plants feed — worlds, districts, and guilds that bloom as you eat. \(gardenerName) opens it up after your first week.")
                         .font(theme.typography.body())
                         .foregroundStyle(theme.colors.textSecondary)
                         .multilineTextAlignment(.center)

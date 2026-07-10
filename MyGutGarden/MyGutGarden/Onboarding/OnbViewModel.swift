@@ -54,6 +54,10 @@ final class OnbViewModel {
     /// thresholds), never a symptom score. Always written.
     var gasComfort: GasComfort = .balanced
 
+    /// The user-chosen gut-gardener name (owner, 2026-07-09). Guides the intro
+    /// story, greets on the map, fronts the tour, signs guardian nudges.
+    var gardenerName: String = OnbGardener.defaultName
+
     var baseline = OnbBaseline()
 
     // Food flags (§9 three-tier model). Each draft keeps scope + tier distinct,
@@ -264,6 +268,7 @@ final class OnbViewModel {
 
             "plant_consumption_level": .string(plantConsumptionLevel.rawValue),
             "gas_comfort":             .string(gasComfort.rawValue),
+            "gardener_name":           .string(OnbGardener.sanitized(gardenerName)),
             "goals":                   .stringArray(goals.map(\.rawValue).sorted()),
 
             // Clean isOnboarded marker: onboarded_at != nil (SPEC §6).
@@ -278,7 +283,7 @@ final class OnbViewModel {
 /// "how's your gut?"); body basics stay away from number-framing; the summary is
 /// a week-1 baseline quest (no fiber number is ever shown at onboarding).
 enum OnbStep: Int, CaseIterable, Hashable {
-    case welcome, goals, body, baseline, flags, checks, summary
+    case welcome, goals, body, baseline, flags, checks, gardener, summary
 
     var next: OnbStep? { OnbStep(rawValue: rawValue + 1) }
     var previous: OnbStep? { OnbStep(rawValue: rawValue - 1) }

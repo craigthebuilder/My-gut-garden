@@ -188,14 +188,21 @@ struct CoachMarkOverlay: View {
         .frame(maxWidth: .infinity)
     }
 
+    /// Personalize seed copy with the user's chosen gardener name: any
+    /// "{gardener}" token becomes their name (owner, 2026-07-09) so the tour can
+    /// speak as their guide without baking a name into static seed data.
+    private func personalize(_ text: String) -> String {
+        text.replacingOccurrences(of: "{gardener}", with: appState.profile?.gardenerDisplayName ?? "Sprout")
+    }
+
     private func cardContent(_ step: TutorialStepRow) -> some View {
         VStack(alignment: .leading, spacing: theme.metrics.space3) {
             if let title = step.title {
-                Text(title)
+                Text(personalize(title))
                     .font(theme.typography.title())
                     .foregroundStyle(theme.colors.textPrimary)
             }
-            Text(step.body)
+            Text(personalize(step.body))
                 .font(theme.typography.body())
                 .foregroundStyle(theme.colors.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)

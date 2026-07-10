@@ -21,29 +21,28 @@ struct GuildRootView: View {
     @Environment(\.theme) private var theme
     @State private var viewModel: GuildGardenViewModel
     @State private var path: [GuildRoute] = []
+    private let gardenerName: String
 
-    init(viewModel: GuildGardenViewModel) {
+    init(viewModel: GuildGardenViewModel, gardenerName: String = "Sprout") {
         _viewModel = State(initialValue: viewModel)
+        self.gardenerName = gardenerName
     }
 
     /// Convenience for the shell: build the read model from the session.
-    init(repository: Repository?, progression: ProgressionState) {
-        self.init(viewModel: GuildGardenViewModel(repository: repository, progression: progression))
+    init(repository: Repository?, progression: ProgressionState, gardenerName: String = "Sprout") {
+        self.init(viewModel: GuildGardenViewModel(repository: repository, progression: progression),
+                  gardenerName: gardenerName)
     }
 
     var body: some View {
         NavigationStack(path: $path) {
-            ScrollView {
-                VStack(spacing: theme.metrics.space4) {
-                    header
-                        .coachTarget("garden")
-                    if !viewModel.isTier2Unlocked { tier2LockedBanner }
-                    trail
-                }
-                .padding(theme.metrics.space5)
+            // The whole garden is now an interactive, pannable map (owner,
+            // 2026-07-09). The map fills the tab; a tap opens a guild card.
+            GuildWorldMapView(districts: viewModel.districts, gardenerName: gardenerName) { order, guild in
+                path.append(GuildRoute(districtOrder: order, internalName: guild.internalName))
             }
-            .background(theme.colors.background.ignoresSafeArea())
-            .navigationTitle("Guild Garden")
+            .coachTarget("garden")
+            .navigationTitle("Garden map")
             .navigationBarTitleDisplayMode(.inline)
             .navigationDestination(for: GuildRoute.self) { route in
                 if let resolved = resolve(route) {
@@ -51,108 +50,21 @@ struct GuildRootView: View {
                 }
             }
             .overlay { if viewModel.isLoading { ProgressView() } }
+            .overlay(alignment: .bottom) {
+                if viewModel.districts.isEmpty && !viewModel.isLoading {
+                    Text("Your map grows in as you feed your garden.")
+                        .font(theme.typography.caption())
+                        .foregroundStyle(theme.colors.textSecondary)
+                        .padding(theme.metrics.space4)
+                }
+            }
         }
         .task { await viewModel.load() }
-        .refreshable { await viewModel.load() }
     }
 
-    // MARK: Header
-
-    private var header: some View {
-        VStack(alignment: .leading, spacing: theme.metrics.space2) {
-            Text("Field guide")
-                .font(theme.typography.caption(weight: .semibold))
-                .foregroundStyle(theme.colors.secondary)
-            Text("The Microbial Guild Garden")
-                .font(theme.typography.display(30))
-                .foregroundStyle(theme.colors.primary)
-            Text("Feed the invisible crews that keep your gut humming. Sustained intake makes them bloom.")
-                .font(theme.typography.body())
-                .foregroundStyle(theme.colors.textSecondary)
-
-            if viewModel.isTier2Unlocked {
-                Badge(text: "\(viewModel.unlockedDistrictCount) of \(viewModel.totalDistrictCount) districts open",
-                      tint: theme.colors.primary)
-                    .padding(.top, theme.metrics.space1)
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    // MARK: Tier-2 gate (the whole garden is a Tier-2 unlock, SPEC §13)
-
-    private var tier2LockedBanner: some View {
-        Card {
-            HStack(alignment: .top, spacing: theme.metrics.space3) {
-                Image(systemName: "seal.fill")
-                    .font(.system(size: 24))
-                    .foregroundStyle(theme.colors.secondary)
-                VStack(alignment: .leading, spacing: theme.metrics.space1) {
-                    Text("Earn your garden first")
-                        .font(theme.typography.title(18))
-                        .foregroundStyle(theme.colors.textPrimary)
-                    Text("Finish your first week, hit 30 plants once, or log \(GameConfig.shared.tier2MinLoggedDaysFirstWeek) days, and the Guild Garden opens.")
-                        .font(theme.typography.body())
-                        .foregroundStyle(theme.colors.textSecondary)
-                }
-            }
-        }
-    }
-
-    // MARK: The trail
-
-    private var trail: some View {
-        VStack(spacing: theme.metrics.space5) {
-            if viewModel.worlds.isEmpty {
-                flatDistricts                       // offline/preview fallback
-            } else {
-                ForEach(viewModel.worlds) { world in worldSection(world) }
-            }
-        }
-    }
-
-    private var flatDistricts: some View {
-        VStack(spacing: 0) {
-            ForEach(Array(viewModel.districts.enumerated()), id: \.element.id) { index, district in
-                if index > 0 { GuildTrailConnector() }
-                GuildDistrictMapZone(district: district) { guild in
-                    path.append(GuildRoute(districtOrder: district.order, internalName: guild.internalName))
-                }
-            }
-        }
-    }
-
-    @ViewBuilder
-    private func worldSection(_ world: GuildWorldDisplay) -> some View {
-        VStack(alignment: .leading, spacing: theme.metrics.space3) {
-            HStack {
-                Text(world.name)
-                    .font(theme.typography.title(22))
-                    .foregroundStyle(world.isUnlocked ? theme.colors.primary : theme.colors.textSecondary)
-                Spacer()
-                if !world.isUnlocked {
-                    Image(systemName: "lock.fill").foregroundStyle(theme.colors.textSecondary)
-                }
-            }
-            if let intro = world.introCopy {
-                Text(intro)
-                    .font(theme.typography.caption())
-                    .foregroundStyle(theme.colors.textSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            if world.isUnlocked && !world.districts.isEmpty {
-                VStack(spacing: 0) {
-                    ForEach(Array(world.districts.enumerated()), id: \.element.id) { i, district in
-                        if i > 0 { GuildTrailConnector() }
-                        GuildDistrictMapZone(district: district) { guild in
-                            path.append(GuildRoute(districtOrder: district.order, internalName: guild.internalName))
-                        }
-                    }
-                }
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
+    // The vertical-trail views (header / tier2 banner / world sections) are
+    // retired: the garden is the interactive map now (GuildWorldMapView), and
+    // the week-one locked state lives in the shell (ShellGardenLocked).
 
     // MARK: Routing
 

@@ -48,8 +48,10 @@ struct ThrRecentMealsSection: View {
             }
         }
         .sheet(item: $selected) { wrapper in
-            ThrMealDetailSheet(appState: appState, meal: wrapper.meal, questions: wrapper.questions,
-                               onQuestionAnswered: { onQuestionAnswered(wrapper.meal.id, $0) })
+            // Owner (2026-07-09): the SAME editor as the fresh-scan review, not
+            // a separate legacy sheet.
+            ThrMealEditSheet(appState: appState, meal: wrapper.meal, questions: wrapper.questions,
+                             onQuestionAnswered: { onQuestionAnswered(wrapper.meal.id, $0) })
         }
     }
 }
@@ -191,9 +193,14 @@ final class ThrMealPhotoLoader {
     }
 }
 
-// MARK: - Detail sheet (editable amounts + confirm/deny hypotheses)
+// MARK: - Meal edit sheet (owner, 2026-07-09: the SAME editor as fresh-scan)
 
-struct ThrMealDetailSheet: View {
+/// Tapping a photo in Today opens this — the fresh-scan review editor
+/// (CapReviewPanel: sliders, add-a-food, remove, "Looks right", grams that
+/// match the DB) rebuilt from the persisted meal, PLUS the meal's quick-check
+/// nudges and the photo-delete control. The old bespoke detail sheet (coarse
+/// tiers + confirm/deny) is retired: one editing experience everywhere.
+struct ThrMealEditSheet: View {
     @Environment(\.theme) private var theme
     @Environment(\.dismiss) private var dismiss
     let appState: AppState
@@ -202,7 +209,8 @@ struct ThrMealDetailSheet: View {
     /// Bubbles an answered quick-check (question id) up so the ⚠︎ badge clears.
     var onQuestionAnswered: (String) -> Void = { _ in }
 
-    @State private var model: ThrMealDetailModel?
+    @State private var reviewModel: CapReviewModel?
+    @State private var quickCheck: ThrQuickCheckModel?
 
     var body: some View {
         NavigationStack {
@@ -219,10 +227,13 @@ struct ThrMealDetailSheet: View {
                             .foregroundStyle(theme.colors.textSecondary)
                     }
 
-                    if let model {
-                        quickCheck(model)
-                        ingredients(model)
-                        hypotheses(model)
+                    if let quickCheck, !quickCheck.pending.isEmpty {
+                        ThrQuickCheckCard(model: quickCheck, onAnswered: onQuestionAnswered)
+                    }
+
+                    if let reviewModel {
+                        CapReviewPanel(model: reviewModel)
+                        photoRow(reviewModel)
                     } else {
                         ProgressView().frame(maxWidth: .infinity).padding(theme.metrics.space5)
                     }
@@ -233,57 +244,84 @@ struct ThrMealDetailSheet: View {
             .navigationTitle(ThrMealDates.shortLabel(meal.capturedAt))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
+                ToolbarItem(placement: .confirmationAction) {
                     Button("Done") { dismiss() }.foregroundStyle(theme.colors.primary)
                 }
             }
         }
         .task {
-            if model == nil {
-                let m = ThrMealDetailModel(appState: appState, meal: meal, questions: questions)
-                await m.load()
-                model = m
+            if reviewModel == nil, let repo = appState.repository, let uid = appState.profile?.id {
+                reviewModel = await CapReviewModel.forLoggedMeal(
+                    mealId: meal.id, photoURL: meal.photoUrl, repository: repo, userId: uid)
+            }
+            if quickCheck == nil {
+                quickCheck = ThrQuickCheckModel(appState: appState, meal: meal, questions: questions)
             }
         }
     }
 
-    // MARK: The one-or-two key questions (the ⚠︎'s payoff; ThrMealQuestions)
-
-    @ViewBuilder private func quickCheck(_ model: ThrMealDetailModel) -> some View {
-        if !model.pendingQuestions.isEmpty {
+    /// Fence 5: photos are permanent-but-deletable; this is the delete surface.
+    @ViewBuilder
+    private func photoRow(_ model: CapReviewModel) -> some View {
+        if model.hadPhoto, model.canPersist {
             Card {
-                VStack(alignment: .leading, spacing: theme.metrics.space3) {
-                    HStack(spacing: theme.metrics.space2) {
-                        Image(systemName: "exclamationmark.circle.fill")
-                            .foregroundStyle(theme.colors.warning)
-                        SectionHeader(title: "Quick check")
-                    }
-                    ForEach(model.pendingQuestions) { question in
-                        VStack(alignment: .leading, spacing: theme.metrics.space2) {
-                            Text(question.prompt)
-                                .font(theme.typography.body())
-                                .foregroundStyle(theme.colors.textPrimary)
-                                .fixedSize(horizontal: false, vertical: true)
-                            HStack(spacing: theme.metrics.space3) {
-                                quickAnswer("Yes, it was", question: question, wasPresent: true)
-                                quickAnswer("No", question: question, wasPresent: false)
-                            }
+                HStack(spacing: theme.metrics.space3) {
+                    Image(systemName: model.photoRemoved ? "photo.badge.exclamationmark" : "photo")
+                        .foregroundStyle(theme.colors.textSecondary)
+                    Text(model.photoRemoved ? "Photo removed" : "Photo saved to your private log")
+                        .font(theme.typography.caption())
+                        .foregroundStyle(theme.colors.textSecondary)
+                    Spacer()
+                    if !model.photoRemoved {
+                        Button(role: .destructive) { Task { await model.deletePhoto() } } label: {
+                            Text("Delete photo").font(theme.typography.caption(weight: .semibold))
                         }
-                        if question.id != model.pendingQuestions.last?.id {
-                            Divider().overlay(theme.colors.divider)
-                        }
+                        .foregroundStyle(theme.colors.error)
                     }
                 }
             }
         }
     }
+}
 
-    private func quickAnswer(_ title: String, question: ThrMealKeyQuestion, wasPresent: Bool) -> some View {
-        Button {
-            Task {
-                await model?.answer(question, wasPresent: wasPresent)
-                onQuestionAnswered(question.id)
+// MARK: - Quick check (the one-or-two ⚠︎ key questions; the nudge stays)
+
+/// The ⚠︎ hidden-ingredient nudges for a meal ("this curry often has onion —
+/// was it?"). On "yes" it adds the food as a hidden_confirmed item (DB derives
+/// fiber) and records the answer so the badge clears for good.
+struct ThrQuickCheckCard: View {
+    @Environment(\.theme) private var theme
+    @Bindable var model: ThrQuickCheckModel
+    var onAnswered: (String) -> Void = { _ in }
+
+    var body: some View {
+        Card {
+            VStack(alignment: .leading, spacing: theme.metrics.space3) {
+                HStack(spacing: theme.metrics.space2) {
+                    Image(systemName: "exclamationmark.circle.fill")
+                        .foregroundStyle(theme.colors.warning)
+                    SectionHeader(title: "Quick check")
+                }
+                ForEach(model.pending) { question in
+                    VStack(alignment: .leading, spacing: theme.metrics.space2) {
+                        Text(question.prompt)
+                            .font(theme.typography.body())
+                            .foregroundStyle(theme.colors.textPrimary)
+                            .fixedSize(horizontal: false, vertical: true)
+                        HStack(spacing: theme.metrics.space3) {
+                            answerButton("Yes, it was", question: question, wasPresent: true)
+                            answerButton("No", question: question, wasPresent: false)
+                        }
+                    }
+                    if question.id != model.pending.last?.id { Divider().overlay(theme.colors.divider) }
+                }
             }
+        }
+    }
+
+    private func answerButton(_ title: String, question: ThrMealKeyQuestion, wasPresent: Bool) -> some View {
+        Button {
+            Task { await model.answer(question, wasPresent: wasPresent); onAnswered(question.id) }
         } label: {
             Text(title)
                 .font(theme.typography.body(weight: .medium))
@@ -293,172 +331,39 @@ struct ThrMealDetailSheet: View {
         .foregroundStyle(theme.colors.primary)
         .background(theme.colors.surface)
         .clipShape(RoundedRectangle(cornerRadius: theme.metrics.radiusSmall, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: theme.metrics.radiusSmall, style: .continuous)
-                .strokeBorder(theme.colors.primary.opacity(0.4), lineWidth: 1)
-        )
+        .overlay(RoundedRectangle(cornerRadius: theme.metrics.radiusSmall, style: .continuous)
+            .strokeBorder(theme.colors.primary.opacity(0.4), lineWidth: 1))
         .accessibilityLabel("\(title): \(question.foodName)")
     }
-
-    // MARK: Ingredients (editable coarse amounts)
-
-    private func ingredients(_ model: ThrMealDetailModel) -> some View {
-        Card {
-            VStack(alignment: .leading, spacing: theme.metrics.space3) {
-                SectionHeader(title: "What was in it")
-                if model.items.isEmpty {
-                    Text("No ingredients recorded for this meal.")
-                        .font(theme.typography.body())
-                        .foregroundStyle(theme.colors.textSecondary)
-                } else {
-                    ForEach(model.items) { item in
-                        VStack(alignment: .leading, spacing: theme.metrics.space2) {
-                            Text(model.name(for: item))
-                                .font(theme.typography.body(weight: .medium))
-                                .foregroundStyle(theme.colors.textPrimary)
-                            ThrPortionPicker(selection: PortionTier(rawValue: item.portionTier)) { tier in
-                                Task { await model.setPortion(item, tier) }
-                            }
-                        }
-                        if item.id != model.items.last?.id { Divider().overlay(theme.colors.divider) }
-                    }
-                    Text("Amounts are coarse and directional, just enough to point you the right way.")
-                        .font(theme.typography.caption())
-                        .foregroundStyle(theme.colors.textSecondary)
-                }
-            }
-        }
-    }
-
-    // MARK: Confirm / deny the AI's hypotheses
-
-    @ViewBuilder private func hypotheses(_ model: ThrMealDetailModel) -> some View {
-        let ai = model.items.filter { $0.source == "vision" || $0.source == "annotation" }
-        if !ai.isEmpty {
-            Card {
-                VStack(alignment: .leading, spacing: theme.metrics.space3) {
-                    SectionHeader(title: "Did we get these right?")
-                    Text("Your confirmations teach the garden, not a verdict on you.")
-                        .font(theme.typography.caption())
-                        .foregroundStyle(theme.colors.textSecondary)
-                    ForEach(ai) { item in
-                        ThrMealHypothesisRow(
-                            name: model.name(for: item),
-                            confirmed: item.userConfirmed,
-                            denied: item.userDenied,
-                            onConfirm: { Task { await model.setVerdict(item, confirmed: true) } },
-                            onDeny: { Task { await model.setVerdict(item, confirmed: false) } }
-                        )
-                    }
-                }
-            }
-        }
-    }
 }
-
-/// One AI-identified item with a confirm / deny choice (writes user_confirmed /
-/// user_denied). Neutral, never an accusation, the user authors the verdict.
-struct ThrMealHypothesisRow: View {
-    @Environment(\.theme) private var theme
-    let name: String
-    let confirmed: Bool?
-    let denied: Bool?
-    let onConfirm: () -> Void
-    let onDeny: () -> Void
-
-    var body: some View {
-        HStack(spacing: theme.metrics.space2) {
-            Text(name)
-                .font(theme.typography.body())
-                .foregroundStyle(theme.colors.textPrimary)
-            Spacer()
-            choice(systemImage: "checkmark", label: "Looks right",
-                   on: confirmed == true, tint: theme.colors.success, action: onConfirm)
-            choice(systemImage: "xmark", label: "Not in it",
-                   on: denied == true, tint: theme.colors.secondary, action: onDeny)
-        }
-        .padding(.vertical, theme.metrics.space1)
-    }
-
-    private func choice(systemImage: String, label: String, on: Bool, tint: Color, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Image(systemName: systemImage)
-                .font(.system(size: 13, weight: .bold))
-                .foregroundStyle(on ? theme.colors.surface : tint)
-                .frame(width: 32, height: 32)
-                .background(on ? tint : tint.opacity(0.14))
-                .clipShape(Circle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel("\(label) for \(name)")
-        .accessibilityAddTraits(on ? .isSelected : [])
-    }
-}
-
-/// A coarse trace/serving/lots picker (no grams, rule #3).
-struct ThrPortionPicker: View {
-    @Environment(\.theme) private var theme
-    let selection: PortionTier?
-    let onPick: (PortionTier) -> Void
-
-    private let tiers: [PortionTier] = [.trace, .serving, .lots]
-
-    var body: some View {
-        HStack(spacing: theme.metrics.space2) {
-            ForEach(tiers, id: \.self) { tier in
-                let on = selection == tier
-                Button { onPick(tier) } label: {
-                    Text(tier.rawValue.capitalized)
-                        .font(theme.typography.caption(weight: on ? .semibold : .regular))
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, theme.metrics.space2)
-                        .foregroundStyle(on ? theme.colors.surface : theme.colors.textSecondary)
-                        .background(on ? theme.colors.primary : theme.colors.background)
-                        .clipShape(RoundedRectangle(cornerRadius: theme.metrics.radiusSmall, style: .continuous))
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("\(tier.rawValue) amount")
-                .accessibilityAddTraits(on ? .isSelected : [])
-            }
-        }
-    }
-}
-
-// MARK: - Detail model
 
 @MainActor
 @Observable
-final class ThrMealDetailModel {
+final class ThrQuickCheckModel {
     let appState: AppState
     let meal: MealRow
+    var pending: [ThrMealKeyQuestion]
+    private var answers: [[String: Any]] = []
 
-    var items: [ThrMealItemRow] = []
-    var pendingQuestions: [ThrMealKeyQuestion] = []
-    private var answers: [[String: Any]] = []       // meals.hidden_ingredient_answers, appended per answer
-    private var nameByFood: [String: String] = [:]
-
-    init(appState: AppState, meal: MealRow, questions: [ThrMealKeyQuestion] = []) {
+    init(appState: AppState, meal: MealRow, questions: [ThrMealKeyQuestion]) {
         self.appState = appState
         self.meal = meal
-        self.pendingQuestions = questions
+        self.pending = questions
         if let raw = meal.hiddenIngredientAnswers,
            let existing = try? JSONSerialization.jsonObject(with: Data(raw.utf8)) as? [[String: Any]] {
             answers = existing
         }
     }
 
-    /// Answer a key question: record it on the meal (so the ⚠︎ clears for good)
-    /// and, on "yes", log the food as a hidden_confirmed item — the DB trigger
-    /// derives its fiber, and the garden picks it up on the next ingest pass.
+    /// Record the answer (clears the ⚠︎ for good) and, on "yes", log the food as
+    /// a hidden_confirmed item so the DB derives its fiber + the garden counts it.
     func answer(_ question: ThrMealKeyQuestion, wasPresent: Bool) async {
         guard let repo = appState.repository else { return }
-        answers.append(["food_name": question.foodName,
-                        "dish_type": question.dishType,
+        answers.append(["food_name": question.foodName, "dish_type": question.dishType,
                         "was_present": wasPresent])
         if let data = try? JSONSerialization.data(withJSONObject: answers),
            let json = String(data: data, encoding: .utf8) {
-            try? await repo.update("meals",
-                                   set: ["hidden_ingredient_answers": .string(json)],
+            try? await repo.update("meals", set: ["hidden_ingredient_answers": .string(json)],
                                    filters: ["id": "eq.\(meal.id)"])
         }
         if wasPresent {
@@ -468,58 +373,8 @@ final class ThrMealDetailModel {
                 "portion_tier": .string(PortionTier.serving.rawValue),
                 "source": .string("hidden_confirmed"),
             ])
-            await load()
         }
-        pendingQuestions.removeAll { $0.id == question.id }
-    }
-
-    func name(for item: ThrMealItemRow) -> String {
-        nameByFood[item.foodId] ?? "This food"
-    }
-
-    func load() async {
-        guard let repo = appState.repository else { return }
-        let rows: [ThrMealItemRow] = (try? await repo.select(
-            "meal_items",
-            columns: "id,food_id,portion_tier,source,est_fiber_g,user_confirmed,user_denied",
-            filters: ["meal_id": "eq.\(meal.id)"]
-        )) ?? []
-        items = rows
-        let ids = Set(rows.map(\.foodId))
-        guard !ids.isEmpty else { return }
-        let inList = "(" + ids.joined(separator: ",") + ")"
-        if let foods: [ThrFoodNameRow] = try? await repo.select(
-            "foods", columns: "id,canonical_name", filters: ["id": "in.\(inList)"]
-        ) {
-            nameByFood = Dictionary(foods.map { ($0.id, $0.canonicalName) }, uniquingKeysWith: { a, _ in a })
-        }
-    }
-
-    /// Edit a coarse amount (writes meal_items.portion_tier).
-    func setPortion(_ item: ThrMealItemRow, _ tier: PortionTier) async {
-        guard let repo = appState.repository else { return }
-        try? await repo.update("meal_items",
-                               set: ["portion_tier": .string(tier.rawValue)],
-                               filters: ["id": "eq.\(item.id)"])
-        replace(item) { ThrMealItemRow(id: $0.id, foodId: $0.foodId, portionTier: tier.rawValue,
-                                       source: $0.source, estFiberG: $0.estFiberG,
-                                       userConfirmed: $0.userConfirmed, userDenied: $0.userDenied) }
-    }
-
-    /// Confirm or deny the AI hypothesis (writes user_confirmed / user_denied).
-    func setVerdict(_ item: ThrMealItemRow, confirmed: Bool) async {
-        guard let repo = appState.repository else { return }
-        try? await repo.update("meal_items",
-                               set: ["user_confirmed": .bool(confirmed), "user_denied": .bool(!confirmed)],
-                               filters: ["id": "eq.\(item.id)"])
-        replace(item) { ThrMealItemRow(id: $0.id, foodId: $0.foodId, portionTier: $0.portionTier,
-                                       source: $0.source, estFiberG: $0.estFiberG,
-                                       userConfirmed: confirmed, userDenied: !confirmed) }
-    }
-
-    private func replace(_ item: ThrMealItemRow, _ transform: (ThrMealItemRow) -> ThrMealItemRow) {
-        guard let idx = items.firstIndex(where: { $0.id == item.id }) else { return }
-        items[idx] = transform(items[idx])
+        pending.removeAll { $0.id == question.id }
     }
 }
 

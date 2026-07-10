@@ -39,6 +39,18 @@ final class AppState {
     /// so it must NOT be used as the completion marker.
     var isOnboarded: Bool { profile?.onboardedAt != nil }
 
+    /// The 3-frame intro story plays once, AFTER onboarding and BEFORE the setup
+    /// tour (owner, 2026-07-09). Gated on `intro_seen_at` being nil.
+    var needsIntroStory: Bool { isOnboarded && (profile?.introSeenAt == nil) }
+
+    /// Stamp the story as seen and refresh, so the shell advances to the app+tour.
+    func markIntroStorySeen() async {
+        guard let repo = repository, let uid = profile?.id else { return }
+        try? await repo.update("users", set: ["intro_seen_at": .date(Date())],
+                               filters: ["id": "eq.\(uid)"])
+        await refreshProfile()
+    }
+
     /// RLS-scoped data layer for the current session (nil when offline/signed out).
     /// Carries a refresh hook so any write that hits an expired JWT recovers
     /// transparently instead of surfacing a 401.

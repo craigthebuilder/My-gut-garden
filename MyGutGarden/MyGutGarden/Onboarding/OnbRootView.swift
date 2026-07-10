@@ -173,6 +173,7 @@ private struct ThemedShell: View {
         case .baseline:   OnbBaselineStep(vm: vm)
         case .flags:      OnbFlagsStep(vm: vm)
         case .checks:     OnbChecksStep(vm: vm)
+        case .gardener:   OnbGardenerStep(vm: vm)
         case .summary:    summaryStep
         }
     }

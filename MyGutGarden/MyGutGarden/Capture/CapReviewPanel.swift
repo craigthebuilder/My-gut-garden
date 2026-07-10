@@ -124,6 +124,64 @@ final class CapReviewModel {
             uniquingKeysWith: { a, _ in a })
     }
 
+    /// Owner (2026-07-09): tapping a photo in Today opens THIS same editor, not a
+    /// separate legacy sheet. Build the model from an already-persisted meal —
+    /// its meal_items joined to their food attributes become editable rows. No
+    /// unmatched list (a logged meal is already resolved); edits replace the
+    /// meal's items and log to the feedback ledger exactly as the fresh path.
+    private init(rows: [Row], photoURL: String?,
+                 repository: Repository?, userId: String?, mealId: String?) {
+        self.repository = repository
+        self.userId = userId
+        self.mealId = mealId
+        self.hadPhoto = photoURL != nil
+        self.rows = rows
+        self.unresolved = []
+    }
+
+    /// One meal_item joined to its food's math anchors (mirrors the fresh-scan
+    /// attributes the editor needs).
+    private struct LoggedItemRow: Decodable, Sendable {
+        struct FoodRef: Decodable, Sendable {
+            struct Fiber: Decodable, Sendable { let estGramsPerServing: Double? }
+            let canonicalName: String
+            let plantId: String?
+            let typicalServingG: Double?
+            let foodFibers: [Fiber]?
+        }
+        let foodId: String
+        let portionTier: String
+        let estGrams: Double?
+        let householdMeasure: String?
+        let source: String
+        let foods: FoodRef?
+    }
+
+    static func forLoggedMeal(mealId: String, photoURL: String?,
+                              repository: Repository, userId: String) async -> CapReviewModel {
+        let items: [LoggedItemRow] = (try? await repository.select(
+            "meal_items",
+            columns: "food_id,portion_tier,est_grams,household_measure,source,foods(canonical_name,plant_id,typical_serving_g,food_fibers(est_grams_per_serving))",
+            filters: ["meal_id": "eq.\(mealId)"])) ?? []
+        let rows: [Row] = items.compactMap { item in
+            guard let f = item.foods else { return nil }
+            return Row(
+                foodId: item.foodId,
+                name: f.canonicalName,
+                visionName: nil,
+                source: CapItemSource(rawValue: item.source) ?? .manual,
+                countsAsPlant: f.plantId != nil,
+                baseGrams: item.estGrams,                 // the saved amount is the slider's 1× anchor
+                typicalServingG: f.typicalServingG,
+                fiberPerServingG: f.foodFibers?.compactMap(\.estGramsPerServing).reduce(0, +) ?? 0,
+                householdMeasure: item.householdMeasure,
+                portionTier: PortionTier(rawValue: item.portionTier) ?? .serving
+            )
+        }
+        return CapReviewModel(rows: rows, photoURL: photoURL,
+                              repository: repository, userId: userId, mealId: mealId)
+    }
+
     private var unmatchedVision: [String: VisionFood] = [:]
 
     // MARK: Derived

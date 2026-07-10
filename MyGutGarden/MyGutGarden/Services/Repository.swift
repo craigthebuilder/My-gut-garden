@@ -173,6 +173,15 @@ struct UserProfile: Decodable, Sendable {
     /// SPEC §17: the gas-for-growth preference (gentle|balanced|bold). Optional-
     /// decoded for pre-migration safety; nil reads as balanced.
     var gasComfort: String? = nil
+    /// The user-chosen gut-gardener name (owner, 2026-07-09). Optional-decoded;
+    /// nil/empty reads as "Sprout" via `gardenerDisplayName`.
+    var gardenerName: String? = nil
+    /// When the 3-frame intro story was seen (nil = not yet). Gates the story
+    /// between onboarding and the setup tour.
+    var introSeenAt: String? = nil
+
+    /// Never-empty gardener name for UI (nudges, map, tour, story).
+    var gardenerDisplayName: String { (gardenerName?.isEmpty == false) ? gardenerName! : "Sprout" }
 }
 
 /// A food restriction at one of three tiers (SPEC §9). Replaces `exclusions` +
