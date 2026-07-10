@@ -1,12 +1,10 @@
 //
 //  CheckInKit.swift
-//  MyGutGarden, the reusable multi-entry daily check-in (SPINE-owned, Batch D/E).
+//  MyGutGarden, the reusable multi-entry daily check-in (SPINE-owned).
 //
-//  Used by BOTH the Survive logger and the new Thrive "test" tab, so neither
-//  reimplements multi-entry persistence. It is the SINGLE place the mood-polarity
-//  inversion happens: the UI presents regulated→erratic (1=regulated), and we store
-//  the CANONICAL high=better score (5=regulated) via `6 - uiValue`, so the pattern
-//  engine never sees mixed polarities.
+//  The SINGLE place the mood-polarity inversion happens: the UI presents
+//  regulated→erratic (1=regulated), and we store the CANONICAL high=better score
+//  (5=regulated) via `6 - uiValue`, so downstream never sees mixed polarities.
 //
 
 import Foundation
@@ -14,9 +12,7 @@ import Observation
 
 /// Written into every sub-entry row's `context` column.
 enum CheckInContext: String, Sendable {
-    case surviveLogger = "survive_logger"
     case thriveCheckin = "thrive_checkin"
-    case thriveTestTab = "thrive_test_tab"
 }
 
 // MARK: - Drafts (one row each; the user can add several of any kind)
@@ -92,7 +88,7 @@ final class CheckInDraft {
     var notes: [CheckInNoteDraft] = []
     /// Thrive "light check-in" (Batch C): when non-nil, only this one category is
     /// shown/saved. Persisted on users.light_checkin_category, so it stays until the
-    /// user de-selects it. nil = full check-in. Survive ignores this (no light option).
+    /// user de-selects it. nil = full check-in.
     var lightCategory: CheckInCategory?
     var lightMode: Bool { lightCategory != nil }
     /// Customized check-in (SPEC §12): which categories to show. nil = all (default).

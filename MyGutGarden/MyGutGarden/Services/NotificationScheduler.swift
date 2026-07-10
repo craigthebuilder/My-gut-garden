@@ -1,8 +1,7 @@
 //
 //  NotificationScheduler.swift
-//  MyGutGarden, thin local-notification wrapper shared by C (Thrive, gain-framed)
-//  and E (Survive, gentle). Copy is the caller's responsibility; Thrive copy is
-//  gain-framed and Survive copy is calm (DESIGN.md "Writing", SPEC §11).
+//  MyGutGarden, thin local-notification wrapper. Copy is the caller's
+//  responsibility; it stays gain-framed and calm (DESIGN.md "Writing", SPEC §11).
 //
 
 import Foundation

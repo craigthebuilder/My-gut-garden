@@ -69,7 +69,6 @@ struct ThrInsightView: View {
             rainbowCard
             fermentationNote
             if let curiosity { ThrCuriosityCard(fact: curiosity.factText) }
-            hiddenPrompts
         }
         .task { await load() }
     }
@@ -187,11 +186,6 @@ struct ThrInsightView: View {
     // review card's live grams-ratio number right above it. One meal, one
     // fiber number — the review summary card (PortionMath == the DB trigger)
     // is the single source now.
-
-    // R6: the generic "Worth a check" hidden-ingredient prompts were removed from the
-    // snap result (the user doesn't want curated guesses there). Add a missed
-    // ingredient via the photo annotation or the meal editor instead.
-    @ViewBuilder private var hiddenPrompts: some View { EmptyView() }
 
     // MARK: Helpers
 

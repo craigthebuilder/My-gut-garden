@@ -1,9 +1,9 @@
 //
-//  GuildDistrictMap.swift
-//  MyGutGarden, the top-down district MAP with fog-of-war (design/references/
-//  example-district-map-*.jpg). Four districts ascend a winding trail from the
-//  foundation (World 1) to the endgame (World 4). Locked districts are fogged
-//  and show "???"; unlocked ones reveal their guild pins with live bloom rings.
+//  GuildMapPin.swift
+//  MyGutGarden — the guild pin + unlock-hint building blocks used by the
+//  interactive garden map (GuildWorldMap.swift). A pin is one guild on the map:
+//  a bloom-ring around its mascot, locked pins fogged as "???". (Formerly
+//  GuildDistrictMap.swift, which also held the retired vertical-trail zone.)
 //
 
 import SwiftUI

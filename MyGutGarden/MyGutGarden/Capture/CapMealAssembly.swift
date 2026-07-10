@@ -58,13 +58,6 @@ enum CapManualConfirm {
     static func initialItems(_ response: RecognitionResponse) -> [CapUnmatchedItem] {
         response.unmatched.map { CapUnmatchedItem(visionName: $0) }
     }
-
-    /// Only the items the user actually resolved. The rest are intentionally
-    /// dropped, logging an unconfirmed guess would claim a precision we don't
-    /// have (§4). Skipping is a valid, blameless choice.
-    static func resolved(_ items: [CapUnmatchedItem]) -> [CapUnmatchedItem] {
-        items.filter(\.isResolved)
-    }
 }
 
 // MARK: - meal_items assembly (the three sources → one ordered set)

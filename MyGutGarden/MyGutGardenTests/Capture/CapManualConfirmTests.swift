@@ -27,16 +27,6 @@ struct CapManualConfirmTests {
         #expect(items.allSatisfy { !$0.isResolved })
     }
 
-    @Test func resolvedKeepsOnlyCorrectedItems() {
-        var corrected = CapUnmatchedItem(visionName: "Dragonfruit")
-        corrected.resolvedFood = CapFoodSearchResult(id: "food-dragon", canonicalName: "Dragon fruit")
-        let skipped = CapUnmatchedItem(visionName: "Sumac")
-
-        let resolved = CapManualConfirm.resolved([corrected, skipped])
-        #expect(resolved.count == 1)
-        #expect(resolved.first?.visionName == "Dragonfruit")
-    }
-
     @Test func manualItemsBuildFromResolvedSelectionsOnly() {
         var corrected = CapUnmatchedItem(visionName: "Dragonfruit")
         corrected.resolvedFood = CapFoodSearchResult(id: "food-dragon", canonicalName: "Dragon fruit")

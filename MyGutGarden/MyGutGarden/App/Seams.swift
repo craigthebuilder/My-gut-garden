@@ -156,7 +156,6 @@ enum GuardianPrompt: Sendable, Identifiable, Equatable {
 
 struct ProgressionState: Sendable, Equatable {
     var isTier2Unlocked: Bool = false
-    var unlockedWorldOrders: Set<Int> = []
     var unlockedDistrictOrders: Set<Int> = []
     var cumulativeTier2Days: Int = 0
 }

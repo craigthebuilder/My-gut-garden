@@ -1,13 +1,14 @@
 //
-//  ThrTestTab.swift
-//  MyGutGarden, Module C: the Thrive check-in surface (R3 Batch C rebuild).
+//  ThrCheckIn.swift
+//  MyGutGarden, Module C: the Thrive check-in surface. (Formerly ThrTestTab.swift
+//  / ThrTestTabView — renamed 2026-07-09; it was always production check-in UI.)
 //
 //  ONE check-in, two entry points:
 //   • ThrCheckInFormView, the single multi-entry form (stool / symptoms / mood /
 //     energy / clarity / notes), opened from BOTH the Today "Log your daily
 //     check-in" button and the Check-in tab's "Log a new check-in". No more two
 //     different check-ins.
-//   • ThrTestTabView, the Check-in TAB, now a LOG of past check-ins grouped by
+//   • ThrCheckInLogView, the Check-in TAB, now a LOG of past check-ins grouped by
 //     month + week, each editable, plus the persisted "light check-in" pick.
 //
 //  Light check-in lives here (not in the form): the user picks ONE category to
@@ -29,7 +30,7 @@ extension MealRow {
 
 // MARK: - Check-in TAB: history log + light pick + log-new
 
-struct ThrTestTabView: View {
+struct ThrCheckInLogView: View {
     @Environment(\.theme) private var theme
     let appState: AppState
     var context: CheckInContext = .thriveCheckin
@@ -143,11 +144,9 @@ struct ThrCheckInFormView: View {
     @Environment(\.dismiss) private var dismiss
     let appState: AppState
     let mode: Mode
-    /// Which surface this check-in belongs to. Thrive uses .thriveCheckin (light
-    /// pick + the thrive_checkins trend aggregate); Survive uses .surviveLogger
-    /// (no light, runs the post-save hook to refresh the streak + break detector).
+    /// Which surface this check-in belongs to (single-mode: always .thriveCheckin).
     var context: CheckInContext = .thriveCheckin
-    /// Mode-specific work to run after a successful save (e.g. Survive store reload).
+    /// Optional work to run after a successful save.
     var onSaved: (() async -> Void)? = nil
     let onDone: () -> Void
 
@@ -1019,7 +1018,7 @@ struct YouCheckInPrefsSheet: View {
 
 #if DEBUG
 #Preview("Thrive check-in tab") {
-    ThrTestTabView(appState: AppState(auth: AuthService()))
+    ThrCheckInLogView(appState: AppState(auth: AuthService()))
         .themed()
 }
 #endif

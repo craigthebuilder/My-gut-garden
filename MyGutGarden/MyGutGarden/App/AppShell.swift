@@ -430,7 +430,7 @@ private struct ShellSettings: View {
         }
         .background(theme.colors.background.ignoresSafeArea())
         .sheet(isPresented: $showFoods) { YouFoodFlagsView(appState: appState) }
-        .sheet(isPresented: $showCheckIn) { ThrTestTabView(appState: appState) }
+        .sheet(isPresented: $showCheckIn) { ThrCheckInLogView(appState: appState) }
         .sheet(isPresented: $showCustomize) { YouCheckInPrefsSheet(appState: appState) { showCustomize = false } }
         .sheet(isPresented: $showBadges) { YouBadgesView(appState: appState) }
     }

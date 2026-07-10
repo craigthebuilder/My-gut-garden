@@ -148,8 +148,7 @@ struct OnbCheckRow: View {
 
 // MARK: - Step: Goals (Q1)
 //
-// Phase-2 (Batch B): single-column full-width layout so options fill the page.
-// 10 goals: first five relief (+1 Survive), last five optimization (-1 Thrive).
+// Single-column full-width layout so options fill the page.
 
 struct OnbGoalsStep: View {
     @Environment(\.theme) private var theme
