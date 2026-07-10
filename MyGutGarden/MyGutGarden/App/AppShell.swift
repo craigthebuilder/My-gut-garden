@@ -120,6 +120,17 @@ private struct ShellHome: View {
         // round 2 — rainbow + phytochemicals start theirs from inside their
         // views). The locked tease has no tour targets, so don't start it there.
         .onChange(of: tab) { _, newTab in
+            // If a tour is showing and the user navigated somewhere the tour did
+            // NOT send them, they've chosen to explore — end the tour so it never
+            // traps them (owner report, 2026-07-10: "freezes when I click Garden").
+            // Comparing against the tour's own target tab (rather than a flag)
+            // stays correct even when the tour walks within one tab.
+            if appState.coach.isShowing {
+                let tourTab = appState.coach.current?.targetHint.flatMap {
+                    Self.tab(forCoachHint: $0, gardenUnlocked: appState.progression.isTier2Unlocked)
+                }
+                if newTab != tourTab { appState.coach.skip(appState) }
+            }
             if newTab == .garden, appState.progression.isTier2Unlocked {
                 Task { await appState.coach.startIfNeeded("garden", appState: appState) }
             }
@@ -556,17 +567,30 @@ private struct ShellGardenLocked: View {
 private struct ShellAuthGate: View {
     @Environment(\.theme) private var theme
     let auth: AuthService
+
+    /// Two screens: the sign-in landing, and a DEDICATED create-account screen.
+    /// "Create account" on the landing NAVIGATES here (it no longer POSTs an
+    /// empty sign-up, which surfaced the "anonymous sign-ins disabled" error —
+    /// owner report, 2026-07-10).
+    private enum Mode { case signIn, createAccount }
+    @State private var mode: Mode = .signIn
     @State private var email = ""
     @State private var password = ""
+
+    private func switchTo(_ m: Mode) {
+        mode = m
+        auth.errorMessage = nil     // don't carry an error across screens
+    }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: theme.metrics.space5) {
                 VStack(alignment: .leading, spacing: theme.metrics.space2) {
-                    Text("My Gut Garden")
+                    Text(mode == .signIn ? "My Gut Garden" : "Create your account")
                         .font(theme.typography.display())
                         .foregroundStyle(theme.colors.primary)
-                    Text("Grow a garden you can feed.")
+                    Text(mode == .signIn ? "Grow a garden you can feed."
+                                         : "Just an email and a password to get started.")
                         .font(theme.typography.body())
                         .foregroundStyle(theme.colors.textSecondary)
                 }
@@ -576,12 +600,20 @@ private struct ShellAuthGate: View {
                             .textContentType(.emailAddress).textInputAutocapitalization(.never).autocorrectionDisabled()
                         SecureField("Password", text: $password)
                             .textContentType(.password)
-                        PrimaryButton(title: "Sign in") { Task { await auth.signIn(email: email, password: password) } }
-                        SecondaryButton(title: "Create account") { Task { await auth.signUp(email: email, password: password) } }
-                        SignInWithAppleButton(.signIn) { auth.prepareAppleRequest($0) }
-                            onCompletion: { result in Task { await auth.handleAppleCompletion(result) } }
-                            .frame(height: 46)
-                            .clipShape(RoundedRectangle(cornerRadius: theme.metrics.radiusMedium))
+                        if mode == .signIn {
+                            PrimaryButton(title: "Sign in") { Task { await auth.signIn(email: email, password: password) } }
+                            SecondaryButton(title: "Create account") { switchTo(.createAccount) }
+                            SignInWithAppleButton(.signIn) { auth.prepareAppleRequest($0) }
+                                onCompletion: { result in Task { await auth.handleAppleCompletion(result) } }
+                                .frame(height: 46)
+                                .clipShape(RoundedRectangle(cornerRadius: theme.metrics.radiusMedium))
+                        } else {
+                            PrimaryButton(title: "Create account") { Task { await auth.signUp(email: email, password: password) } }
+                            Button("Already have an account? Sign in") { switchTo(.signIn) }
+                                .font(theme.typography.caption(weight: .medium))
+                                .foregroundStyle(theme.colors.primary)
+                                .frame(maxWidth: .infinity)
+                        }
                         if auth.isBusy { ProgressView() }
                         if let error = auth.errorMessage {
                             Text(error).font(theme.typography.caption()).foregroundStyle(theme.colors.error)

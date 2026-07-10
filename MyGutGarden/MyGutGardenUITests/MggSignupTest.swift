@@ -14,8 +14,15 @@ final class MggSignupTest: XCTestCase {
         let app = XCUIApplication()
         app.launch()
 
+        // Two-step (2026-07-10): the landing's "Create account" navigates to a
+        // DEDICATED create screen; the create screen's "Create account" submits.
+        XCTAssertTrue(app.textFields["Email"].waitForExistence(timeout: 25), "auth gate did not appear")
+        XCTAssertTrue(app.staticTexts["My Gut Garden"].exists, "did not start on the sign-in landing")
+        app.buttons["Create account"].tap()   // → the create-account screen
+        XCTAssertTrue(app.staticTexts["Create your account"].waitForExistence(timeout: 5),
+                      "Create account did not open the dedicated create screen")
+
         let email = app.textFields["Email"]
-        XCTAssertTrue(email.waitForExistence(timeout: 25), "auth gate did not appear")
         email.tap()
         email.typeText("carlosesber00+uisignup\(Int(Date().timeIntervalSince1970))@gmail.com")
 
@@ -24,23 +31,15 @@ final class MggSignupTest: XCTestCase {
         pw.tap()
         pw.typeText("UiSignup-12345!")
 
-        app.buttons["Create account"].tap()
+        app.buttons["Create account"].firstMatch.tap()   // submit
 
-        // The iOS "Save Password?" sheet invisibly blocks taps — sweep it.
-        for _ in 0..<10 {
-            if app.buttons["Not Now"].exists { app.buttons["Not Now"].tap(); break }
-            if app.buttons["Begin"].exists { break }
+        // Reached onboarding? Sweep the "Save Password?" sheet while waiting.
+        var arrived = false
+        for _ in 0..<20 {
+            if app.buttons["Not Now"].exists { app.buttons["Not Now"].tap() }
+            if app.buttons["Begin"].exists { arrived = true; break }
             sleep(1)
         }
-
-        let arrived = app.buttons["Begin"].waitForExistence(timeout: 20)
-        if !arrived {
-            var seen: [String] = []
-            for i in 0..<min(app.staticTexts.count, 30) {
-                let t = app.staticTexts.element(boundBy: i).label
-                if !t.isEmpty { seen.append(t) }
-            }
-            XCTFail("Signup did not reach onboarding. Gate shows: \(seen.joined(separator: " | "))")
-        }
+        XCTAssertTrue(arrived, "Signup did not reach the onboarding welcome (Begin).")
     }
 }

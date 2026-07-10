@@ -135,7 +135,12 @@ struct CoachMarkOverlay: View {
                     card(step, spotlight: rect, in: proxy.size)
                 }
             }
-            .ignoresSafeArea()
+            // Reserve the bottom tab-bar strip: the dim covers the content +
+            // status area but NOT the tab bar, so a user can still switch tabs
+            // during a tour instead of feeling frozen (the shell ends the tour
+            // when they navigate away). 2026-07-10.
+            .padding(.bottom, 90)
+            .ignoresSafeArea(edges: [.top, .horizontal])
             .transition(reduceMotion ? .identity : .opacity)
             .onAppear { if let hint = step.targetHint { onNavigate?(hint) } }
             .onChange(of: controller.current?.targetHint) { _, hint in

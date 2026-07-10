@@ -32,16 +32,26 @@ final class AuthService {
     // MARK: - Email
 
     func signUp(email: String, password: String) async {
+        // Guard empty credentials CLIENT-side: an empty email+password POST is
+        // read by GoTrue as an anonymous sign-up, surfacing the confusing
+        // "Anonymous sign-ins are disabled" 422 (owner report, 2026-07-10).
+        let e = email.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !e.isEmpty else { errorMessage = "Enter your email to create an account."; return }
+        guard !password.isEmpty else { errorMessage = "Choose a password (at least 6 characters)."; return }
         await run {
             guard let client = self.client else { throw SupabaseError.notConfigured }
-            self.session = try await client.signUp(email: email, password: password)
+            self.session = try await client.signUp(email: e, password: password)
         }
     }
 
     func signIn(email: String, password: String) async {
+        let e = email.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !e.isEmpty, !password.isEmpty else {
+            errorMessage = "Enter your email and password."; return
+        }
         await run {
             guard let client = self.client else { throw SupabaseError.notConfigured }
-            self.session = try await client.signIn(email: email, password: password)
+            self.session = try await client.signIn(email: e, password: password)
         }
     }
 
