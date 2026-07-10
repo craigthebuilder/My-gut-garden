@@ -930,6 +930,12 @@ struct YouCheckInPrefsSheet: View {
     @State private var notesEnabled = true
     @State private var loaded = false
     @State private var saving = false
+    // A sheet-LOCAL coach controller (owner, 2026-07-09: "add a tour for
+    // customize"). The shared shell overlay can't reach into a sheet, so the
+    // sheet renders its own spotlight overlay bound to this local controller —
+    // isolated, so the tour can never leak back onto the home screen. Completion
+    // still persists to tutorial_state (section "customize"), so it shows once.
+    @State private var coach = CoachMarkController()
 
     var body: some View {
         NavigationStack {
@@ -949,6 +955,7 @@ struct YouCheckInPrefsSheet: View {
                             toggleRow("Notes", on: notesEnabled) { notesEnabled.toggle() }
                         }
                     }
+                    .coachTarget("customize")
                     PrimaryButton(title: saving ? "Saving\u{2026}" : "Save") { Task { await save() } }
                         .disabled(saving)
                 }
@@ -958,8 +965,15 @@ struct YouCheckInPrefsSheet: View {
             .navigationTitle("Customize check-in")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Close", action: onDone) } }
+            .overlayPreferenceValue(CoachTargetKey.self) { anchors in
+                CoachMarkOverlay(controller: coach, appState: appState, anchors: anchors)
+            }
         }
-        .task { await load() }
+        .task {
+            await load()
+            await coach.loadCompleted(appState)
+            await coach.startIfNeeded("customize", appState: appState)
+        }
     }
 
     private func toggleRow(_ title: String, on: Bool, action: @escaping () -> Void) -> some View {

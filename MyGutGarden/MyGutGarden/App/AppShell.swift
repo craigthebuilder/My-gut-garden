@@ -410,7 +410,6 @@ private struct ShellSettings: View {
                         SecondaryButton(title: "Customize check-in", systemImage: "slider.horizontal.3") {
                             showCustomize = true
                         }
-                        .coachTarget("customize")
                         gasComfortRow
                         SecondaryButton(title: "Badges", systemImage: "rosette") {
                             showBadges = true
