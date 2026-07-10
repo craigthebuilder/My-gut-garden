@@ -41,20 +41,21 @@ insert into recipes (title, description, color_ids, fiber_highlights, ingredient
   ('Berry walnut yogurt bowl', 'Probiotic base, polyphenol toppings, thirty seconds of work.', array['blue_purple','red','white_brown'], 'Live-culture yogurt plus berry anthocyanins and walnut fibre.', array['1 cup plain live yogurt','3/4 cup mixed berries','small handful of walnuts','1 tsp honey (optional)','1 tbsp ground flaxseed'], array['Spoon the yogurt into a bowl','Top with berries, walnuts and flaxseed','Drizzle the honey if you like'], 3, 'Curated', true, false),
   ('Sheet-pan ratatouille', 'Five plants roasting themselves while you do something else.', array['red','blue_purple','green','orange'], 'A wide mix of gentle vegetable fibres and polyphenols.', array['1 eggplant, cubed','1 zucchini, sliced','1 red pepper, sliced','1 red onion, wedged','2 tomatoes, quartered','2 cloves garlic, whole','2 tbsp olive oil','1 tsp dried oregano'], array['Toss everything on a sheet pan with the oil and oregano','Roast at 200C for 35 minutes, turning once','Rest 5 minutes before serving'], 45, 'Curated', false, true);
 
--- ---- tutorial_steps — ON CONFLICT (section_key, "order") ------------
+-- ---- tutorial_steps — DELETE-then-insert so the CSV is authoritative
+--      (upsert alone leaves removed/renumbered steps behind — coach rework,
+--      2026-07-09). tutorial_state (completions) is unaffected: it stores
+--      section_key as text, not an FK to this table.
+delete from tutorial_steps;
 insert into tutorial_steps (section_key, "order", title, body, target_hint, claim_risk) values
   ('intro', 0, 'Here''s how it works', 'Hi, I''m {gardener} — your gut gardener. You''ve seen the why and the catch; my job is the how. Snap your plates and I''ll grow your garden while keeping your fiber at a pace your gut is happy with. Quick tour?', 'home', false),
   ('intro', 1, 'Your dashboard', 'Home base: the week''s plant count, the rainbow, and the 3 P''s, with callouts for exactly what to eat to fill today''s gaps. Thirty different plants a week is the target — variety, never restriction.', 'dashboard', true),
   ('intro', 2, 'The 3 P''s', 'Three things a well-fed gut loves each day: Prebiotic (fiber your microbes eat), Probiotic (live cultures, like yogurt or kimchi), and Polyphenol (deep-colored plant compounds). Tap the pill any time for your trend.', 'threeps', true),
-  ('intro', 3, 'I''ll help you build meals', 'Try this serves curated ideas with serving sizes. The ↻ deals a fresh one; the target picks the meal that best fills today''s gaps — fiber, plants, colors — so you never quietly run low.', 'trythis', true),
-  ('intro', 4, 'Snap your meals', 'Point the camera at your plate and I''ll spot the plants and feed your garden — no weighing, no typing. A quick note like "extra onion" catches what the camera can''t see.', 'snap', false),
-  ('intro', 5, 'Your field guide', 'Every plant you eat joins a lifetime collection — plants, colors, phytochemicals, fermented finds. The rarer the find, the bigger the moment.', 'fieldguide', false),
-  ('intro', 6, 'Your fiber goal is coming', 'Remember the catch — too much fiber too fast backfires. So there''s no number in week one: I watch how you actually eat, then unlock a goal that''s comfortable for you and raise it gently, water reminders included.', 'fiber', true),
-  ('intro', 7, 'Eat freely — I''ve got the rest', 'The part I care about most. The optional check-in plus my quiet watching notice what sits well and what doesn''t — and I''ll always ask before flagging anything. Over time I steer you toward the foods that make you feel good.', 'checkin', true),
-  ('intro', 8, 'Make the check-in yours', 'Track as much or as little as you like — customize exactly what the check-in asks, right here in You. Your picks shape your trends too.', 'customize', false),
-  ('garden', 0, 'Your microbiome garden', 'These crews stand for the microbes you''re feeding. Each one runs on different plants — feed a crew steadily for a few days and it blooms.', 'garden', true),
-  ('garden', 1, 'Worlds to explore', 'The garden grows in worlds: bloom the Core''s crews and new districts open up. It''s a living map of your gut''s diversity, drawn from what you actually eat.', 'garden', true),
-  ('garden', 2, 'Rhythm beats feasts', 'Nourishment fades a little each day, so steady feeding beats one big plate. Every crew''s page tells you exactly what it runs on.', 'garden', true),
+  ('intro', 3, 'Snap your meals', 'Point the camera at your plate and I''ll spot the plants and feed your garden — no weighing, no typing. A quick note like "extra onion" catches what the camera can''t see.', 'snap', false),
+  ('intro', 4, 'Your fiber goal is coming', 'Remember the catch — too much fiber too fast backfires. So there''s no number in week one: I watch how you actually eat, then unlock a goal that''s comfortable for you and raise it gently, water reminders included.', 'fiber', true),
+  ('intro', 5, 'Eat freely — I''ve got the rest', 'The part I care about most. The optional check-in plus my quiet watching notice what sits well and what doesn''t — and I''ll always ask before flagging anything. Over time I steer you toward the foods that make you feel good.', 'checkin', true),
+  ('garden', 0, 'Your living map', 'This whole world is your garden, and it grows as you feed it. Drag to roam, pinch to zoom — each region is a district of microbe crews your plants feed.', 'garden', true),
+  ('garden', 1, 'Locked lands', 'Foggy regions are still sealed. Keep feeding your crews and new districts — even whole new worlds — open up. Tap any bloomed guild to meet the microbes behind it.', 'garden', true),
+  ('garden', 2, 'Rhythm beats feasts', 'Steady, varied feeding makes a guild bloom and hold; a single feast then nothing lets it fade. A little of many plants, most days, is the whole trick.', 'garden', true),
   ('rainbow', 0, 'Eat the rainbow', 'Six color groups, each carrying its own phytochemicals. Any amount counts toward the week''s six — a ring closes fully when you eat a lot of that color, and the outline shows how much is left to fill.', 'rainbow', true),
   ('rainbow', 1, 'Tap a color', 'Each color''s page shows its week, example foods, and what it does for you — the fastest way to answer "what should I add today?"', 'rainbow', true),
   ('plants', 0, 'Your plant field guide', 'Every new plant you eat joins your collection for life — rarer finds are a bigger deal. Tap any plant to read its story.', 'plants', false),
@@ -62,8 +63,7 @@ insert into tutorial_steps (section_key, "order", title, body, target_hint, clai
   ('phytochemicals', 0, 'Phytochemicals', 'The compounds behind the colors — your microbes turn them into useful things. The coverage bars show how much of the catalogue you''ve eaten this week, fortnight, and month.', 'phytochemicals', true),
   ('phytochemicals', 1, 'Chase the gaps', 'Tap a coverage bar to see exactly which compounds you haven''t had lately — each one lists the foods that carry it.', 'phytochemicals', false),
   ('yourfiber', 0, 'Fast fibers, slow fibers', 'Fast-fermenting fibers get devoured by your microbes within hours; slower ones burn all day. Fast fuel grows the garden quickest — and makes the most gas while your crews scale up. These charts show your mix.', 'yourfiber', true),
-  ('yourfiber', 1, 'Your gut adapts', 'Feed a crew steadily and it grows capacity — meals that felt lively a month ago sit quietly once the microbes that eat them multiply. Slow, steady increases are the whole trick.', 'yourfiber', true),
-  ('trends', 0, 'Your trends', 'Customise your daily check-in and watch mood, energy, and clarity move against your starting baseline.', 'trends', false)
+  ('yourfiber', 1, 'Your gut adapts', 'Feed a crew steadily and it grows capacity — meals that felt lively a month ago sit quietly once the microbes that eat them multiply. Slow, steady increases are the whole trick.', 'yourfiber', true)
 on conflict (section_key, "order") do update set
   title = excluded.title,
   body = excluded.body,

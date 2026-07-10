@@ -320,6 +320,9 @@ struct ThrFermentedFindsScreen: View {
 
     var body: some View {
         ThrFermentedFindsView(model: model)
-            .task { await model.load(appState: appState, latestMeal: latestMeal) }
+            .task {
+                await model.load(appState: appState, latestMeal: latestMeal)
+                await appState.coach.startIfNeeded("fermented", appState: appState)
+            }
     }
 }

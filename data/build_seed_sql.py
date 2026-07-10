@@ -510,7 +510,11 @@ for r in recipes:
 w2(",\n".join(vals) + ";")
 w2()
 
-w2('-- ---- tutorial_steps — ON CONFLICT (section_key, "order") ------------')
+w2('-- ---- tutorial_steps — DELETE-then-insert so the CSV is authoritative')
+w2('--      (upsert alone leaves removed/renumbered steps behind — coach rework,')
+w2('--      2026-07-09). tutorial_state (completions) is unaffected: it stores')
+w2('--      section_key as text, not an FK to this table.')
+w2('delete from tutorial_steps;')
 w2('insert into tutorial_steps (section_key, "order", title, body, target_hint, claim_risk) values')
 vals = [f"  ({s(r['section_key'])}, {r['order']}, {s(r['title'])}, {s(r['body'])}, {s(r['target_hint'])}, {b(r['claim_risk'])})" for r in tutorials]
 w2(",\n".join(vals))

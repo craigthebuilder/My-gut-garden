@@ -177,6 +177,7 @@ struct ThrPlantGardenView: View {
                     SecondaryButton(title: "Suggest a plant to try", systemImage: "dice") {
                         suggestion = uneaten.randomElement()
                     }
+                    .coachTarget("plants")   // the plants tour fires here; give it a spotlight
                 }
                 if collected.isEmpty {
                     ThrEmptyState(icon: "leaf.fill",
@@ -294,13 +295,14 @@ struct ThrFermentedFindsView: View {
                             Text("Live cultures love company")
                                 .font(theme.typography.body(weight: .medium))
                                 .foregroundStyle(theme.colors.textPrimary)
-                            Text("A daily fermented food keeps your probiotic P ticking.")
+                            Text("A daily one with live cultures keeps your probiotic P ticking.")
                                 .font(theme.typography.caption())
                                 .foregroundStyle(theme.colors.textSecondary)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
                     }
                 }
+                .coachTarget("fermented")
                 if model.fermentedFinds.isEmpty {
                     ThrEmptyState(icon: "drop.fill",
                                   title: "No fermented finds yet",

@@ -191,12 +191,15 @@ private struct ShellHome: View {
 
     @ViewBuilder
     private func guardianPrompt(_ event: GuardianPrompt) -> some View {
-        ModalScrim(onTapOutside: dismissGuardian) {
+        // The guardian IS the gardener: every nudge speaks in their voice, by
+        // name (owner, 2026-07-09). Still deterministic + user-confirmed (§11).
+        let name = appState.profile?.gardenerDisplayName ?? "Sprout"
+        return ModalScrim(onTapOutside: dismissGuardian) {
             switch event {
             case let .fiberGoalIncrease(current, proposed):
                 ConfirmationModal(
                     title: "Ready for a little more fiber?",
-                    message: "You've been handling \(current) g comfortably. Want to nudge your daily goal up to \(proposed) g? Add a little more water to match.",
+                    message: "You've been handling \(current) g comfortably, so \(name) thinks you're ready for a little more. Nudge your daily goal up to \(proposed) g? Add a little water to match.",
                     confirmTitle: "Raise it",
                     cancelTitle: "Not yet",
                     severity: .info,
@@ -206,7 +209,7 @@ private struct ShellHome: View {
             case let .suggestWatching(foodName, foodId):
                 ConfirmationModal(
                     title: "Keep an eye on \(foodName)?",
-                    message: "You've noted feeling off after a few meals with \(foodName). Want to keep an eye on it? It stays on your plate — we'll just watch how it sits.",
+                    message: "\(name) noticed you've felt off after a few meals with \(foodName). Want to keep an eye on it together? It stays on your plate — we'll just watch how it sits.",
                     confirmTitle: "Yes, add it",
                     cancelTitle: "Not now",
                     severity: .info,
@@ -216,7 +219,7 @@ private struct ShellHome: View {
             case let .couldBeAllergy(foodName, foodId):
                 ConfirmationModal(
                     title: "Worth a closer look?",
-                    message: "\(foodName) really doesn't seem to agree with you. Some people find that worth raising with a doctor or allergist. Want to mark it as an allergy so we always flag it clearly?",
+                    message: "\(foodName) really doesn't seem to agree with you. \(name) thinks it could be worth raising with a doctor or allergist. Want to mark it as an allergy so we always flag it clearly?",
                     confirmTitle: "Mark as allergy",
                     cancelTitle: "Not now",
                     severity: .caution,
@@ -226,7 +229,7 @@ private struct ShellHome: View {
             case let .overcameSensitivity(foodName, foodId):
                 ConfirmationModal(
                     title: "\(foodName) looks good again",
-                    message: "You've been enjoying \(foodName) with no trouble lately. Want to bring it back in and stop flagging it?",
+                    message: "You've been enjoying \(foodName) with no trouble lately — \(name) thinks it's earned its place back. Bring it back in and stop flagging it?",
                     confirmTitle: "Bring it back",
                     cancelTitle: "Keep flagging",
                     severity: .info,
@@ -238,7 +241,7 @@ private struct ShellHome: View {
                 // any food suggestion, and the user authors the change.
                 ConfirmationModal(
                     title: "A big fermenting day",
-                    message: "That was a lot of fast-fermenting fiber, and you felt it. That's usually your crews adapting to new fuel, not a problem food — comfort builds as their capacity grows. Want to ramp a little gentler for a while?",
+                    message: "That was a lot of fast-fermenting fiber, and you felt it. \(name) reckons that's your crews adapting to new fuel, not a problem food — comfort builds as their capacity grows. Ramp a little gentler for a while?",
                     confirmTitle: "Go gentler",
                     cancelTitle: "Keep my pace",
                     severity: .info,
@@ -249,8 +252,8 @@ private struct ShellHome: View {
                 // SPEC §17 quiet balance: one calm sentence, dismiss-only, words
                 // never numbers (rule #6 as amended). // RD-REVIEW-REQUIRED copy.
                 ConfirmationModal(
-                    title: "A gentle observation",
-                    message: balanceMessage(kind),
+                    title: "A note from \(name)",
+                    message: balanceMessage(kind, gardener: name),
                     confirmTitle: "Got it",
                     cancelTitle: nil,
                     severity: .info,
@@ -263,14 +266,14 @@ private struct ShellHome: View {
 
     /// 🔒 FENCE 3/4 (RD-REVIEW-REQUIRED): curated balance copy — educational,
     /// gain-framed, never a number, score, or instruction to restrict.
-    private func balanceMessage(_ kind: GuardianPrompt.BalanceKind) -> String {
+    private func balanceMessage(_ kind: GuardianPrompt.BalanceKind, gardener: String) -> String {
         switch kind {
         case .proteinLight:
-            "Your recent meals look a little light on protein-rich foods. Protein keeps energy steady and repairs the body — beans, lentils, tofu, yogurt, eggs, fish, or meat all count. Just something to keep in mind."
+            "\(gardener) noticed your recent meals look a little light on protein-rich foods. Protein keeps energy steady and repairs the body — beans, lentils, tofu, yogurt, eggs, fish, or meat all count. Just something to keep in mind."
         case .proteinHeavy:
-            "Your recent plates lean heavily on protein-rich foods. Nothing wrong with protein — but variety is what feeds your garden. A few more plants alongside would round things out nicely."
+            "\(gardener) noticed your recent plates lean heavily on protein-rich foods. Nothing wrong with protein — but variety is what feeds your garden. A few more plants alongside would round things out nicely."
         case .energyLight:
-            "Your recent meals look light on overall fuel. Gardens need energy to grow — whole grains, nuts, olive oil, or simply heartier portions all help everything work better."
+            "\(gardener) noticed your recent meals look light on overall fuel. Gardens need energy to grow — whole grains, nuts, olive oil, or simply heartier portions all help everything work better."
         }
     }
 
