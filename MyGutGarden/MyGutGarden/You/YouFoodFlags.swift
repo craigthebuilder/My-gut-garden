@@ -110,6 +110,7 @@ final class YouFoodFlagsModel {
 
 struct YouFoodFlagsView: View {
     @Environment(\.theme) private var theme
+    @Environment(\.dismiss) private var dismiss
     let appState: AppState
 
     @State private var model = YouFoodFlagsModel()
@@ -134,6 +135,10 @@ struct YouFoodFlagsView: View {
             .navigationTitle("Your foods")
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
+                // Sheet from You — needs an explicit exit (owner, 2026-07-17).
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Close") { dismiss() }.foregroundStyle(theme.colors.primary)
+                }
                 ToolbarItem(placement: .primaryAction) {
                     Button { adding = true } label: { Image(systemName: "plus") }
                         .accessibilityLabel("Add a food to keep an eye on")

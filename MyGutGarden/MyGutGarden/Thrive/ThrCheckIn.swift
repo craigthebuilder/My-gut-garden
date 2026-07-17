@@ -32,6 +32,7 @@ extension MealRow {
 
 struct ThrCheckInLogView: View {
     @Environment(\.theme) private var theme
+    @Environment(\.dismiss) private var dismiss
     let appState: AppState
     var context: CheckInContext = .thriveCheckin
     var onSaved: (() async -> Void)? = nil
@@ -56,6 +57,13 @@ struct ThrCheckInLogView: View {
             .background(theme.colors.background.ignoresSafeArea())
             .navigationTitle("Check-ins")
             .navigationBarTitleDisplayMode(.large)
+            // Presented as a sheet from You — without this there is NO visible
+            // way out (owner, 2026-07-17: the You surface felt trapped/frozen).
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Close") { dismiss() }.foregroundStyle(theme.colors.primary)
+                }
+            }
         }
         .task { await model.load(appState) }
         .sheet(item: $presenting) { mode in

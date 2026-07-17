@@ -93,6 +93,7 @@ private struct MealItemFoodRow: Decodable, Sendable { let foodId: String }
 
 struct YouBadgesView: View {
     @Environment(\.theme) private var theme
+    @Environment(\.dismiss) private var dismiss
     let appState: AppState
 
     @State private var model = YouBadgesModel()
@@ -116,6 +117,12 @@ struct YouBadgesView: View {
             .background(theme.colors.background.ignoresSafeArea())
             .navigationTitle("Badges")
             .navigationBarTitleDisplayMode(.large)
+            // Sheet from You — needs an explicit exit (owner, 2026-07-17).
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Close") { dismiss() }.foregroundStyle(theme.colors.primary)
+                }
+            }
         }
         .task { await model.load(appState) }
     }
