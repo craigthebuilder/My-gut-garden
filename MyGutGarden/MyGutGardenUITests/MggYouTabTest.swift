@@ -38,10 +38,16 @@ final class MggYouTabTest: XCTestCase {
         XCTAssertFalse(app.staticTexts["New district unlocked!"].waitForExistence(timeout: 4),
                        "district unlock re-celebrated on launch (already seen long ago)")
 
-        // 2. One tap on You must switch tabs, even if a launch pop-up (daily
-        //    check-in) is showing — shell modals never cover the tab bar.
+        // 2. The daily check-in pop-up is due (seeded: meal yesterday, no
+        //    check-in row) — wait for it so the modal is REALLY on screen.
+        let checkinPrompt = app.staticTexts["How did you feel? (directional — no wrong answer)"]
+        XCTAssertTrue(checkinPrompt.waitForExistence(timeout: 10),
+                      "expected the daily check-in pop-up (seeded due) to appear")
+
+        // 3. One tap on You must switch tabs WHILE the modal is showing —
+        //    shell modals never cover the tab bar.
         youTab.tap()
         XCTAssertTrue(app.buttons["Sign out"].waitForExistence(timeout: 6),
-                      "You page did not open on the first tap of the You tab")
+                      "You page did not open on the first tap of the You tab (modal blocked it)")
     }
 }
