@@ -33,11 +33,22 @@ final class MggCheckInFormTest: XCTestCase {
             app.buttons["Great"].tap(); sleep(2)
         }
 
+        // A one-time celebration (e.g. "Your fiber goal is ready") can cover the
+        // page on first sign-in after an unlock — dismiss it before interacting.
+        if app.buttons["Lovely"].waitForExistence(timeout: 3) { app.buttons["Lovely"].tap() }
+
         youTab.tap()
         XCTAssertTrue(app.buttons["Sign out"].waitForExistence(timeout: 8))
 
-        // You → Daily check-in (history sheet).
-        app.buttons["Daily check-in"].tap()
+        // You → Daily check-in (history sheet). Retry through any lingering
+        // overlay so the tap lands on the row, not a scrim.
+        let daily = app.buttons["Daily check-in"].firstMatch
+        for _ in 0..<5 {
+            if app.buttons["Log a new check-in"].exists { break }
+            if daily.isHittable { daily.tap() }
+            else { app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.05)).tap() }
+            usleep(500_000)
+        }
         let logNew = app.buttons["Log a new check-in"]
         XCTAssertTrue(logNew.waitForExistence(timeout: 10), "history sheet did not open")
 

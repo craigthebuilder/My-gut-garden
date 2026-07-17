@@ -42,6 +42,9 @@ struct ThrRootView: View {
                         dashboardSection
                             .coachTarget("dashboard")
                             .id("dashboard")
+                        fiberSection            // charts inline under the dashboard (owner, 2026-07-17)
+                            .coachTarget("fiber")
+                            .id("fiber")
                         dailyCheckInButton      // right under the dashboard (owner, 2026-07-10)
                         recipeSection
                             .coachTarget("trythis")
@@ -67,6 +70,13 @@ struct ThrRootView: View {
             .navigationBarTitleDisplayMode(.inline)
         }
         .task { await model.load(appState: appState, latestMeal: latestMeal) }
+        // The fiber goal can unlock in the background (launch recompute) AFTER
+        // Today's model snapshotted the locked state — reload when it flips so
+        // the section shows the goal, not a stale "coming" (owner audit,
+        // 2026-07-17). Cheap: the state transitions once, ever.
+        .onChange(of: appState.profile?.fiberGoalState) { _, _ in
+            Task { await model.load(appState: appState, latestMeal: latestMeal) }
+        }
         .sheet(item: $educatingColor) { group in
             ThrColorDetailSheet(
                 group: group,
@@ -108,44 +118,43 @@ struct ThrRootView: View {
                 .foregroundStyle(theme.colors.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)
                 .frame(maxWidth: .infinity, alignment: .leading)
-            // Locked or unlocked, the fiber line opens "Your fiber" (SPEC §17):
-            // the trend + the fermentation-speed / solubility composition history.
-            NavigationLink {
-                ThrFiberDetailView(appState: appState, homeModel: model)
-            } label: {
-                Group {
-                    if model.fiberGoalG != nil {
-                        ThrFiberLine(consumedG: model.fiberConsumedTodayG,
-                                     goalG: model.fiberGoalG,
-                                     fraction: model.fiberFraction)
-                    } else if model.isLoaded {
-                        lockedFiberLine
-                    }
-                }
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .padding(.top, theme.metrics.space1)
-            .coachTarget("fiber")
-            .id("fiber")
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    /// The pre-unlock state, visible so the goal's arrival means something. No
-    /// number shows before the unlock (SPEC §10 / Fence 5) — just the promise.
-    private var lockedFiberLine: some View {
-        HStack(spacing: theme.metrics.space2) {
-            Image(systemName: "lock.fill")
-                .font(.system(size: 11))
-                .foregroundStyle(theme.colors.textSecondary)
-            Text("Fiber goal — unlocks after your first 30-plant week")
-                .font(theme.typography.caption())
-                .foregroundStyle(theme.colors.textSecondary)
-            Spacer(minLength: 0)
+    // MARK: - Your fiber (the charts, inline under the dashboard — owner 2026-07-17)
+
+    /// The fiber section: a titled row (tap → "Your fiber" education page) plus
+    /// the charts inline. Pre-unlock it still shows the "goal is coming" card and
+    /// the two-week composition so the surface isn't empty (SPEC §17). Hidden
+    /// only until Today's model has loaded, to avoid a flash of empty cards.
+    @ViewBuilder private var fiberSection: some View {
+        if model.isLoaded {
+            VStack(alignment: .leading, spacing: theme.metrics.space3) {
+                NavigationLink {
+                    ThrFiberDetailView(appState: appState, homeModel: model)
+                } label: {
+                    HStack(spacing: theme.metrics.space1) {
+                        SectionHeader(title: "Your fiber")
+                        if model.fiberGoalG == nil {
+                            Image(systemName: "lock.fill")
+                                .font(.system(size: 11))
+                                .foregroundStyle(theme.colors.textSecondary)
+                        }
+                        Spacer(minLength: 0)
+                        Text("Learn more")
+                            .font(theme.typography.caption(weight: .semibold))
+                            .foregroundStyle(theme.colors.textSecondary)
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(theme.colors.textSecondary)
+                    }
+                }
+                .buttonStyle(.plain)
+                ThrFiberCharts(appState: appState, homeModel: model)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("Fiber goal locked. It unlocks after your first thirty-plant week.")
     }
 
     private func scrollToCoachTarget(_ hint: String?, proxy: ScrollViewProxy) {

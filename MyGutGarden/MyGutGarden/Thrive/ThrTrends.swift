@@ -110,11 +110,16 @@ struct ThrTrendSeries: Identifiable {
     let color: Color
     /// 0…1 per day, oldest → newest.
     let values: [Double]
+    /// Optional value shown after the label in the legend, e.g. "6 g today".
+    var trailingValue: String? = nil
 }
 
 struct ThrMultiLineChart: View {
     @Environment(\.theme) private var theme
     let series: [ThrTrendSeries]
+    /// When set, the shared top of the scale in grams — labels the y-axis so the
+    /// normalized lines read as real numbers (owner, 2026-07-17). nil hides it.
+    var peakG: Double? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: theme.metrics.space2) {
@@ -133,15 +138,24 @@ struct ThrMultiLineChart: View {
                         line(for: s.values, in: geo.size)
                             .stroke(s.color, style: .init(lineWidth: 2.5, lineCap: .round, lineJoin: .round))
                     }
+                    // Grams y-axis: top of scale + zero, so the lines have numbers.
+                    if let peakG {
+                        VStack {
+                            axisLabel("\(Int(peakG.rounded())) g")
+                            Spacer()
+                            axisLabel("0")
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
                 }
             }
             .frame(height: 150)
-            // Legend: label + swatch, never color alone (DESIGN.md §5).
+            // Legend: label + swatch (+ optional today value), never color alone.
             FlowRows(items: series.map(\.id)) { id in
                 if let s = series.first(where: { $0.id == id }) {
                     HStack(spacing: theme.metrics.space1) {
                         Circle().fill(s.color).frame(width: 8, height: 8)
-                        Text(s.label)
+                        Text(s.trailingValue.map { "\(s.label) · \($0)" } ?? s.label)
                             .font(theme.typography.caption(11))
                             .foregroundStyle(theme.colors.textPrimary)
                     }
@@ -154,6 +168,14 @@ struct ThrMultiLineChart: View {
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilitySummary)
+    }
+
+    private func axisLabel(_ text: String) -> some View {
+        Text(text)
+            .font(theme.typography.caption(10))
+            .foregroundStyle(theme.colors.textSecondary)
+            .padding(.horizontal, 3)
+            .background(theme.colors.surface.opacity(0.85))
     }
 
     private func line(for values: [Double], in size: CGSize) -> Path {

@@ -106,12 +106,25 @@ struct MealIngestion {
     func recomputeProgression(userId: String) async {
         // Maintain this week's `weekly_summaries` row first (nothing else writes
         // it — streaks, hit-30 history, and the Tier-2 gate all read it), then
-        // run the week-one fiber unlock off the same snapshot.
+        // run the week-one fiber unlock.
         let goal = await goalRow()
-        if let snapshot = await currentWeekSnapshot() {
+        let snapshot = await currentWeekSnapshot()
+        if let snapshot {
             await refreshWeeklySummary(userId: userId, snapshot: snapshot, goalG: goal?.fiberGoalG)
-            await maybeUnlockFiberGoal(userId: userId, goal: goal, snapshot: snapshot)
         }
+        // Fetch summaries AFTER refreshing this week's row (so it's included);
+        // reused by the fiber-goal unlock AND the Tier-2 gate below.
+        let summaries = (try? await repository.select("weekly_summaries") as [WeeklySummaryRow]) ?? []
+        // The baseline quest is met if 30 distinct plants were hit in ANY week —
+        // NOT only the current partial week. Otherwise a user who hits 30 in
+        // week one but eases off in week two never unlocks their goal, even
+        // though the garden (which uses ever-hit-30) already opened for them
+        // (owner audit, 2026-07-17). `hit30` == 30-plant week == the baseline.
+        let baselineEverMet = summaries.contains(where: \.hit30)
+            || (snapshot?.distinctPlantCount ?? 0) >= GameConfig.shared.fiberBaselineQuestPlants
+        await maybeUnlockFiberGoal(userId: userId, goal: goal, snapshot: snapshot,
+                                   baselineEverMet: baselineEverMet)
+
         let guilds = (try? await repository.fetchGuilds()) ?? []
         let districts = (try? await repository.fetchDistricts()) ?? []
         let orderByDistrictId = Dictionary(districts.map { ($0.id, $0.order) }, uniquingKeysWith: { a, _ in a })
@@ -133,8 +146,7 @@ struct MealIngestion {
         // Tier-2 gate (§13): first full week, hit 30 once OR logged on ≥5 days.
         // Count DISTINCT calendar days (by captured_at date), NOT meal count —
         // otherwise 5 meals in a single day would open the garden early for a
-        // brand-new user (2026-07-09 review).
-        let summaries = (try? await repository.select("weekly_summaries") as [WeeklySummaryRow]) ?? []
+        // brand-new user (2026-07-09 review). `summaries` fetched above.
         let mealDays = (try? await repository.select("meals", columns: "captured_at") as [MealDayRow]) ?? []
         let loggedDays = Set(mealDays.map { String($0.capturedAt.prefix(10)) }).count
         let isTier2 = summaries.contains(where: \.hit30) || loggedDays >= GameConfig.shared.tier2MinLoggedDaysFirstWeek
@@ -243,18 +255,18 @@ struct MealIngestion {
 
     // MARK: - Week-one fiber-goal unlock (SPEC §10; Fence 2)
 
-    /// Completing the baseline quest (30 distinct plant foods within the weekly
-    /// window, `GameConfig.fiberBaselineQuestPlants`) sets
-    /// `fiber_goal_state = 'unlocked'` and surfaces the FIRST `fiber_goal_g` — a
-    /// comfortable starting point informed by the observed baseline, never the
-    /// full target on day one (SPEC §10). Idempotent: only fires while the state
-    /// is still 'baseline_pending'.
-    private func maybeUnlockFiberGoal(userId: String, goal: GoalRow?, snapshot: WeekSnapshot) async {
-        guard goal?.fiberGoalState == "baseline_pending",
-              snapshot.distinctPlantCount >= GameConfig.shared.fiberBaselineQuestPlants else { return }
+    /// Completing the baseline quest (30 distinct plant foods in a weekly window,
+    /// `GameConfig.fiberBaselineQuestPlants`, in ANY week — see `baselineEverMet`)
+    /// sets `fiber_goal_state = 'unlocked'` and surfaces the FIRST `fiber_goal_g`
+    /// — a comfortable starting point informed by the observed baseline, never
+    /// the full target on day one (SPEC §10). Idempotent: only fires while the
+    /// state is still 'baseline_pending'.
+    private func maybeUnlockFiberGoal(userId: String, goal: GoalRow?,
+                                      snapshot: WeekSnapshot?, baselineEverMet: Bool) async {
+        guard goal?.fiberGoalState == "baseline_pending", baselineEverMet else { return }
 
         let startingGoal = GuardianEngine.initialFiberGoal(
-            observedDailyFiberG: Array(snapshot.fiberByDay.values),
+            observedDailyFiberG: Array((snapshot?.fiberByDay ?? [:]).values),
             targetG: goal?.fiberTargetG)
         try? await repository.update("users", set: [
             "fiber_goal_g": .int(startingGoal),

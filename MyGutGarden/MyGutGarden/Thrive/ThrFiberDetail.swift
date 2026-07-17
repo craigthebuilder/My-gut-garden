@@ -154,6 +154,22 @@ struct ThrFiberBarsChart: View {
                         .frame(width: barWidth, height: max(3, h))
                         .position(x: slot * (CGFloat(idx) + 0.5), y: geo.size.height - max(3, h) / 2)
                 }
+                // Grams scale: peak at the top, and the goal beside its line.
+                Text("\(Int(top.rounded())) g")
+                    .font(theme.typography.caption(10))
+                    .foregroundStyle(theme.colors.textSecondary)
+                    .padding(.horizontal, 3)
+                    .background(theme.colors.surface.opacity(0.85))
+                    .position(x: 18, y: 8)
+                if let goal = goalG {
+                    let y = geo.size.height * (1 - CGFloat(Double(goal) / top))
+                    Text("goal \(goal)")
+                        .font(theme.typography.caption(10))
+                        .foregroundStyle(theme.colors.accent)
+                        .padding(.horizontal, 3)
+                        .background(theme.colors.surface.opacity(0.85))
+                        .position(x: geo.size.width - 26, y: max(8, y - 8))
+                }
             }
         }
         .frame(height: 110)
@@ -168,9 +184,14 @@ struct ThrFiberBarsChart: View {
     }
 }
 
-// MARK: - The page
+// MARK: - The charts (shared: inline on Today's dashboard + the detail page)
 
-struct ThrFiberDetailView: View {
+/// The fiber charts — today + distance to goal, the 14-day trend, and the
+/// composition split by fermentation speed and by type. Owns its own trend
+/// model so it can be dropped inline (Today, owner 2026-07-17) or in the
+/// detail page. The detail page adds the education cards + the "yourfiber"
+/// tour anchor around this; the inline copy stays anchor-free (one per key).
+struct ThrFiberCharts: View {
     @Environment(\.theme) private var theme
     let appState: AppState
     /// The Today model (goal + today's consumed), shared by reference.
@@ -179,32 +200,25 @@ struct ThrFiberDetailView: View {
     @State private var model = ThrFiberTrendModel()
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: theme.metrics.space4) {
-                todayCard
-                trendCard
-                compositionSpeedCard
-                    .coachTarget("yourfiber")
-                compositionSolubilityCard
-                educationCards
-            }
-            .padding(theme.metrics.space5)
+        VStack(alignment: .leading, spacing: theme.metrics.space4) {
+            todayCard
+            trendCard
+            compositionSpeedCard
+            compositionSolubilityCard
         }
-        .background(theme.colors.background.ignoresSafeArea())
-        .navigationTitle("Your fiber")
-        .navigationBarTitleDisplayMode(.inline)
-        .task {
-            await model.load(appState: appState)
-            await appState.coach.startIfNeeded("yourfiber", appState: appState)
-        }
+        .task { await model.load(appState: appState) }
     }
 
     private var todayCard: some View {
         Card {
             VStack(alignment: .leading, spacing: theme.metrics.space2) {
                 if let goal = homeModel.fiberGoalG {
-                    SectionHeader(title: "Today", trailing: "\(Int(homeModel.fiberConsumedTodayG.rounded())) / \(goal) g")
-                    Text("Directional, from what's visible on your plates. The goal rises gently as it keeps sitting well.")
+                    let consumed = Int(homeModel.fiberConsumedTodayG.rounded())
+                    let toGo = max(0, goal - consumed)
+                    SectionHeader(title: "Today", trailing: "\(consumed) / \(goal) g")
+                    Text(toGo > 0
+                         ? "\(toGo) g to your goal today — directional, from what's visible on your plates. The goal rises gently as it keeps sitting well."
+                         : "Goal reached today — directional, from what's visible on your plates. The goal rises gently as it keeps sitting well.")
                         .font(theme.typography.caption())
                         .foregroundStyle(theme.colors.textSecondary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -241,7 +255,7 @@ struct ThrFiberDetailView: View {
         Card {
             VStack(alignment: .leading, spacing: theme.metrics.space3) {
                 SectionHeader(title: "By fermentation speed")
-                Text("Fast fuel grows the garden quickest — and makes the most gas while your crews scale up.")
+                Text("Different speeds reach different stretches of your gut: fast-fermenting fibers are eaten early (and make the most gas), slower ones travel further to feed the crews deeper down. Variety covers the whole length.")
                     .font(theme.typography.caption())
                     .foregroundStyle(theme.colors.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -257,7 +271,7 @@ struct ThrFiberDetailView: View {
                         DotBand(level: GameConfig.shared.fastFermentBandLevel(dayG: todayFastG),
                                 label: GameConfig.shared.fastFermentBandLabel(dayG: todayFastG))
                     }
-                    ThrMultiLineChart(series: speedSeries)
+                    ThrMultiLineChart(series: speedSeries, peakG: model.chartMax)
                 } else {
                     ProgressView().frame(maxWidth: .infinity)
                 }
@@ -274,7 +288,7 @@ struct ThrFiberDetailView: View {
                     .foregroundStyle(theme.colors.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
                 if model.isLoaded {
-                    ThrMultiLineChart(series: solubilitySeries)
+                    ThrMultiLineChart(series: solubilitySeries, peakG: model.chartMax)
                 } else {
                     ProgressView().frame(maxWidth: .infinity)
                 }
@@ -290,26 +304,62 @@ struct ThrFiberDetailView: View {
     /// the 5-dot band, never a number).
     private var todayFastG: Double { model.bySpeed["high"]?.last ?? 0 }
 
+    /// "N g today" for a series' most recent day, or nil if there's nothing yet.
+    private func todayLabel(_ values: [Double]?) -> String? {
+        guard let g = values?.last, g > 0 else { return nil }
+        return "\(Int(g.rounded())) g today"
+    }
+
     private var speedSeries: [ThrTrendSeries] {
         [
             ThrTrendSeries(id: "high", label: "Fast-fermenting", color: theme.colors.accent,
-                           values: normalized(model.bySpeed["high"] ?? [])),
+                           values: normalized(model.bySpeed["high"] ?? []),
+                           trailingValue: todayLabel(model.bySpeed["high"])),
             ThrTrendSeries(id: "moderate", label: "Moderate", color: theme.colors.primary,
-                           values: normalized(model.bySpeed["moderate"] ?? [])),
+                           values: normalized(model.bySpeed["moderate"] ?? []),
+                           trailingValue: todayLabel(model.bySpeed["moderate"])),
             ThrTrendSeries(id: "low", label: "Gentle", color: theme.colors.secondary,
-                           values: normalized(model.bySpeed["low"] ?? [])),
+                           values: normalized(model.bySpeed["low"] ?? []),
+                           trailingValue: todayLabel(model.bySpeed["low"])),
         ]
     }
 
     private var solubilitySeries: [ThrTrendSeries] {
         [
             ThrTrendSeries(id: "soluble", label: "Soluble", color: theme.colors.primary,
-                           values: normalized(model.bySolubility["soluble"] ?? [])),
+                           values: normalized(model.bySolubility["soluble"] ?? []),
+                           trailingValue: todayLabel(model.bySolubility["soluble"])),
             ThrTrendSeries(id: "insoluble", label: "Insoluble", color: theme.colors.secondary,
-                           values: normalized(model.bySolubility["insoluble"] ?? [])),
+                           values: normalized(model.bySolubility["insoluble"] ?? []),
+                           trailingValue: todayLabel(model.bySolubility["insoluble"])),
             ThrTrendSeries(id: "resistant", label: "Resistant starch", color: theme.colors.accent,
-                           values: normalized(model.bySolubility["resistant"] ?? [])),
+                           values: normalized(model.bySolubility["resistant"] ?? []),
+                           trailingValue: todayLabel(model.bySolubility["resistant"])),
         ]
+    }
+
+}
+
+// MARK: - The detail page (charts + education + the "yourfiber" tour)
+
+struct ThrFiberDetailView: View {
+    @Environment(\.theme) private var theme
+    let appState: AppState
+    let homeModel: ThrHomeModel
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: theme.metrics.space4) {
+                ThrFiberCharts(appState: appState, homeModel: homeModel)
+                    .coachTarget("yourfiber")
+                educationCards
+            }
+            .padding(theme.metrics.space5)
+        }
+        .background(theme.colors.background.ignoresSafeArea())
+        .navigationTitle("Your fiber")
+        .navigationBarTitleDisplayMode(.inline)
+        .task { await appState.coach.startIfNeeded("yourfiber", appState: appState) }
     }
 
     // MARK: Education (curated, rule #11; 🔒 Fence 2/4 RD-REVIEW-REQUIRED).
@@ -317,7 +367,7 @@ struct ThrFiberDetailView: View {
 
     private static let education: [(title: String, body: String, icon: String)] = [
         ("Fast fibers, slow fibers",
-         "Fast-fermenting fibers — onions, garlic, beans, chicory — get devoured by your microbes within hours (they're what clinicians call FODMAPs). Slower fibers burn all day. Fast fuel grows the garden quickest, and makes the most gas while your crews scale up. Neither is bad; they're different speeds of the same good thing.",
+         "Fast-fermenting fibers — onions, garlic, beans, chicory — get eaten within hours, near the start of the colon (they're what clinicians call FODMAPs, and they make the most gas). Slower fibers travel further and feed the crews deeper down, toward the end of the colon that's often under-fed. It's not that one grows more — different speeds reach different stretches of your gut, so variety feeds the whole length.",
          "wind"),
         ("Gas is a signal, not a failure",
          "Fermentation IS the process working — gas means your microbes are eating. The question is only how much is comfortable for you. Your gas-comfort setting (in You) tunes how fast we nudge you upward; change it any time.",
