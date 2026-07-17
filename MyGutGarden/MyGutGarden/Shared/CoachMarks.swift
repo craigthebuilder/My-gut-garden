@@ -139,7 +139,7 @@ struct CoachMarkOverlay: View {
             // status area but NOT the tab bar, so a user can still switch tabs
             // during a tour instead of feeling frozen (the shell ends the tour
             // when they navigate away). 2026-07-10.
-            .padding(.bottom, 90)
+            .padding(.bottom, theme.metrics.tabBarClearance)
             .ignoresSafeArea(edges: [.top, .horizontal])
             .transition(reduceMotion ? .identity : .opacity)
             .onAppear { if let hint = step.targetHint { onNavigate?(hint) } }

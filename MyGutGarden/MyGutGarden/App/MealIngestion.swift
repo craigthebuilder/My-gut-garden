@@ -76,6 +76,12 @@ struct MealIngestion {
                 points: pts,
                 at: feedingDate
             )
+            // The marquee modal fires ONCE per guild — its first-ever bloom
+            // (judged on the PERSISTED flag, before this write). A re-bloom
+            // after a fade still shows ambiently (map pulse, bloom meter,
+            // "Replay the bloom") but never re-modals (owner, 2026-07-17:
+            // celebrations show once).
+            let firstEverBloom = outcome.crossedIntoBlooming && !(row?.hasEverBloomed ?? false)
             let everBloomed = (row?.hasEverBloomed ?? false) || outcome.crossedIntoBlooming || outcome.state == .blooming
             try? await repository.upsert("guild_state", [
                 "user_id": .string(userId),
@@ -87,7 +93,7 @@ struct MealIngestion {
                 "has_ever_bloomed": .bool(everBloomed),
             ], onConflict: "user_id,guild_id")
 
-            if outcome.crossedIntoBlooming, let name = nameByInternal[internalName] {
+            if firstEverBloom, let name = nameByInternal[internalName] {
                 appState.celebrate(.guildBloom(displayName: name))
             }
         }
@@ -137,8 +143,12 @@ struct MealIngestion {
         var unlocked = Set<Int>()
         if isTier2 {
             unlocked = GuildIngestor().unlockedDistrictOrders(snapshots: snapshots, cumulativeTier2Days: cumulativeTier2Days)
-            // Persist + celebrate any newly opened districts.
-            let previously = appState.progression.unlockedDistrictOrders
+            // Persist + celebrate any newly opened districts. "New" is judged
+            // against the PERSISTED user_districts rows — never in-memory
+            // progression, which is empty at launch and re-celebrated every
+            // already-unlocked district on every app open (owner, 2026-07-17).
+            let persisted: [UserDistrictRow] = (try? await repository.select("user_districts")) ?? []
+            let alreadyUnlockedIds = Set(persisted.map(\.districtId))
             for order in unlocked {
                 guard let district = districts.first(where: { $0.order == order }) else { continue }
                 try? await repository.upsert("user_districts", [
@@ -146,7 +156,7 @@ struct MealIngestion {
                     "district_id": .string(district.id),
                     "unlocked_at": .date(Date()),
                 ], onConflict: "user_id,district_id", ignoreDuplicates: true)
-                if !previously.contains(order) {
+                if !alreadyUnlockedIds.contains(district.id) {
                     appState.celebrate(.districtUnlock(name: district.name))
                 }
             }

@@ -105,17 +105,23 @@ private struct ShellHome: View {
                     }
                 })
             }
+            // All three shell modals stop above the tab bar (tabBarClearance):
+            // a tap on a tab must always switch tabs, never silently dismiss a
+            // scrim instead (owner, 2026-07-17: "bug when I click the You tab").
             if let event = appState.pendingCelebration {
                 celebration(for: event)
+                    .padding(.bottom, theme.metrics.tabBarClearance)
             }
             // A calm, user-confirmed guardian prompt (fiber-increase offer, flag
             // suggestion, care prompt). SEPARATE from celebrations (SPEC §11).
             if let prompt = appState.pendingGuardianPrompt {
                 guardianPrompt(prompt)
+                    .padding(.bottom, theme.metrics.tabBarClearance)
             }
             // The soft daily "did you feel okay yesterday?" pop-up (SPEC §12).
             if let offer = appState.pendingDailyCheckIn {
                 dailyCheckIn(offer)
+                    .padding(.bottom, theme.metrics.tabBarClearance)
             }
         }
         .tint(theme.colors.primary)

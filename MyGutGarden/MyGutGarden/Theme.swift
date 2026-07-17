@@ -94,6 +94,12 @@ struct ThemeMetrics {
     // Elevation, TODO(owner).
     let shadowRadius: CGFloat = 12
     let shadowOpacity: Double = 0.10
+
+    // Shell overlays (coach dim, celebration, guardian + check-in scrims) stop
+    // this far above the screen bottom so the tab bar stays visible and
+    // tappable — navigation must never feel frozen behind a modal
+    // (owner reports 2026-07-10 "Garden freezes" + 2026-07-17 "You tab").
+    let tabBarClearance: CGFloat = 90
 }
 
 // MARK: - The theme  (TODO(owner): replace placeholder hexes)
