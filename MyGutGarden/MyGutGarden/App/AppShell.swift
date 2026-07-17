@@ -406,6 +406,7 @@ private struct ShellSettings: View {
     @State private var showCheckIn = false
     @State private var showCustomize = false
     @State private var showBadges = false
+    @State private var showGasComfort = false
 
     var body: some View {
         ScrollView {
@@ -459,28 +460,16 @@ private struct ShellSettings: View {
         .sheet(isPresented: $showBadges) { YouBadgesView(appState: appState) }
     }
 
-    /// SPEC §17: the gas-for-growth dial. Whole row is the menu; a preference,
-    /// never a symptom score. Tunes ramp speed + guardian thresholds.
+    /// SPEC §17: the gas-for-growth dial. Whole row opens the picker; a
+    /// preference, never a symptom score. Tunes ramp speed + guardian
+    /// thresholds. Button + confirmationDialog, NOT a Menu: on iOS 26 a Menu
+    /// whose label carries full-width chrome wedges SwiftUI's AttributeGraph
+    /// on re-render — a permanent 100%-CPU main-thread freeze (owner report
+    /// 2026-07-17 "the app freezes"; caught live via `sample`, all frames in
+    /// the Menu label closure).
     private var gasComfortRow: some View {
         let current = appState.profile?.gasComfort.flatMap(GasComfort.init(rawValue:)) ?? .balanced
-        return Menu {
-            ForEach(GasComfort.allCases, id: \.self) { option in
-                Button {
-                    Task {
-                        guard let repo = appState.repository, let id = appState.profile?.id else { return }
-                        try? await repo.update("users", set: ["gas_comfort": .string(option.rawValue)],
-                                               filters: ["id": "eq.\(id)"])
-                        await appState.refreshProfile()
-                    }
-                } label: {
-                    if option == current {
-                        Label("\(option.label) — \(option.explainer)", systemImage: "checkmark")
-                    } else {
-                        Text("\(option.label) — \(option.explainer)")
-                    }
-                }
-            }
-        } label: {
+        return Button { showGasComfort = true } label: {
             HStack(spacing: theme.metrics.space2) {
                 Image(systemName: "wind")
                 Text("Gas comfort: \(current.label)")
@@ -501,8 +490,25 @@ private struct ShellSettings: View {
                     .strokeBorder(theme.colors.primary.opacity(0.4), lineWidth: 1)
             )
         }
+        .buttonStyle(.plain)
+        .confirmationDialog("Gas comfort", isPresented: $showGasComfort, titleVisibility: .visible) {
+            ForEach(GasComfort.allCases, id: \.self) { option in
+                Button(option == current
+                       ? "\(option.label) — \(option.explainer) ✓"
+                       : "\(option.label) — \(option.explainer)") {
+                    Task { await setGasComfort(option) }
+                }
+            }
+        }
         .accessibilityLabel("Gas comfort")
         .accessibilityValue(current.label)
+    }
+
+    private func setGasComfort(_ option: GasComfort) async {
+        guard let repo = appState.repository, let id = appState.profile?.id else { return }
+        try? await repo.update("users", set: ["gas_comfort": .string(option.rawValue)],
+                               filters: ["id": "eq.\(id)"])
+        await appState.refreshProfile()
     }
 }
 

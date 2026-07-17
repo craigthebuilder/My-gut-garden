@@ -45,12 +45,21 @@ final class MggYouStressTest: XCTestCase {
         youTab.tap()
         XCTAssertTrue(app.buttons["Sign out"].waitForExistence(timeout: 8), "You page did not open")
 
-        // 1. Daily check-in sheet: open, wait for content, close.
-        app.buttons["Daily check-in"].tap()
-        XCTAssertTrue(app.buttons["Close"].waitForExistence(timeout: 8), "check-in sheet did not open")
+        // 1. Daily check-in sheet: open, wait for content, close. A guardian
+        //    prompt can pop over the page seconds after the answered check-in —
+        //    tap-outside clears it, then retry until the sheet is up.
+        let daily = app.buttons["Daily check-in"].firstMatch
+        let sheetClose = app.buttons["Close"].firstMatch
+        for _ in 0..<8 {
+            if sheetClose.exists { break }
+            app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.06)).tap()
+            if daily.isHittable { daily.tap() }
+            sleep(1)
+        }
+        XCTAssertTrue(sheetClose.waitForExistence(timeout: 6), "check-in sheet did not open")
         sleep(2)                       // let its .task (prefs + meals) run
-        XCTAssertTrue(app.buttons["Close"].isHittable, "check-in sheet froze")
-        app.buttons["Close"].tap()
+        XCTAssertTrue(sheetClose.isHittable, "check-in sheet froze")
+        sheetClose.tap()
 
         // 2. Customize check-in: open + close.
         app.buttons["Customize check-in"].tap()
@@ -62,14 +71,22 @@ final class MggYouStressTest: XCTestCase {
             app.swipeDown()            // dismiss if still presented
         }
 
-        // 3. Gas comfort menu: open it and pick the current value again.
+        // 3. Gas comfort: the dialog must open (retry through any sheet-dismiss
+        //    animation), then re-pick the current value (✓ — no state change).
+        //    Note: iOS 26 shows this dialog with NO automatic Cancel button.
         let gas = app.buttons["Gas comfort"].firstMatch
-        if gas.exists {
-            gas.tap()
+        let gasDialog = app.sheets["Gas comfort"]
+        XCTAssertTrue(gas.waitForExistence(timeout: 6), "gas-comfort row missing")
+        for _ in 0..<8 {
+            if gasDialog.exists { break }
+            if gas.isHittable { gas.tap() }
             sleep(1)
-            let first = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'balanced'")).firstMatch
-            if first.exists { first.tap() } else { app.tap() }
         }
+        XCTAssertTrue(gasDialog.waitForExistence(timeout: 4), "gas-comfort dialog did not open")
+        let currentOption = app.buttons.matching(NSPredicate(format: "label CONTAINS '✓'")).firstMatch
+        XCTAssertTrue(currentOption.waitForExistence(timeout: 4), "no ✓-marked current option in dialog")
+        currentOption.tap()
+        usleep(600_000)
 
         // 4. Badges: open + close.
         XCTAssertTrue(app.buttons["Badges"].waitForExistence(timeout: 6), "You page lost after menu")
