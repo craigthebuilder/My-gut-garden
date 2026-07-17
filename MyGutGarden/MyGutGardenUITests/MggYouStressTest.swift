@@ -74,7 +74,7 @@ final class MggYouStressTest: XCTestCase {
         // 3. Gas comfort: the dialog must open (retry through any sheet-dismiss
         //    animation), then re-pick the current value (✓ — no state change).
         //    Note: iOS 26 shows this dialog with NO automatic Cancel button.
-        let gas = app.buttons["Gas comfort"].firstMatch
+        let gas = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Gas comfort'")).firstMatch
         let gasDialog = app.sheets["Gas comfort"]
         XCTAssertTrue(gas.waitForExistence(timeout: 6), "gas-comfort row missing")
         for _ in 0..<8 {

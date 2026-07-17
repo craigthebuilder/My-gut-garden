@@ -435,7 +435,9 @@ private struct ShellSettings: View {
                         SecondaryButton(title: "Customize check-in", systemImage: "slider.horizontal.3") {
                             showCustomize = true
                         }
-                        gasComfortRow
+                        SecondaryButton(title: "Gas comfort: \(currentGasComfort.label)", systemImage: "wind") {
+                            showGasComfort = true
+                        }
                         SecondaryButton(title: "Badges", systemImage: "rosette") {
                             showBadges = true
                         }
@@ -458,50 +460,26 @@ private struct ShellSettings: View {
         .sheet(isPresented: $showCheckIn) { ThrCheckInLogView(appState: appState) }
         .sheet(isPresented: $showCustomize) { YouCheckInPrefsSheet(appState: appState) { showCustomize = false } }
         .sheet(isPresented: $showBadges) { YouBadgesView(appState: appState) }
-    }
-
-    /// SPEC §17: the gas-for-growth dial. Whole row opens the picker; a
-    /// preference, never a symptom score. Tunes ramp speed + guardian
-    /// thresholds. Button + confirmationDialog, NOT a Menu: on iOS 26 a Menu
-    /// whose label carries full-width chrome wedges SwiftUI's AttributeGraph
-    /// on re-render — a permanent 100%-CPU main-thread freeze (owner report
-    /// 2026-07-17 "the app freezes"; caught live via `sample`, all frames in
-    /// the Menu label closure).
-    private var gasComfortRow: some View {
-        let current = appState.profile?.gasComfort.flatMap(GasComfort.init(rawValue:)) ?? .balanced
-        return Button { showGasComfort = true } label: {
-            HStack(spacing: theme.metrics.space2) {
-                Image(systemName: "wind")
-                Text("Gas comfort: \(current.label)")
-                    .font(theme.typography.body(weight: .medium))
-                Spacer()
-                Image(systemName: "chevron.up.chevron.down")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(theme.colors.textSecondary)
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.horizontal, theme.metrics.space4)
-            .padding(.vertical, theme.metrics.space3)
-            .foregroundStyle(theme.colors.primary)
-            .background(theme.colors.surface)
-            .clipShape(RoundedRectangle(cornerRadius: theme.metrics.radiusMedium, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: theme.metrics.radiusMedium, style: .continuous)
-                    .strokeBorder(theme.colors.primary.opacity(0.4), lineWidth: 1)
-            )
-        }
-        .buttonStyle(.plain)
+        // SPEC §17: the gas-for-growth dial — a preference, never a symptom
+        // score. Presented from the CONTAINER, and the row is a stock
+        // SecondaryButton: two bespoke versions of this row (a Menu, then a
+        // Button, each with full-width chrome INSIDE the label) wedged
+        // SwiftUI's AttributeGraph on iOS 26 into a permanent main-thread
+        // freeze (owner reports 2026-07-17; both `sample`d live, all frames
+        // flooring in this row). Keep it identical to its sibling rows.
         .confirmationDialog("Gas comfort", isPresented: $showGasComfort, titleVisibility: .visible) {
             ForEach(GasComfort.allCases, id: \.self) { option in
-                Button(option == current
+                Button(option == currentGasComfort
                        ? "\(option.label) — \(option.explainer) ✓"
                        : "\(option.label) — \(option.explainer)") {
                     Task { await setGasComfort(option) }
                 }
             }
         }
-        .accessibilityLabel("Gas comfort")
-        .accessibilityValue(current.label)
+    }
+
+    private var currentGasComfort: GasComfort {
+        appState.profile?.gasComfort.flatMap(GasComfort.init(rawValue:)) ?? .balanced
     }
 
     private func setGasComfort(_ option: GasComfort) async {
