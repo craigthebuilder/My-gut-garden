@@ -204,6 +204,32 @@ struct ThrDashboardDetailView: View {
                         }
                     }
                 }
+                // Your fiber — the goal + the two-week charts live in the
+                // dashboard now, above "To grow today" (owner, 2026-07-17).
+                // "Learn more" opens the education page.
+                VStack(alignment: .leading, spacing: theme.metrics.space3) {
+                    NavigationLink {
+                        ThrFiberDetailView(appState: appState, homeModel: model)
+                    } label: {
+                        HStack(spacing: theme.metrics.space1) {
+                            SectionHeader(title: "Your fiber")
+                            if model.fiberGoalG == nil {
+                                Image(systemName: "lock.fill")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(theme.colors.textSecondary)
+                            }
+                            Spacer(minLength: 0)
+                            Text("Learn more")
+                                .font(theme.typography.caption(weight: .semibold))
+                                .foregroundStyle(theme.colors.textSecondary)
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundStyle(theme.colors.textSecondary)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    ThrFiberCharts(appState: appState, homeModel: model)
+                }
                 Card {
                     VStack(alignment: .leading, spacing: theme.metrics.space3) {
                         SectionHeader(title: "To grow today")

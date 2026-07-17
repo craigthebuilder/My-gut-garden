@@ -42,9 +42,9 @@ struct ThrRootView: View {
                         dashboardSection
                             .coachTarget("dashboard")
                             .id("dashboard")
-                        fiberSection            // charts inline under the dashboard (owner, 2026-07-17)
-                            .coachTarget("fiber")
-                            .id("fiber")
+                        // Fiber moved INTO the dashboard detail page (owner,
+                        // 2026-07-17). The intro "fiber" step now has no Today
+                        // anchor and its card centers gracefully.
                         dailyCheckInButton      // right under the dashboard (owner, 2026-07-10)
                         recipeSection
                             .coachTarget("trythis")
@@ -120,41 +120,6 @@ struct ThrRootView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    // MARK: - Your fiber (the charts, inline under the dashboard — owner 2026-07-17)
-
-    /// The fiber section: a titled row (tap → "Your fiber" education page) plus
-    /// the charts inline. Pre-unlock it still shows the "goal is coming" card and
-    /// the two-week composition so the surface isn't empty (SPEC §17). Hidden
-    /// only until Today's model has loaded, to avoid a flash of empty cards.
-    @ViewBuilder private var fiberSection: some View {
-        if model.isLoaded {
-            VStack(alignment: .leading, spacing: theme.metrics.space3) {
-                NavigationLink {
-                    ThrFiberDetailView(appState: appState, homeModel: model)
-                } label: {
-                    HStack(spacing: theme.metrics.space1) {
-                        SectionHeader(title: "Your fiber")
-                        if model.fiberGoalG == nil {
-                            Image(systemName: "lock.fill")
-                                .font(.system(size: 11))
-                                .foregroundStyle(theme.colors.textSecondary)
-                        }
-                        Spacer(minLength: 0)
-                        Text("Learn more")
-                            .font(theme.typography.caption(weight: .semibold))
-                            .foregroundStyle(theme.colors.textSecondary)
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundStyle(theme.colors.textSecondary)
-                    }
-                }
-                .buttonStyle(.plain)
-                ThrFiberCharts(appState: appState, homeModel: model)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-        }
     }
 
     private func scrollToCoachTarget(_ hint: String?, proxy: ScrollViewProxy) {
@@ -292,28 +257,8 @@ struct ThrRootView: View {
         VStack(spacing: theme.metrics.space4) {
             Card {
                 VStack(spacing: theme.metrics.space2) {
-                    // Tab routes: these go straight to the tab, never a pushed copy.
-                    Button {
-                        onSwitchTab?(.fieldGuide)
-                    } label: {
-                        ThrNavRow(icon: "books.vertical.fill", title: "Field guide",
-                                  subtitle: "Plants, rainbow, phytochemicals, fermented finds")
-                    }
-                    .buttonStyle(.plain)
-                    Divider().overlay(theme.colors.divider)
-                    if appState.progression.isTier2Unlocked {
-                        Button {
-                            onSwitchTab?(.garden)
-                        } label: {
-                            ThrNavRow(icon: "map", title: "Garden",
-                                      subtitle: "The microbiome worlds you're growing")
-                        }
-                        .buttonStyle(.plain)
-                    } else {
-                        ThrNavRow(icon: "map", title: "Garden",
-                                  subtitle: "Unlocks after your first full week", locked: true)
-                    }
-                    Divider().overlay(theme.colors.divider)
+                    // Field guide + Garden are their own tabs — removed from the
+                    // Today explore list to avoid redundancy (owner, 2026-07-17).
                     NavigationLink {
                         ThrRainbowPokedexView(appState: appState, latestMeal: latestMeal)
                     } label: {

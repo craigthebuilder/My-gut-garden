@@ -35,20 +35,43 @@ final class MggFiberUnlockTest: XCTestCase {
         let shot1 = XCTAttachment(screenshot: app.screenshot())
         shot1.name = "after-signin"; shot1.lifetime = .keepAlways; add(shot1)
 
-        // Dismiss any celebration so it doesn't cover the page.
-        for label in ["Lovely", "Close"] {
-            if app.buttons[label].waitForExistence(timeout: 3) { app.buttons[label].firstMatch.tap(); break }
+        // Fiber moved OFF Today into the dashboard detail (owner, 2026-07-17);
+        // Field guide + Garden explore rows were removed too. (Absence checks —
+        // unaffected by any covering scrim.)
+        XCTAssertFalse(app.staticTexts["Your fiber"].waitForExistence(timeout: 3),
+                       "'Your fiber' should no longer be on the Today page")
+        XCTAssertFalse(app.buttons["Field guide"].exists,
+                       "'Field guide' explore row should be gone from Today")
+
+        // Open the dashboard detail (the "Your dashboard" hero card). A launch
+        // pop-up (daily check-in / celebration / guardian — all dismiss on a tap
+        // outside their card) can appear a beat after launch and cover the card,
+        // so interleave tap-outside with the tap until the detail opens.
+        let dashBtn = app.buttons["Your dashboard"].firstMatch
+        for _ in 0..<14 {
+            if app.navigationBars["Your dashboard"].exists { break }
+            // Clear a launch overlay via its own button first (answering the
+            // check-in / accepting a celebration / declining a guardian nudge),
+            // then, once clear, open the dashboard.
+            var acted = false
+            for label in ["Great", "Lovely", "Keep my pace", "Not now", "Not yet", "Got it"] {
+                if app.buttons[label].exists { app.buttons[label].firstMatch.tap(); acted = true; break }
+            }
+            if !acted { if dashBtn.isHittable { dashBtn.tap() } }
+            usleep(500_000)
         }
+        XCTAssertTrue(app.navigationBars["Your dashboard"].waitForExistence(timeout: 8),
+                      "did not open the dashboard detail")
 
         // DURABLE assertion (order-independent): ui-test is a veteran who hit 30
-        // in a past week, so the goal MUST be unlocked — the Today fiber section
-        // must NOT show the locked "Your goal is coming" state. If the ever-hit-30
-        // unlock regressed, a veteran stays baseline_pending and this fails.
+        // in a past week, so the goal MUST be unlocked — the dashboard's fiber
+        // section must NOT show the locked "Your goal is coming" state. If the
+        // ever-hit-30 unlock regressed, a veteran stays baseline_pending → fails.
         XCTAssertTrue(app.staticTexts["Your fiber"].waitForExistence(timeout: 8),
-                      "Today did not show the inline 'Your fiber' section")
+                      "dashboard did not show the 'Your fiber' section")
         XCTAssertFalse(app.staticTexts["Your goal is coming"].waitForExistence(timeout: 4),
                        "fiber goal still locked for a user who already hit 30 in a past week")
         let shot2 = XCTAttachment(screenshot: app.screenshot())
-        shot2.name = "today-fiber-section"; shot2.lifetime = .keepAlways; add(shot2)
+        shot2.name = "dashboard-fiber-section"; shot2.lifetime = .keepAlways; add(shot2)
     }
 }

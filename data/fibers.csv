@@ -10,8 +10,8 @@ name|is_fodmap_trigger|fermentability|solubility|notes
 inulin|true|high|soluble|Fructan. Top bacterial fuel AND classic IBS trigger. Chicory, jerusalem artichoke, onion, garlic.
 fos|true|high|soluble|Fructo-oligosaccharide; shorter-chain fructan, distinct from inulin. Onion, garlic, asparagus.
 gos|true|high|soluble|Galacto-oligosaccharide. Legumes and some dairy. A FODMAP trigger.
-rs2|false|moderate|resistant|Resistant starch, native granular form. Green banana, raw potato starch, legumes.
-rs3|false|moderate|resistant|Retrograded resistant starch, formed when cooked starch is cooled. Cooled rice and potato.
+rs2|false|low|resistant|Resistant starch, native granular form. Green banana, raw potato starch, legumes. Slow, distal fermentation (reaches the deep/under-fed colon) — hence "gentle" on the speed axis.
+rs3|false|low|resistant|Retrograded resistant starch, formed when cooked starch is cooled. Cooled rice and potato. Slow, distal fermentation — "gentle" on the speed axis.
 pectin|false|moderate|soluble|Soluble, gentle, gel-forming. Apple, citrus, carrot. Feeds butyrate producers.
 beta_glucan|false|moderate|soluble|Soluble fiber of oats, barley and mushrooms. Feeds propionate producers; lowers cholesterol.
 arabinoxylan|false|moderate|insoluble|Major fiber of whole wheat, rye and bran. Commonly overlooked; feeds Base Layer and Appetite Crew.
