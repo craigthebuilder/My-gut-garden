@@ -15,6 +15,7 @@ final class MggPlantTourTest: XCTestCase {
 
     func testPlantTourFromToday() throws {
         let app = XCUIApplication()
+        app.launchArguments += ["--mgg-reset-auth"]
         app.launch()
 
         let email = app.textFields["Email"]

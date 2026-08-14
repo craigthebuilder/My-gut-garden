@@ -123,6 +123,10 @@ struct ThrMealPhoto: View {
             }
         }
         .task(id: photoUrl) {
+            // Recycled cells keep @State: without a reset a reused cell shows
+            // the PREVIOUS meal's photo (or its failure) while the new one loads.
+            image = nil
+            failed = false
             guard let photoUrl else { return }
             if let loaded = await ThrMealPhotoLoader.shared.load(photoUrl, auth: appState.auth) {
                 image = loaded
@@ -178,7 +182,7 @@ final class ThrMealPhotoLoader {
         var req = URLRequest(url: url)
         req.setValue(SupabaseConfig.anonKey, forHTTPHeaderField: "apikey")
         req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        guard let (data, resp) = try? await URLSession.shared.data(for: req),
+        guard let (data, resp) = try? await SupabaseHTTP.session.data(for: req),
               let http = resp as? HTTPURLResponse else { return (nil, 0) }
         guard (200..<300).contains(http.statusCode), let image = UIImage(data: data) else {
             return (nil, http.statusCode)

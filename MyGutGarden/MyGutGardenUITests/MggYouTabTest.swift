@@ -17,6 +17,7 @@ final class MggYouTabTest: XCTestCase {
 
     func testNoRepeatUnlockCelebrationAndYouTabOpens() throws {
         let app = XCUIApplication()
+        app.launchArguments += ["--mgg-reset-auth"]
         app.launch()
 
         let email = app.textFields["Email"]

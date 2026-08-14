@@ -42,11 +42,11 @@ enum GuildSampleData {
 
     static let guilds: [GuildRow] = [
         // ---- District 1, The Backbone District -----------------------------
-        guild("anti_inflammatory_arsenal", "d1", "The Anti-inflammatory Arsenal", "solid",
-              fn: "A plant-powered defense squad that helps calm irritation and keep the gut environment soothed.",
+        guild("anti_inflammatory_arsenal", "d1", "The Lining Keepers", "solid",
+              fn: "Butyrate makers that fuel the gut lining — the backbone crew of a well-fed garden.",
               feeds: "resistant starch"),
         guild("appetite_crew", "d1", "The Appetite Crew", "solid",
-              fn: "Keeps you satisfied and your blood sugar steady by turning fiber into fuel.",
+              fn: "Turns fiber into fuel, studied for its role in feeling satisfied after meals.",
               feeds: "oats and barley"),
         guild("base_layer", "d1", "The Base Layer", "solid",
               fn: "A sturdy barrier builder that reinforces the gut lining and feeds everyone else.",
@@ -67,32 +67,32 @@ enum GuildSampleData {
         guild("vitamin_lab", "d3", "The Vitamin Lab", "solid",
               fn: "A micro-factory that helps make vitamins, this is where your 30 plants pay off.",
               feeds: "as much plant variety as you can"),
-        // 🔒 Fence 2, claim_risk
-        guild("mood_regulators", "d3", "The Mood Regulators", "frontier",
-              fn: "Makes neuroactive compounds along the gut–brain axis.",
+        // 🔒 Fence 1, claim_risk (renamed 2026-08-13 — de-claimed names for launch)
+        guild("mood_regulators", "d3", "The Messengers", "frontier",
+              fn: "Makes signal molecules that travel the gut–brain axis.",
               feeds: "oats, seeds and soy",
               claimRisk: true,
               substantiation: "Real research field; food→mood causality is unproven. // RD-REVIEW-REQUIRED"),
 
         // ---- District 4, The Hidden Gems (personal traits) -----------------
-        // 🔒 Fence 2, claim_risk
-        guild("estrogen_regulators", "d4", "The Estrogen Regulators", "emerging",
-              fn: "A graceful specialist that helps process and recycle estrogen, a trait roughly 1 in 3 people host.",
+        // 🔒 Fence 1, claim_risk
+        guild("estrogen_regulators", "d4", "The Alchemists", "emerging",
+              fn: "A rare specialist crew — roughly 1 in 3 people host them — that transmutes soy compounds into equol.",
               feeds: "soy foods",
               claimRisk: true,
               substantiation: "Equol-producer trait; confirmable only by a urine test after a challenge. // RD-REVIEW-REQUIRED"),
-        // 🔒 Fence 2, claim_risk
-        guild("mitochondria_boosters", "d4", "The Mitochondria Boosters", "emerging",
+        // 🔒 Fence 1, claim_risk
+        guild("mitochondria_boosters", "d4", "The Spark Tenders", "emerging",
               fn: "Turns certain fruits into compounds studied for cellular energy.",
               feeds: "pomegranate, walnuts or berries",
               claimRisk: true,
               substantiation: "Urolithin metabotype; early human trials only. // RD-REVIEW-REQUIRED"),
-        // 🔒 Fence 2, claim_risk
-        guild("tumor_preventors", "d4", "The Tumor Preventors", "associational",
-              fn: "Converts seed lignans into compounds of hormonal and cardiovascular interest.",
+        // 🔒 Fence 1, claim_risk
+        guild("tumor_preventors", "d4", "The Lignan Weavers", "associational",
+              fn: "Weaves seed lignans into enterolignans, a much-studied gut transformation.",
               feeds: "flax, sesame or rye",
               claimRisk: true,
-              substantiation: "Associational only, NOT proven prevention; heavily scrutinized claim. // RD-REVIEW-REQUIRED"),
+              substantiation: "Associational only; all outcome language kept out of copy. // RD-REVIEW-REQUIRED"),
         guild("stone_breakers", "d4", "The Stone Breakers", "solid",
               fn: "A niche crew that breaks down oxalate, matters most for kidney-stone formers.",
               feeds: "a varied plant diet"),

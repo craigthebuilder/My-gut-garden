@@ -16,10 +16,14 @@ struct GuildContentTests {
     @Test func collectibleNumberingMatchesReferenceCards() {
         let numbers = GuildGardenAssembler.numbering(districts: GuildSampleData.districts,
                                                      guilds: GuildSampleData.guilds)
-        // From the reference images (district order, then alphabetical sans "The"):
-        #expect(numbers["anti_inflammatory_arsenal"] == 1) // double-click-into-the-anti-inflammatory-arsenal
-        #expect(numbers["base_layer"] == 3)                // double-click-into-the-base-layer (badge "3")
-        #expect(numbers["estrogen_regulators"] == 9)       // double-click-into-the-estrogen-regulators (badge "9")
+        // District order, then alphabetical sans "The". The 2026-08-13
+        // de-claiming renames re-alphabetized district 1: Appetite Crew,
+        // Base Layer, Lining Keepers (né Anti-inflammatory Arsenal),
+        // Recycling Engine.
+        #expect(numbers["appetite_crew"] == 1)
+        #expect(numbers["base_layer"] == 2)
+        #expect(numbers["anti_inflammatory_arsenal"] == 3) // "The Lining Keepers"
+        #expect(numbers["estrogen_regulators"] == 9)       // "The Alchemists"
     }
 
     @Test func numberingIsContiguousAcrossWholeRoster() {
@@ -72,11 +76,11 @@ struct GuildContentTests {
         // Owner (2026-07-02): the visible emerging-science disclaimer is retired
         // app-wide, pushes included. claim_risk stays in the data as the
         // RD-review ledger (FENCES.md Fence 1) but must not alter user copy.
-        let hungry = GuildNotifications.hungry(displayName: "The Mood Regulators",
+        let hungry = GuildNotifications.hungry(displayName: "The Messengers",
                                                feedSuggestion: "oats and seeds", claimRisk: true)
-        let bloomed = GuildNotifications.bloomed(displayName: "The Estrogen Regulators", claimRisk: true)
-        let wellFed = GuildNotifications.wellFed(displayName: "The Tumor Preventors", claimRisk: true)
-        let unlocked = GuildNotifications.guildUnlocked(displayName: "The Mitochondria Boosters", claimRisk: true)
+        let bloomed = GuildNotifications.bloomed(displayName: "The Alchemists", claimRisk: true)
+        let wellFed = GuildNotifications.wellFed(displayName: "The Lignan Weavers", claimRisk: true)
+        let unlocked = GuildNotifications.guildUnlocked(displayName: "The Spark Tenders", claimRisk: true)
         for n in [hungry, bloomed, wellFed, unlocked] {
             #expect(!n.body.lowercased().contains("emerging science"), "retired qualifier resurfaced: \(n.body)")
         }

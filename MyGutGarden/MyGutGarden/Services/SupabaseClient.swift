@@ -52,6 +52,30 @@ enum SupabaseError: LocalizedError {
     }
 }
 
+/// Shared sessions for all Supabase traffic. The default URLSession waits 60 s
+/// of idle before failing — against an unreachable or paused backend every
+/// surface would hang a full minute per call before its empty state settled
+/// (and Today issues ~a dozen reads). Fail fast instead; the LLM-backed
+/// function calls legitimately idle while the model works, so they get a
+/// patient session.
+enum SupabaseHTTP {
+    static let session: URLSession = {
+        let config = URLSessionConfiguration.default
+        config.timeoutIntervalForRequest = 15
+        config.waitsForConnectivity = false
+        return URLSession(configuration: config)
+    }()
+
+    /// For recognize/librarian invocations — the vision/generation call holds
+    /// the connection silent for tens of seconds before responding.
+    static let longRunning: URLSession = {
+        let config = URLSessionConfiguration.default
+        config.timeoutIntervalForRequest = 120
+        config.waitsForConnectivity = false
+        return URLSession(configuration: config)
+    }()
+}
+
 struct SupabaseClient {
     let baseURL: URL
     let anonKey: String
@@ -74,7 +98,10 @@ struct SupabaseClient {
         req.setValue(anonKey, forHTTPHeaderField: "apikey")
         req.setValue("Bearer \(bearer)", forHTTPHeaderField: "Authorization")
         req.httpBody = try JSONSerialization.data(withJSONObject: body)
-        let (data, resp) = try await URLSession.shared.data(for: req)
+        // Function invocations (recognize) idle while the model works — give
+        // them the patient session; auth stays fail-fast.
+        let session = path.hasPrefix("functions/") ? SupabaseHTTP.longRunning : SupabaseHTTP.session
+        let (data, resp) = try await session.data(for: req)
         guard let http = resp as? HTTPURLResponse else {
             throw SupabaseError.server(status: -1, message: "no HTTP response")
         }
@@ -186,5 +213,18 @@ struct SupabaseClient {
             throw SupabaseError.server(status: http.statusCode, message: extractMessage(data))
         }
         return try decoder.decode(RecognitionResponse.self, from: data)
+    }
+
+    /// Invoke the `delete-account` Edge Function: removes the caller's photos,
+    /// auth user, and (by cascade) every user-table row. App Store 5.1.1(v).
+    func deleteAccount(accessToken: String) async throws {
+        let (data, http) = try await request(
+            path: "functions/v1/delete-account",
+            body: [:],
+            bearer: accessToken
+        )
+        guard (200..<300).contains(http.statusCode) else {
+            throw SupabaseError.server(status: http.statusCode, message: extractMessage(data))
+        }
     }
 }

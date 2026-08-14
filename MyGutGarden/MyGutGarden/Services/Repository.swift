@@ -60,13 +60,13 @@ struct Repository: Sendable {
 
     private func run(_ req: URLRequest) async throws -> Data {
         var req = req
-        var (data, resp) = try await URLSession.shared.data(for: req)
+        var (data, resp) = try await SupabaseHTTP.session.data(for: req)
         // Transparently recover from an expired access token: mint a fresh token
         // via the refresh grant and retry the same request once.
         if (resp as? HTTPURLResponse)?.statusCode == 401,
            let refresh = refreshAccessToken, let fresh = await refresh() {
             req.setValue("Bearer \(fresh)", forHTTPHeaderField: "Authorization")
-            (data, resp) = try await URLSession.shared.data(for: req)
+            (data, resp) = try await SupabaseHTTP.session.data(for: req)
         }
         guard let http = resp as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
             let body = String(data: data, encoding: .utf8) ?? ""
@@ -130,7 +130,16 @@ struct Repository: Sendable {
     // MARK: Convenience — profile & food flags
 
     func fetchProfile() async throws -> UserProfile? {
-        let rows: [UserProfile] = try await select("users")
+        // Explicit column list: `est_daily_kcal` is SELECT-revoked at the DB
+        // (Fence 5 — the internal calorie estimate must not be readable even
+        // over raw PostgREST), and a `*` select would fail on the revoked
+        // column. Keep in sync with UserProfile's decoded fields.
+        let rows: [UserProfile] = try await select(
+            "users",
+            columns: "id,height_cm,weight_kg,age,sex,activity_level,fiber_goal_g,"
+                + "fiber_goal_state,fiber_goal_unlocked_at,baseline_mood,baseline_energy,"
+                + "baseline_clarity,goals,plant_consumption_level,fiber_goal_adjusted_week_start,"
+                + "onboarded_at,gas_comfort,gardener_name,intro_seen_at")
         return rows.first
     }
 
@@ -153,7 +162,7 @@ struct Repository: Sendable {
 /// NOT decoded here — they are internal-only and must never reach a view
 /// (SPEC §10 / Fence 5). The only surfaced derived number is `fiberGoalG`, and
 /// that stays nil until the week-one baseline quest unlocks it (SPEC §10).
-struct UserProfile: Decodable, Sendable {
+struct UserProfile: Codable, Sendable {
     let id: String
     let heightCm: Double?
     let weightKg: Double?

@@ -32,6 +32,10 @@ struct AppShell: View {
         .themed()
         .task(id: appState.isSignedIn) {
             guard appState.isSignedIn else { return }
+            // A keychain-restored access token is usually expired — mint a
+            // fresh one before the first data load (no-op after sign-in).
+            await appState.auth.restoreOnLaunch()
+            guard appState.isSignedIn else { return }  // restore found a dead session
             await appState.refreshProfile()
             if let uid = appState.profile?.id, let repo = appState.repository {
                 await MealIngestion(repository: repo, appState: appState).recomputeProgression(userId: uid)
@@ -208,7 +212,7 @@ private struct ShellHome: View {
         }
     }
 
-    private func dismissCelebration() { appState.pendingCelebration = nil }
+    private func dismissCelebration() { appState.dismissCelebration() }
     private func dismissGuardian() { appState.pendingGuardianPrompt = nil }
 
     // MARK: Guardian prompts (SPEC §11) — the user confirms every step.
@@ -389,10 +393,12 @@ private struct ShellInsightPresenter: MealInsightPresenting {
     func insightView(for meal: ConfirmedMeal) -> AnyView {
         let base = inner.insightView(for: meal)
         let state = appState
-        return AnyView(base.task {
-            if let repo = state.repository {
-                await MealIngestion(repository: repo, appState: state).ingest(meal)
-            }
+        return AnyView(base.task(id: meal.id) {
+            // Once per meal per process: the insight view re-mounts on tab
+            // churn and the task re-fires — guild feeding is additive, so a
+            // re-run would double-credit nourishment and can re-bloom.
+            guard state.markIngestedOnce(meal.id), let repo = state.repository else { return }
+            await MealIngestion(repository: repo, appState: state).ingest(meal)
         })
     }
 }
@@ -401,12 +407,15 @@ private struct ShellInsightPresenter: MealInsightPresenting {
 
 private struct ShellSettings: View {
     @Environment(\.theme) private var theme
+    @Environment(\.openURL) private var openURL
     let appState: AppState
     @State private var showFoods = false
     @State private var showCheckIn = false
     @State private var showCustomize = false
     @State private var showBadges = false
     @State private var showGasComfort = false
+    @State private var showDeleteAccount = false
+    @State private var deleteAccountError: String?
 
     var body: some View {
         ScrollView {
@@ -450,6 +459,14 @@ private struct ShellSettings: View {
                         SecondaryButton(title: "Sign out", systemImage: "rectangle.portrait.and.arrow.right") {
                             appState.auth.signOut()
                         }
+                        SecondaryButton(title: "Privacy policy", systemImage: "hand.raised") {
+                            if let url = URL(string: "https://craigthebuilder.github.io/My-gut-garden/privacy.html") {
+                                openURL(url)
+                            }
+                        }
+                        SecondaryButton(title: "Delete account", systemImage: "trash") {
+                            showDeleteAccount = true
+                        }
                     }
                 }
             }
@@ -475,6 +492,32 @@ private struct ShellSettings: View {
                     Task { await setGasComfort(option) }
                 }
             }
+        }
+        // Full self-serve deletion (App Store 5.1.1(v); Fence 5). Presented from
+        // the container like its siblings; iOS 26 adds no automatic Cancel, so
+        // the keep-my-account escape is explicit.
+        .confirmationDialog("Delete your account?", isPresented: $showDeleteAccount, titleVisibility: .visible) {
+            Button("Delete everything permanently", role: .destructive) {
+                Task {
+                    do {
+                        try await appState.auth.deleteAccount()
+                    } catch {
+                        deleteAccountError = (error as? LocalizedError)?.errorDescription
+                            ?? error.localizedDescription
+                    }
+                }
+            }
+            Button("Keep my account", role: .cancel) {}
+        } message: {
+            Text("This permanently removes your account, photos, meals, garden and check-ins. There's no undo.")
+        }
+        .alert("Couldn't delete your account", isPresented: Binding(
+            get: { deleteAccountError != nil },
+            set: { if !$0 { deleteAccountError = nil } }
+        )) {
+            Button("OK") { deleteAccountError = nil }
+        } message: {
+            Text(deleteAccountError ?? "")
         }
     }
 

@@ -1,0 +1,35 @@
+# OPTIONAL REDUNDANCY — the primary keep-alive is a pg_cron + pg_net job
+# INSIDE the database (migration 20260813000006), which pings PostgREST
+# daily with no external dependency. This GitHub Actions version adds a
+# second, independent pinger + failure notifications. To install it, move
+# this file to .github/workflows/ and push with a workflow-scoped token
+# (`gh auth refresh -s workflow` first — the default OAuth token can't
+# push workflow files). Remove both once the project moves to the Pro
+# plan, which never pauses and is the right footing for production.
+#
+# Context: the free tier pauses after ~7 days without API activity; a
+# paused backend takes the whole app down — this happened on 2026-08-13.
+
+name: Supabase keep-alive
+
+on:
+  schedule:
+    - cron: "17 9 * * *" # daily, 09:17 UTC
+  workflow_dispatch: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping PostgREST
+        run: |
+          # The anon key is the same publishable key shipped inside the app
+          # binary (SupabaseConfig.swift) — public by design, safe to embed.
+          ANON="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJkemZqZmxma3Z6eGV5b2pmYmtrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzOTIxMTMsImV4cCI6MjA5Nzk2ODExM30.bMo7uqEtimBrJ2Ij7oeg-ekrTuBPQlpDGqe6eiN6fPI"
+          code=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "apikey: $ANON" -H "Authorization: Bearer $ANON" \
+            "https://bdzfjflfkvzxeyojfbkk.supabase.co/rest/v1/plants?select=id&limit=1")
+          echo "PostgREST responded $code"
+          # 200 = alive; anything else (paused project returns 5xx/timeouts) fails
+          # the job so the owner gets a GitHub notification instead of silence.
+          [ "$code" = "200" ]

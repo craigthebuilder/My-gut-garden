@@ -68,6 +68,14 @@ enum ThrDates {
         return withFrac.date(from: s) ?? ISO8601DateFormatter().date(from: s)
     }
 
+    /// Local `yyyy-MM-dd` day for a `timestamptz` string. Timestamps arrive in
+    /// UTC, so slicing the first 10 characters takes the UTC day — which files
+    /// every evening meal under tomorrow for users behind UTC (all of the
+    /// Americas). Parse, then format on the local calendar.
+    static func localDayString(_ timestamp: String) -> String {
+        parseTimestamp(timestamp).map { dateString($0) } ?? String(timestamp.prefix(10))
+    }
+
     /// Parse a `yyyy-MM-dd` day string (a `date` column, or a timestamp prefix).
     static func parseDay(_ s: String) -> Date? {
         let f = DateFormatter()

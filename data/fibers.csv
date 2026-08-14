@@ -7,6 +7,7 @@
 # Source: framework §5; Monash University FODMAP program (which fibers are FODMAPs); USDA dietary-fiber definitions.
 # Format: pipe-delimited. name|is_fodmap_trigger|fermentability|solubility|notes
 name|is_fodmap_trigger|fermentability|solubility|notes
+cellulose|false|low|insoluble|The structural bulk of plant cell walls (cellulose, hemicellulose and lignin bucketed together) — the largest share of total fiber in most whole foods. Poorly fermented: it bulks, keeps things moving, and carries nutrients to the deep colon. Gentle on gas.
 inulin|true|high|soluble|Fructan. Top bacterial fuel AND classic IBS trigger. Chicory, jerusalem artichoke, onion, garlic.
 fos|true|high|soluble|Fructo-oligosaccharide; shorter-chain fructan, distinct from inulin. Onion, garlic, asparagus.
 gos|true|high|soluble|Galacto-oligosaccharide. Legumes and some dairy. A FODMAP trigger.

@@ -215,7 +215,15 @@ struct CheckInWriter {
     /// The daily pop-up "did you feel okay?" → a check_in (source='daily_popup') + a
     /// `felt_okay` entry. `discomfort` is 0 (great) .. 3 (rough) — the guardian reads it (SPEC §11).
     func saveDailyFeltOkay(discomfort: Int, on date: Date) async throws {
-        let checkInId = try await createCheckIn(day: Self.dateString(date), source: "daily_popup")
+        let day = Self.dateString(date)
+        // Idempotent: a retried answer (relaunch after a slow/failed-looking
+        // write that actually committed) must not double-count discomfort in
+        // the guardian's input (Fence 3).
+        let existing: [CheckInIdRow] = try await repository.select(
+            "check_ins", columns: "id",
+            filters: ["log_date": "eq.\(day)", "source": "eq.daily_popup"], limit: 1)
+        guard existing.isEmpty else { return }
+        let checkInId = try await createCheckIn(day: day, source: "daily_popup")
         let b = Self.entry(checkInId, userId, "felt_okay", int: discomfort, text: nil, at: nil, meal: nil)
         try await repository.insertVoid("check_in_entries", b)
     }

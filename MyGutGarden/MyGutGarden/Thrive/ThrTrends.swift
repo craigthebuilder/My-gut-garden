@@ -52,7 +52,7 @@ final class ThrDailyTrendModel {
             "meals", columns: "id,photo_url,captured_at,confirmed,user_annotation",
             filters: ["captured_at": "gte.\(since)", "confirmed": "eq.true"]
         ), !meals.isEmpty else { isLoaded = true; return }
-        let dayByMeal = Dictionary(meals.map { ($0.id, String($0.capturedAt.prefix(10))) },
+        let dayByMeal = Dictionary(meals.map { ($0.id, ThrDates.localDayString($0.capturedAt)) },
                                    uniquingKeysWith: { a, _ in a })
         let mealList = "(" + meals.map(\.id).joined(separator: ",") + ")"
         guard let items: [ItemRow] = try? await repo.select(

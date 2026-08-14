@@ -30,7 +30,12 @@ final class AppState {
     /// The shared coach-mark tutorial controller (SPEC §7) — app-wide so You can replay tours.
     let coach = CoachMarkController()
 
-    init(auth: AuthService) { self.auth = auth }
+    init(auth: AuthService) {
+        self.auth = auth
+        // A restored session pairs with the last-known profile so an offline
+        // launch (or a paused backend) never re-onboards an onboarded user.
+        if auth.isSignedIn { profile = ProfileCache.load() }
+    }
 
     var isSignedIn: Bool { auth.isSignedIn }
 
@@ -44,6 +49,16 @@ final class AppState {
     /// (otherwise a dropped connection at that moment traps them on the story
     /// with no way forward — 2026-07-09 review).
     private var introStoryDismissedThisSession = false
+
+    /// Meals already run through MealIngestion this process. The ingest task
+    /// re-fires when the insight view re-mounts; feeding is additive and must
+    /// apply exactly once per meal (2026-08-13 review).
+    private var ingestedMealIds: Set<UUID> = []
+
+    /// True the first time a meal id is seen; false on every repeat.
+    func markIngestedOnce(_ mealId: UUID) -> Bool {
+        ingestedMealIds.insert(mealId).inserted
+    }
 
     /// The 3-frame intro story plays once, AFTER onboarding and BEFORE the setup
     /// tour (owner, 2026-07-09). Gated on `intro_seen_at` being nil.
@@ -74,14 +89,37 @@ final class AppState {
 
     func refreshProfile() async {
         guard let repo = repository else { return }
-        profile = try? await repo.fetchProfile()
+        if let fresh = try? await repo.fetchProfile() {
+            profile = fresh
+            ProfileCache.save(fresh)
+        } else if profile == nil {
+            // Unreachable backend: fall back to the cached profile rather than
+            // dropping to nil (which reads as "not onboarded" and would replay
+            // onboarding over a signed-in user's data).
+            profile = ProfileCache.load()
+        }
     }
 
     func updateProgression(_ p: ProgressionState) { progression = p }
 
+    /// Celebrations queued behind the presented one — a varied plate can bloom
+    /// two guilds in one meal, and a single slot would swallow the first.
+    private var celebrationQueue: [CelebrationEvent] = []
+
     /// Celebrations are positive-outcome juice only (DESIGN §3); never attached
     /// to restriction (rule #7).
-    func celebrate(_ event: CelebrationEvent) { pendingCelebration = event }
+    func celebrate(_ event: CelebrationEvent) {
+        if pendingCelebration == nil {
+            pendingCelebration = event
+        } else {
+            celebrationQueue.append(event)
+        }
+    }
+
+    /// Dismiss the presented celebration and surface the next queued one.
+    func dismissCelebration() {
+        pendingCelebration = celebrationQueue.isEmpty ? nil : celebrationQueue.removeFirst()
+    }
 
     /// A calm, user-confirmed guardian prompt (SPEC §11): a fiber-increase offer,
     /// a "keep an eye on this?" suggestion, a care prompt, or an "you've overcome

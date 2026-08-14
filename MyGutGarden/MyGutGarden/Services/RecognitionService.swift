@@ -90,7 +90,7 @@ final class RecognitionService {
             "phytochemicals": [],
             "guild_feeds": [
               { "internal_name": "appetite_crew", "display_name": "The Appetite Crew", "relevance": "primary", "claim_risk": false },
-              { "internal_name": "anti_inflammatory_arsenal", "display_name": "The Anti-inflammatory Arsenal", "relevance": "moderate", "claim_risk": false }
+              { "internal_name": "anti_inflammatory_arsenal", "display_name": "The Lining Keepers", "relevance": "moderate", "claim_risk": false }
             ]
           }
         },
@@ -131,7 +131,7 @@ final class RecognitionService {
         "guilds_fed": [
           { "display_name": "The Base Layer", "claim_risk": false },
           { "display_name": "The Appetite Crew", "claim_risk": false },
-          { "display_name": "The Anti-inflammatory Arsenal", "claim_risk": false },
+          { "display_name": "The Lining Keepers", "claim_risk": false },
           { "display_name": "The Vitamin Lab", "claim_risk": false },
           { "display_name": "The Knights of the Wall", "claim_risk": false }
         ],

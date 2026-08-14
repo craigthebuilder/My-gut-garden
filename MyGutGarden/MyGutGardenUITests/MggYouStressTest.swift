@@ -14,6 +14,7 @@ final class MggYouStressTest: XCTestCase {
 
     func testYouSurfaceEndToEnd() throws {
         let app = XCUIApplication()
+        app.launchArguments += ["--mgg-reset-auth"]
         app.launch()
 
         let email = app.textFields["Email"]

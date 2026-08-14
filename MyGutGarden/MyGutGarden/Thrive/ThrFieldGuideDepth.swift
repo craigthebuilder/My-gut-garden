@@ -351,7 +351,7 @@ final class ThrPhytoDepthModel {
             "meal_items", columns: "meal_id,food_id", filters: ["meal_id": "in.\(mealList)"]
         ) else { return }
 
-        let dayByMeal = Dictionary(meals.map { ($0.id, String($0.capturedAt.prefix(10))) },
+        let dayByMeal = Dictionary(meals.map { ($0.id, ThrDates.localDayString($0.capturedAt)) },
                                    uniquingKeysWith: { a, _ in a })
         var phytosByFood: [String: [String]] = [:]
         for r in foodPhytos { phytosByFood[r.foodId, default: []].append(r.phytochemicalId) }

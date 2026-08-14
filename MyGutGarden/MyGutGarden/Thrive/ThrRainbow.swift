@@ -155,7 +155,7 @@ enum ThrRainbowContent {
         "red":         .init(meaning: "Lycopene & anthocyanins", whatItDoes: "Heart and circulation support"),
         "orange":      .init(meaning: "Carotenoids",             whatItDoes: "Eyes, skin, and immune signalling"),
         "yellow":      .init(meaning: "Flavonoids & carotenoids", whatItDoes: "A spread of antioxidants"),
-        "green":       .init(meaning: "Chlorophyll & folate",    whatItDoes: "Methylation and detox pathways"),
+        "green":       .init(meaning: "Chlorophyll & folate",    whatItDoes: "Folate for everyday cell renewal"),
         "blue_purple": .init(meaning: "Anthocyanins",            whatItDoes: "Feeds the mucus-barrier crews"),
         "white_brown": .init(meaning: "Organosulfur & quercetin", whatItDoes: "Prebiotic fuel and allyl compounds"),
     ]

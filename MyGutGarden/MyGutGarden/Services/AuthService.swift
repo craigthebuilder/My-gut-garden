@@ -14,11 +14,25 @@ import Observation
 @MainActor
 @Observable
 final class AuthService {
-    private(set) var session: SupabaseSession?
+    private(set) var session: SupabaseSession? {
+        didSet {
+            if let session { SessionStore.save(session) } else { SessionStore.clear() }
+        }
+    }
     private(set) var isBusy = false
     var errorMessage: String?
 
     private var currentNonce: String?
+    /// True only when the session came from the keychain this process — the
+    /// one case where the access token predates the launch and needs an
+    /// up-front refresh. A fresh sign-in's token is already new.
+    private var needsLaunchRefresh = false
+
+    init() {
+        // Restore the persisted session so a cold launch lands signed-in.
+        session = SessionStore.load()
+        needsLaunchRefresh = session != nil
+    }
 
     var isConfigured: Bool { SupabaseConfig.isConfigured }
     var user: SupabaseUser? { session?.user }
@@ -58,6 +72,40 @@ final class AuthService {
     func signOut() {
         session = nil
         errorMessage = nil
+        ProfileCache.clear()
+    }
+
+    /// Called once from the shell's launch task. A restored access token is
+    /// usually expired, so mint a fresh one up front; a dead refresh token
+    /// (revoked, account gone) drops to the sign-in gate, while a network
+    /// failure keeps the stored session — Repository's 401→refresh path
+    /// recovers the moment the backend is reachable again.
+    func restoreOnLaunch() async {
+        guard needsLaunchRefresh else { return }
+        needsLaunchRefresh = false
+        guard let client, let refresh = session?.refreshToken, !refresh.isEmpty else { return }
+        do {
+            session = try await client.refreshSession(refreshToken: refresh)
+        } catch let SupabaseError.server(status, _) where status == 400 || status == 401 {
+            session = nil
+        } catch {
+            // Offline or backend hiccup — keep the session, stay signed in.
+        }
+    }
+
+    /// Full account deletion (App Store 5.1.1(v)) — calls the delete-account
+    /// Edge Function (photos + auth user + cascaded rows), then signs out
+    /// locally. Throws so the confirm UI can show what went wrong.
+    func deleteAccount() async throws {
+        guard let client, let token = session?.accessToken else {
+            throw SupabaseError.notConfigured
+        }
+        isBusy = true
+        defer { isBusy = false }
+        try await client.deleteAccount(accessToken: token)
+        session = nil
+        errorMessage = nil
+        ProfileCache.clear()
     }
 
     /// Exchange the stored refresh token for a fresh access token. Returns the

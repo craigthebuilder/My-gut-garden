@@ -34,11 +34,11 @@ enum OnbGoal: String, CaseIterable, Identifiable, Sendable {
 
     var label: String {
         switch self {
-        case .calmIbs:             "Calm IBS flare-ups"
+        case .calmIbs:             "Calmer, more comfortable digestion"
         case .easeBloating:        "Ease bloating"
         case .findTriggers:        "Find my triggers"
         case .relieveConstipation: "Relieve constipation"
-        case .ibdAutoimmune:       "Help with IBD or Autoimmune issues"
+        case .ibdAutoimmune:       "Support alongside a diagnosed condition"
         case .increaseEnergy:      "Increase energy"
         case .decreaseBrainFog:    "Decrease brain fog"
         case .regulateMood:        "Regulate mood swings"

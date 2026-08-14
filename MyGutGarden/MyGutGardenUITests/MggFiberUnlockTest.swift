@@ -14,6 +14,7 @@ final class MggFiberUnlockTest: XCTestCase {
 
     func testFiberGoalUnlocksForVeteranAndDashboardShowsFiber() throws {
         let app = XCUIApplication()
+        app.launchArguments += ["--mgg-reset-auth"]
         app.launch()
 
         let email = app.textFields["Email"]

@@ -70,6 +70,7 @@ final class MggFlowScreenshots: XCTestCase {
     func testA_OnboardingWalkthrough() throws {
         continueAfterFailure = true
         let app = XCUIApplication()
+        app.launchArguments += ["--mgg-reset-auth"]
         app.launch()
 
         signIn(app, email: "fable-e2e@mygutgarden.test", password: "FableE2e-12345!")
@@ -171,6 +172,7 @@ final class MggFlowScreenshots: XCTestCase {
     func testB_SampleMealAndToday() throws {
         continueAfterFailure = true
         let app = XCUIApplication()
+        app.launchArguments += ["--mgg-reset-auth"]
         app.launch()
 
         signIn(app, email: "ui-test@mygutgarden.test", password: "UiTest-12345!")

@@ -66,7 +66,7 @@ struct CapStorageUploader: Sendable {
         req.setValue("true", forHTTPHeaderField: "x-upsert")
         req.httpBody = imageData
 
-        let (data, resp) = try await URLSession.shared.data(for: req)
+        let (data, resp) = try await SupabaseHTTP.session.data(for: req)
         guard let http = resp as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
             let body = String(data: data, encoding: .utf8) ?? ""
             throw CapError.uploadFailed(body.isEmpty ? "status \((resp as? HTTPURLResponse)?.statusCode ?? -1)" : body)
@@ -135,7 +135,7 @@ struct CapRecognizer: Sendable {
         req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         req.httpBody = try JSONSerialization.data(withJSONObject: body)
 
-        let (data, resp) = try await URLSession.shared.data(for: req)
+        let (data, resp) = try await SupabaseHTTP.longRunning.data(for: req)
         guard let http = resp as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
             let message = String(data: data, encoding: .utf8) ?? ""
             throw SupabaseError.server(status: (resp as? HTTPURLResponse)?.statusCode ?? -1, message: message)
@@ -250,7 +250,7 @@ struct CapLibrarianClient: Sendable {
         req.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
         req.httpBody = try JSONSerialization.data(withJSONObject: body)
 
-        let (data, resp) = try await URLSession.shared.data(for: req)
+        let (data, resp) = try await SupabaseHTTP.longRunning.data(for: req)
         guard let http = resp as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
             let message = String(data: data, encoding: .utf8) ?? ""
             throw SupabaseError.server(status: (resp as? HTTPURLResponse)?.statusCode ?? -1, message: message)

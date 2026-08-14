@@ -219,12 +219,28 @@ final class OnbViewModel {
 
         if let repo = appState.repository, let uid = appState.auth.user?.id {
             do {
-                try await repo.update("users", set: usersWriteBody(), filters: ["id": "eq.\(uid)"])
-                // Each flag written with its OWN tier, never merged (§9).
+                // Flags FIRST, idempotently — a mid-save failure must be
+                // retryable without duplicating rows, and a user must never be
+                // stamped onboarded with a silently-missing ALLERGY flag (§9).
+                // Each flag keeps its OWN tier, never merged.
+                let existing: [FoodFlagRow] = (try? await repo.fetchFoodFlags()) ?? []
+                let existingFoodIds = Set(existing.compactMap(\.foodId))
+                let existingCategories = Set(existing.compactMap(\.category))
                 for draft in foodFlags {
-                    try await repo.insertVoid("food_flags",
-                                              OnbFlagWriter.insertBody(userId: uid, draft: draft))
+                    switch draft.scope {
+                    case let .food(id, _):
+                        guard !existingFoodIds.contains(id) else { continue }
+                        try await repo.upsert("food_flags",
+                                              OnbFlagWriter.insertBody(userId: uid, draft: draft),
+                                              onConflict: "user_id,food_id")
+                    case let .category(key, _):
+                        guard !existingCategories.contains(key) else { continue }
+                        try await repo.insertVoid("food_flags",
+                                                  OnbFlagWriter.insertBody(userId: uid, draft: draft))
+                    }
                 }
+                // Stamp onboarded_at LAST — only a fully-written intake counts.
+                try await repo.update("users", set: usersWriteBody(), filters: ["id": "eq.\(uid)"])
                 await appState.refreshProfile()
             } catch {
                 errorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription

@@ -17,6 +17,7 @@ Adzuki Beans|rs3|primary|4
 Alfalfa Sprouts|arabinoxylan|minor|0.4
 Alfalfa Sprouts|pectin|minor|0.2
 Almond|arabinoxylan|moderate|0.7
+Almond|cellulose|primary|2.0
 Almond|fos|minor|0.1
 Almond|mucilage|minor|0.2
 Almond|pectin|minor|0.3
@@ -24,8 +25,10 @@ Almond|rs2|minor|0.2
 Amaranth|arabinoxylan|primary|2.5
 Amaranth|rs3|moderate|1.5
 Apple Juice|pectin|minor|0.2
+Apple|cellulose|primary|2.8
 Apple|pectin|primary|1.5
 Apricot|arabinoxylan|minor|0.3
+Apricot|cellulose|moderate|0.9
 Apricot|pectin|primary|1
 Arborio Rice|rs3|primary|0.5
 Artichoke|arabinoxylan|minor|0.2
@@ -38,6 +41,7 @@ Arugula|pectin|moderate|0.3
 Asparagus|fos|minor|0.6
 Asparagus|inulin|moderate|1.5
 Avocado|arabinoxylan|moderate|0.9
+Avocado|cellulose|moderate|2.2
 Avocado|fos|minor|0.2
 Avocado|mucilage|minor|0.2
 Avocado|pectin|moderate|1.2
@@ -46,30 +50,37 @@ Bamboo Shoots|arabinoxylan|primary|1.6
 Bamboo Shoots|pectin|minor|0.4
 Banana Pepper|arabinoxylan|minor|0.2
 Banana Pepper|pectin|primary|0.5
+Banana|cellulose|primary|2.6
 Banana|fos|minor|0.5
 Barley|arabinoxylan|moderate|1.5
 Barley|beta_glucan|primary|2.5
+Barley|cellulose|moderate|1.7
 Basil|arabinoxylan|minor|0.1
 Basil|mucilage|minor|0.1
 Basil|pectin|minor|0.1
 Bean Sprouts|arabinoxylan|minor|0.4
 Bean Sprouts|pectin|moderate|0.9
+Beet|cellulose|primary|1.5
 Beet|pectin|minor|0.7
 Bell pepper|arabinoxylan|moderate|0.6
 Bell pepper|fos|minor|0.2
 Bell pepper|pectin|primary|1.2
 Black Rice|arabinoxylan|primary|1.5
 Black Rice|rs3|moderate|0.7
+Black bean|cellulose|primary|5.3
 Black bean|gos|primary|2.2
 Black pepper|arabinoxylan|minor|0.1
 Black pepper|pectin|minor|0.1
+Black-Eyed Peas|cellulose|moderate|4.1
 Black-Eyed Peas|gos|moderate|1.5
 Black-Eyed Peas|pectin|moderate|2
 Black-Eyed Peas|rs3|primary|3.5
 Blackberry|arabinoxylan|moderate|0.8
+Blackberry|cellulose|moderate|1.3
 Blackberry|fos|minor|0.2
 Blackberry|mucilage|minor|0.2
 Blackberry|pectin|primary|1.5
+Blueberry|cellulose|primary|1.3
 Blueberry|pectin|minor|0.5
 Bok choy|arabinoxylan|moderate|0.4
 Bok choy|fos|minor|0.1
@@ -86,6 +97,7 @@ Broccoli|arabinoxylan|moderate|0.8
 Broccoli|fos|minor|0.4
 Broccoli|gos|minor|0.3
 Broccoli|pectin|primary|1.2
+Brown rice|cellulose|moderate|1.4
 Brown rice|rs3|moderate|1.5
 Brussels sprouts|arabinoxylan|moderate|0.9
 Brussels sprouts|fos|moderate|0.6
@@ -96,6 +108,7 @@ Buckwheat|beta_glucan|moderate|0.8
 Buckwheat|mucilage|minor|0.5
 Buckwheat|rs3|moderate|1.5
 Bulgur|arabinoxylan|primary|3.5
+Bulgur|cellulose|moderate|4.0
 Bulgur|rs3|moderate|0.7
 Butter Lettuce|arabinoxylan|minor|0.2
 Butter Lettuce|pectin|primary|0.6
@@ -108,9 +121,11 @@ Cabbage|gos|minor|0.2
 Cabbage|pectin|primary|0.9
 Cacao Nibs|arabinoxylan|primary|2.5
 Cacao Nibs|pectin|moderate|1
+Cantaloupe|cellulose|primary|0.7
 Cantaloupe|pectin|primary|0.7
 Capers|pectin|primary|0.3
 Caraway Seeds|arabinoxylan|primary|0.7
+Carrot|cellulose|moderate|0.8
 Carrot|pectin|moderate|1.2
 Cashew|arabinoxylan|moderate|0.4
 Cashew|pectin|minor|0.3
@@ -125,10 +140,13 @@ Celery|pectin|primary|0.7
 Chanterelle Mushroom|arabinoxylan|minor|0.3
 Chanterelle Mushroom|beta_glucan|primary|1
 Cherry|arabinoxylan|minor|0.5
+Cherry|cellulose|moderate|1.2
 Cherry|pectin|primary|1.2
 Chestnut|arabinoxylan|moderate|1.5
 Chestnut|pectin|moderate|1.5
+Chia seed|cellulose|moderate|1.7
 Chia seed|mucilage|primary|3.5
+Chickpea|cellulose|primary|4.4
 Chickpea|gos|primary|2.5
 Chicory root|inulin|primary|10.0
 Chili Powder|arabinoxylan|minor|0.2
@@ -158,11 +176,14 @@ Concord grape|pectin|primary|0.8
 Coriander Seeds|arabinoxylan|primary|0.5
 Corn Flakes|arabinoxylan|primary|0.5
 Corn Tortilla|arabinoxylan|primary|1.2
+Corn Tortilla|cellulose|moderate|1.0
 Corn Tortilla|rs2|minor|0.4
 Corn|arabinoxylan|primary|1
+Corn|cellulose|minor|0.4
 Corn|pectin|minor|0.3
 Corn|rs2|moderate|0.5
 Couscous|arabinoxylan|primary|1.2
+Couscous|cellulose|moderate|0.7
 Couscous|rs3|minor|0.3
 Cranberry|arabinoxylan|minor|0.2
 Cranberry|mucilage|minor|0.1
@@ -176,6 +197,7 @@ Cumin|pectin|minor|0.1
 Curry Powder|arabinoxylan|minor|0.2
 Curry Powder|pectin|minor|0.1
 Dark Chocolate|arabinoxylan|primary|2
+Dark Chocolate|cellulose|moderate|1.6
 Dark Chocolate|pectin|minor|0.8
 Date|arabinoxylan|moderate|0.5
 Date|inulin|minor|0.2
@@ -211,11 +233,15 @@ Fermented Pickles|pectin|primary|0.4
 Fig|arabinoxylan|moderate|0.5
 Fig|mucilage|minor|0.2
 Fig|pectin|primary|1
+Flaxseed|cellulose|moderate|1.1
 Flaxseed|mucilage|primary|3.0
 Flour Tortilla|arabinoxylan|primary|0.8
+Flour Tortilla|cellulose|moderate|0.5
 Flour Tortilla|rs3|minor|0.2
 Freekeh|arabinoxylan|primary|4
 Freekeh|rs3|moderate|1
+Fried Ripe Plantain|pectin|primary|1.2
+Fried Ripe Plantain|rs3|minor|0.3
 Garam Masala|arabinoxylan|minor|0.2
 Garlic|fos|moderate|1.0
 Garlic|inulin|primary|2.0
@@ -231,36 +257,51 @@ Granola|arabinoxylan|moderate|0.8
 Granola|beta_glucan|primary|1.5
 Granola|rs3|minor|0.2
 Grapefruit|arabinoxylan|minor|0.4
+Grapefruit|cellulose|moderate|0.5
 Grapefruit|pectin|primary|1.6
+Grape|cellulose|primary|0.8
 Green Beans|arabinoxylan|minor|0.5
+Green Beans|cellulose|moderate|0.8
 Green Beans|pectin|primary|1.2
 Green Beans|rs2|minor|0.2
 Green Olives|pectin|primary|0.5
 Green banana|rs2|primary|4.5
+Green pea|cellulose|primary|3.2
 Green pea|gos|moderate|1.2
 Grits|arabinoxylan|primary|1
 Grits|rs3|minor|0.3
 Guava|arabinoxylan|minor|0.5
 Guava|pectin|primary|2.8
 Habanero Pepper|pectin|primary|0.2
+Hazelnut|cellulose|primary|2.7
 Hearts of Palm|arabinoxylan|minor|0.5
 Hearts of Palm|pectin|moderate|0.9
 Hemp Seeds|arabinoxylan|primary|1.2
 Honeydew Melon|pectin|primary|0.7
 Horseradish|pectin|minor|0.1
+Hummus|cellulose|moderate|1.2
+Hummus|fos|moderate|0.9
+Hummus|pectin|minor|0.5
+Hummus|rs2|minor|0.4
 Iceberg Lettuce|arabinoxylan|minor|0.2
+Iceberg Lettuce|cellulose|moderate|0.3
 Iceberg Lettuce|pectin|primary|0.5
 Jackfruit|pectin|primary|1.5
 Jackfruit|rs2|minor|0.5
 Jerusalem artichoke|inulin|primary|6.0
 Kalamata Olives|pectin|primary|0.5
+Kale|cellulose|primary|2.5
 Ketchup|pectin|primary|0.2
+Kidney bean|cellulose|primary|7.6
 Kidney bean|gos|primary|2.0
+Kimchi|cellulose|primary|1.0
+Kiwi|cellulose|primary|2.2
 Kohlrabi|arabinoxylan|minor|0.6
 Kohlrabi|pectin|moderate|0.9
 Leek|fos|minor|0.5
 Leek|inulin|moderate|1.5
 Lemon|pectin|moderate|1.0
+Lentil|cellulose|primary|4.2
 Lentil|gos|moderate|1.8
 Lima Beans|fos|minor|0.5
 Lima Beans|pectin|moderate|1.2
@@ -276,8 +317,11 @@ Maitake Mushroom|beta_glucan|primary|1.8
 Mandarin Orange|arabinoxylan|minor|0.3
 Mandarin Orange|pectin|primary|1.2
 Mango|arabinoxylan|moderate|0.8
+Mango|cellulose|minor|0.3
 Mango|fos|minor|0.3
 Mango|pectin|primary|1.2
+Microgreens|arabinoxylan|minor|0.1
+Microgreens|pectin|moderate|0.3
 Milk Chocolate|inulin|minor|0.3
 Millet|arabinoxylan|minor|0.7
 Mint|arabinoxylan|minor|0.1
@@ -300,6 +344,7 @@ Naan|arabinoxylan|primary|1.2
 Naan|rs3|minor|0.3
 Napa Cabbage|arabinoxylan|minor|0.3
 Napa Cabbage|pectin|moderate|0.5
+Natto|cellulose|primary|2.4
 Nectarine|arabinoxylan|minor|0.4
 Nectarine|pectin|primary|1.1
 Nori|mucilage|primary|0.25
@@ -315,6 +360,7 @@ Olives|pectin|primary|0.5
 Onion|fos|moderate|1.0
 Onion|inulin|moderate|1.2
 Orange Juice|pectin|minor|0.3
+Orange|cellulose|primary|1.6
 Orange|pectin|moderate|1.5
 Oregano|arabinoxylan|primary|0.5
 Oregano|mucilage|minor|0.1
@@ -331,24 +377,32 @@ Parsnip|pectin|minor|0.5
 Passion Fruit|arabinoxylan|minor|0.3
 Passion Fruit|pectin|moderate|0.9
 Pasta|arabinoxylan|primary|1.5
+Pasta|cellulose|moderate|0.5
 Pasta|rs3|minor|0.5
 Peach|arabinoxylan|minor|0.4
+Peach|cellulose|moderate|0.6
 Peach|pectin|primary|1.2
+Peanut|cellulose|primary|1.8
 Peanut|gos|minor|0.6
+Pear|cellulose|primary|3.7
 Pear|pectin|moderate|1.4
 Pecan|arabinoxylan|primary|1.2
+Pecan|cellulose|moderate|0.6
 Pecan|pectin|moderate|0.6
 Pecan|rs2|minor|0.3
 Persimmon|arabinoxylan|minor|0.5
 Persimmon|pectin|primary|2.5
 Pine Nuts|arabinoxylan|primary|1
 Pineapple|arabinoxylan|moderate|0.6
+Pineapple|cellulose|moderate|0.5
 Pineapple|inulin|minor|0.2
 Pineapple|pectin|primary|1
+Pinto Beans|cellulose|minor|1.5
 Pinto Beans|gos|moderate|1.5
 Pinto Beans|pectin|moderate|2
 Pinto Beans|rs3|primary|4
 Pistachio|arabinoxylan|primary|1.5
+Pistachio|cellulose|minor|0.4
 Pistachio|fos|moderate|0.7
 Pistachio|pectin|minor|0.4
 Pita Bread|arabinoxylan|primary|1
@@ -361,9 +415,11 @@ Poblano Pepper|pectin|primary|1.4
 Polenta|arabinoxylan|primary|1.5
 Polenta|rs3|minor|0.5
 Pomegranate|arabinoxylan|moderate|0.8
+Pomegranate|cellulose|minor|0.5
 Pomegranate|mucilage|minor|0.3
 Pomegranate|pectin|primary|1.8
 Popcorn|arabinoxylan|primary|2
+Popcorn|cellulose|moderate|1.6
 Popcorn|rs2|minor|0.5
 Poppy Seeds|arabinoxylan|minor|0.2
 Poppy Seeds|mucilage|primary|0.7
@@ -371,6 +427,7 @@ Porcini Mushroom|arabinoxylan|minor|0.4
 Porcini Mushroom|beta_glucan|primary|1.3
 Portobello Mushroom|arabinoxylan|minor|0.4
 Portobello Mushroom|beta_glucan|primary|1.5
+Potato|cellulose|moderate|1.6
 Potato|rs3|moderate|2.0
 Pretzels|arabinoxylan|primary|0.8
 Prune|pectin|primary|2.5
@@ -389,6 +446,7 @@ Purple sweet potato|rs2|minor|0.5
 Purple sweet potato|rs3|moderate|0.9
 Quinoa|arabinoxylan|primary|2
 Quinoa|beta_glucan|minor|0.5
+Quinoa|cellulose|minor|0.7
 Quinoa|rs3|moderate|1
 Radicchio|inulin|primary|2
 Radicchio|pectin|minor|0.5
@@ -397,6 +455,7 @@ Radish|pectin|primary|0.5
 Raisin|arabinoxylan|minor|0.5
 Raisin|pectin|primary|1
 Raspberry|arabinoxylan|moderate|1.2
+Raspberry|cellulose|minor|0.9
 Raspberry|fos|minor|0.3
 Raspberry|pectin|primary|2.5
 Red Bell Pepper|arabinoxylan|minor|0.4
@@ -434,11 +493,14 @@ Sourdough bread|arabinoxylan|primary|1.2
 Sourdough bread|beta_glucan|minor|0.2
 Sourdough bread|rs3|moderate|0.5
 Soy Milk|gos|primary|0.8
+Soybean|cellulose|primary|6.3
 Soybean|gos|moderate|1.5
 Spelt|arabinoxylan|primary|3.8
 Spelt|beta_glucan|minor|0.4
 Spelt|rs3|minor|0.4
+Spinach|cellulose|primary|0.7
 Spinach|pectin|minor|0.6
+Split Peas|cellulose|moderate|6.3
 Split Peas|gos|moderate|2
 Split Peas|pectin|moderate|3
 Split Peas|rs3|primary|5
@@ -460,6 +522,7 @@ Sunflower seed|arabinoxylan|primary|1.5
 Sunflower seed|mucilage|minor|0.3
 Sunflower seed|pectin|moderate|0.8
 Sweet potato|arabinoxylan|moderate|0.7
+Sweet potato|cellulose|minor|0.5
 Sweet potato|inulin|minor|0.4
 Sweet potato|pectin|primary|1.5
 Sweet potato|rs3|moderate|0.8
@@ -501,15 +564,19 @@ Watercress|gos|minor|0.1
 Watercress|pectin|primary|0.3
 Watermelon Radish|arabinoxylan|minor|0.3
 Watermelon Radish|pectin|primary|0.8
+Watermelon|cellulose|moderate|0.5
 Watermelon|pectin|primary|0.6
 White Bread|arabinoxylan|primary|0.6
+White Bread|cellulose|primary|0.8
 White Rice|rs3|primary|0.6
 White bean|gos|moderate|1.8
 White mushroom|beta_glucan|moderate|1.0
 Whole Grain Bread|arabinoxylan|primary|2
 Whole Grain Bread|beta_glucan|minor|0.3
+Whole Grain Bread|cellulose|moderate|1.1
 Whole Wheat Pasta|arabinoxylan|primary|3.5
 Whole Wheat Pasta|beta_glucan|minor|0.3
+Whole Wheat Pasta|cellulose|moderate|1.7
 Whole Wheat Pasta|rs3|moderate|0.8
 Whole wheat|arabinoxylan|primary|2.5
 Whole wheat|fos|minor|0.5

@@ -17,6 +17,7 @@ final class MggXcodeRunConditionsTest: XCTestCase {
         if FileManager.default.fileExists(atPath: mtc) {
             app.launchEnvironment["DYLD_INSERT_LIBRARIES"] = mtc
         }
+        app.launchArguments += ["--mgg-reset-auth"]
         app.launch()
 
         let email = app.textFields["Email"]

@@ -127,9 +127,13 @@ enum GuildGardenAssembler {
         let lastFed = state.lastFedAt.flatMap(parseTimestamp)
         let decayed = GuildBloom.decayedScore(storedScore: Double(state.nourishmentScore),
                                               lastFedAt: lastFed, asOf: now)
+        // days_fed_this_week is only recomputed on WRITE — after a week rolls
+        // over it still shows last week's count until the next feed. Zero it
+        // for display when the last feed predates the current week.
+        let fedThisWeek = lastFed.map { GuildWeek.sameWeek($0, now, calendar: calendar) } ?? false
         return GuildBloomDisplay(score: decayed,
                                  state: GuildBloomState.state(for: decayed),
-                                 daysFedThisWeek: state.daysFedThisWeek)
+                                 daysFedThisWeek: fedThisWeek ? state.daysFedThisWeek : 0)
     }
 
     /// Tolerant ISO-8601 parse for Postgres `timestamptz` (with/without fractions).

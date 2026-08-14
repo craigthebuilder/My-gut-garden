@@ -12,6 +12,7 @@ final class MggGardenLockedTest: XCTestCase {
 
     func testTapGardenWhileLocked() throws {
         let app = XCUIApplication()
+        app.launchArguments += ["--mgg-reset-auth"]
         app.launch()
 
         // Sign in (onboarded account → straight to the tab bar, maybe a tour).

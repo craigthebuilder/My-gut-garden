@@ -148,7 +148,7 @@ struct MealIngestion {
         // otherwise 5 meals in a single day would open the garden early for a
         // brand-new user (2026-07-09 review). `summaries` fetched above.
         let mealDays = (try? await repository.select("meals", columns: "captured_at") as [MealDayRow]) ?? []
-        let loggedDays = Set(mealDays.map { String($0.capturedAt.prefix(10)) }).count
+        let loggedDays = Set(mealDays.map { ThrDates.localDayString($0.capturedAt) }).count
         let isTier2 = summaries.contains(where: \.hit30) || loggedDays >= GameConfig.shared.tier2MinLoggedDaysFirstWeek
         let cumulativeTier2Days = isTier2 ? max(loggedDays, GameConfig.shared.tier2MinLoggedDaysFirstWeek) : 0
 
@@ -224,7 +224,7 @@ struct MealIngestion {
         let distinctPlantNames = Set(foods.filter { plantFoodIds.contains($0.id) }
             .map { $0.canonicalName.lowercased() })
 
-        let dayByMeal = Dictionary(meals.map { ($0.id, String($0.capturedAt.prefix(10))) },
+        let dayByMeal = Dictionary(meals.map { ($0.id, ThrDates.localDayString($0.capturedAt)) },
                                    uniquingKeysWith: { a, _ in a })
         var fiberByDay: [String: Double] = [:]
         for item in items {

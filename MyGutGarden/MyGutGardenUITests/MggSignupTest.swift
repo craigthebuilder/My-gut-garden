@@ -12,6 +12,7 @@ final class MggSignupTest: XCTestCase {
 
     func testEmailCreateAccount() throws {
         let app = XCUIApplication()
+        app.launchArguments += ["--mgg-reset-auth"]
         app.launch()
 
         // Two-step (2026-07-10): the landing's "Create account" navigates to a

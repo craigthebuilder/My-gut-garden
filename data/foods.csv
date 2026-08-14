@@ -58,6 +58,7 @@ Black Rice|forbidden rice;black glutinous rice;purple rice|true|Black Rice|false
 Black tea|tea;english breakfast tea;earl grey|true||false|false|low||beverage;caffeine|none|none|240
 Black-Eyed Peas|cowpeas;black-eyed beans|true|Black-Eyed Peas|false|false|||legume;gluten_free;prebiotic;fodmap|high|moderate|170
 Blackberry|blackberries|true|Blackberry|false|false|moderate|smoothie;dessert;jam|fruit;berry;blue_purple;polyphenol_rich|low|low|75
+Blood Sausage|morcilla;black pudding;boudin noir;blood pudding|false||false|false|||meat;red_meat;processed_meat;high_histamine|moderate|moderate|70
 Blue Cheese|bleu cheese;gorgonzola;roquefort;stilton|false||true|false|||dairy;lactose;fermented;high_histamine|moderate|moderate|28
 Blueberry|blueberries;wild blueberry|true|Blueberry|false|false|low|smoothie;muffin;pancake|fruit;berry;blue_purple;polyphenol_rich|low|low|75
 Bok choy|pak choi;chinese cabbage|true|Bok choy|false|false|low|stir_fry|cruciferous;leafy_green;green|low|low|70
@@ -95,13 +96,16 @@ Cheddar Cheese|cheddar;sharp cheddar;mild cheddar|false||true|false|||dairy;lact
 Cherry|cherries;sweet cherry;red cherry;bing cherry|true|Cherry|false|false|||fruit;polyphenol_rich|none|low|140
 Chestnut|chestnuts;sweet chestnut;roasted chestnut|true|Chestnut|false|false|||nut;tree_nut;gluten_free|low|moderate|84
 Chia seed|chia;chia seeds|true|Chia seed|false|false|low|pudding;smoothie;baked_goods|seed|moderate|high|15
+Chicharron|fried pork belly;fried pork rinds;chicharrones;crackling|false||false|false|||meat;red_meat;snack|high|high|30
 Chicken|chicken breast;chicken thigh;grilled chicken;roast chicken;poultry|false||false|false|low|soup;curry;stir_fry;salad|meat;poultry|high|moderate|110
 Chicken Broth|chicken stock;chicken bouillon broth|false||false|false|||poultry|low|low|240
+Chicken Patty|chicken burger patty;ground chicken patty|false||false|false|||poultry;meat|high|moderate|113
 Chickpea|garbanzo;hummus bean|true|Chickpea|false|false|low|hummus;curry;falafel;soup|legume;fodmap|high|moderate|150
 Chicory root|chicory;inulin;witloof root|true|Chicory root|false|false|low|coffee_substitute;fiber_additive|root_vegetable;fodmap;prebiotic|low|low|10
 Chili pepper|chilli;hot pepper;jalapeno;pickled jalapeno|true|Chili pepper|false|false|moderate|curry;salsa;sauce;marinade|nightshade;red;herb_spice|low|low|15
 Chili Powder|chile powder;chilli powder|true|Chili Powder Blend|false|false|||herb_spice;nightshade|none|low|7
 Chives|chive|true|Chives|false|false|low|garnish;dip;baked_potato|allium;herb_spice|low|low|5
+Chorizo Sausage|chorizo;Spanish chorizo;Mexican chorizo|false||false|false|||meat;red_meat;processed_meat;high_histamine|high|high|60
 Cilantro|coriander leaf;fresh coriander|true|Cilantro|false|false|low|salsa;curry;garnish|herb_spice;green|low|low|5
 Cinnamon|ground cinnamon;cinnamon stick|true|Cinnamon|false|false|low|baked_goods;curry;oatmeal;chai|herb_spice;white_brown|low|low|3
 Clam|clams|false||false|false|moderate|soup;pasta_sauce|shellfish|high|moderate|85
@@ -162,6 +166,7 @@ Flaxseed|flax;linseed;ground flaxseed|true|Flaxseed|false|false|low|smoothie;bak
 Flounder|summer flounder;winter flounder;plaice|false||false|false|||fish|high|low|85
 Flour Tortilla|wheat tortilla;white flour tortilla|true|Whole wheat|false|false|||grain;gluten;wheat;fodmap|low|moderate|45
 Freekeh|farik;freekah;green durum wheat|true|Freekeh|false|false|||grain;whole_grain;gluten;wheat|moderate|moderate|160
+Fried Ripe Plantain|tostones de maduros;maduros;platanos maduros fritos|true|Plantain|false|false|||fruit;vegetable;fodmap|low|moderate|100
 Garam Masala|garam masala spice blend|true|Garam Masala Blend|false|false|||herb_spice|none|low|6
 Garlic|garlic clove;minced garlic;ajo;garlic powder|true|Garlic|false|false|low|curry;stir_fry;pasta_sauce;dressing;soup;marinade|allium;fodmap;prebiotic|low|low|6
 Ghee|clarified butter|false||false|false|low|curry|dairy|none|high|10
@@ -197,6 +202,7 @@ Honeydew Melon|honeydew;honey dew melon;green melon|true|Honeydew Melon|false|fa
 Horseradish|prepared horseradish|true|Horseradish|false|false|||cruciferous;condiment;herb_spice|none|low|15
 Hot Dog|frankfurter;wiener;beef frank;pork frank|false||false|false|||meat;processed_meat;high_histamine|moderate|moderate|57
 Hot sauce|sriracha;chili sauce;tabasco|true||false|false|moderate|stir_fry;marinade;tacos|condiment|none|low|5
+Hummus|homemade hummus;chickpea dip;hummus bi tahini|true|Chickpea|false|false|||legume;prebiotic;vegetable;fodmap;sesame;gluten_free|moderate|moderate|60
 Ice cream|gelato;soft serve|false||false|false|low|dessert|dairy;lactose|low|high|70
 Iceberg Lettuce|crisphead lettuce;head lettuce|true|Iceberg Lettuce|false|false|||leafy_green|none|low|85
 Imitation Crab|surimi;krab sticks;crab sticks|false||false|false|||fish;processed_meat|moderate|low|85
@@ -230,6 +236,7 @@ Mandarin Orange|tangerine;clementine;mandarin;satsuma|true|Mandarin Orange|false
 Mango|mangoes;mango|true|Mango|false|false|moderate|smoothie;salsa;curry|fruit;orange;fodmap|low|low|165
 Maple syrup||true||false|false|low|baked_goods;pancakes|sweetener|none|moderate|20
 Mayonnaise|mayo;aioli|false||false|false|low|sandwich;salad;dressing|egg;condiment|low|high|15
+Microgreens|micro greens;microgreen mix;micro shoots;microgreens / sprouts|true|Microgreens|false|false|||vegetable;leafy_green|low|low|25
 Milk|whole milk;skim milk;cows milk|false||false|false|low|smoothie;baked_goods;sauce;porridge|dairy;lactose|moderate|moderate|240
 Milk Chocolate|milk chocolate bar;milk choc|false||false|false|||sweetener;dairy;lactose;polyphenol_rich|low|high|40
 Millet|millet grain|true|Millet|false|false|low|porridge;flatbread|grain;whole_grain;gluten_free|low|moderate|150
@@ -271,7 +278,7 @@ Parsnip|parsnips|true|Parsnip|false|false|low|soup;roast;mash|root_vegetable;whi
 Passion Fruit|passionfruit;granadilla;maracuya|true|Passion Fruit|false|false|||fruit;polyphenol_rich|none|low|36
 Pasta|white pasta;refined pasta;semolina pasta;spaghetti;penne;fusilli;macaroni|true|Durum Wheat|false|false|||grain;gluten;wheat|moderate|moderate|140
 Peach|peaches;yellow peach;white peach|true|Peach|false|false|||fruit;fodmap;polyphenol_rich|none|low|150
-Peanut|peanuts;groundnut;peanut butter|true|Peanut|false|false|moderate|satay;sauce;dressing;baked_goods|legume;peanut|high|moderate|28
+Peanut|peanuts;groundnut;peanut butter;boiled peanuts|true|Peanut|false|false|moderate|satay;sauce;dressing;baked_goods|legume;peanut|high|moderate|28
 Peanut oil|groundnut oil|true||false|false|low|stir_fry;fried_food|oil;peanut|none|high|14
 Pear|pears;bartlett;bosc|true|Pear|false|false|low|salad;dessert;juice|fruit;fodmap|low|low|165
 Pecan|pecans|true|Pecan|false|false|low|pie;salad;baked_goods|nut;tree_nut|moderate|high|28
@@ -297,7 +304,7 @@ Provolone Cheese|provolone|false||true|false|||dairy;lactose;fermented|moderate|
 Prune|dried plum;pitted prune|true|Plum|false|false|||fruit;gluten_free;polyphenol_rich;fodmap|none|moderate|84
 Pumpkin|pumpkin puree;winter squash|true|Pumpkin|false|false|low|soup;pie;curry|squash;orange|low|low|120
 Pumpkin seed|pepitas;pumpkin seeds|true|Pumpkin seed|false|false|low|salad;snack_mix;granola|seed|moderate|high|28
-Purple sweet potato|purple sweet potatoes;okinawan sweet potato;stokes purple;murasaki;ube|true|Purple sweet potato|false|false|low|fries;mash;curry|root_vegetable;purple|low|moderate|130
+Purple sweet potato|purple sweet potatoes;okinawan sweet potato;stokes purple;murasaki;ube;mashed purple sweet potato|true|Purple sweet potato|false|false|low|fries;mash;curry|root_vegetable;purple|low|moderate|130
 Quinoa|quinoa grain|true|Quinoa|false|false|low|salad;bowl;porridge|grain;whole_grain;gluten_free|low|moderate|150
 Radicchio|red chicory;Italian chicory;radicchio rosso|true|Radicchio|false|false|||leafy_green;polyphenol_rich;prebiotic|none|low|85
 Radish|radishes;daikon|true|Radish|false|false|low|salad;slaw|cruciferous;root_vegetable|low|low|40
@@ -379,6 +386,7 @@ Tomato|tomatoes;cherry tomato;roma|true|Tomato|false|false|moderate|sauce;curry;
 Trout|rainbow trout|false||false|false|low||fish|high|moderate|125
 Tuna|tuna steak;canned tuna;ahi tuna|false||false|false|high|sushi;salad;sandwich|fish|high|moderate|100
 Turkey|turkey breast;ground turkey|false||false|false|low|soup;salad;sandwich|meat;poultry|high|moderate|110
+Turkey Patty|turkey burger patty;ground turkey patty|false||false|false|||poultry;meat|high|moderate|113
 Turmeric|fresh turmeric;turmeric root|true|Turmeric|false|false|low|curry;golden_milk;rice|root_vegetable;herb_spice;yellow|low|low|3
 Turnip|turnips;swede|true|Turnip|false|false|low|soup;stew|cruciferous;root_vegetable|low|low|90
 Udon Noodles|japanese udon;wheat udon|true|Durum Wheat|false|false|||grain;gluten;wheat|low|moderate|200

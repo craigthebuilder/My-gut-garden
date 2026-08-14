@@ -84,6 +84,8 @@ Chili Powder|beta_carotene
 Chili Powder|capsaicin
 Chili pepper|capsaicin
 Chives|kaempferol
+Chorizo Sausage|capsaicin
+Chorizo Sausage|piperine
 Cinnamon|chlorogenic_acid
 Cinnamon|eugenol
 Clove|eugenol
@@ -125,6 +127,7 @@ Fig|anthocyanin
 Flaxseed|secoisolariciresinol
 Freekeh|beta_carotene
 Freekeh|lutein
+Fried Ripe Plantain|beta_carotene
 Garam Masala|eugenol
 Garam Masala|piperine
 Garlic|allicin
@@ -161,6 +164,8 @@ Hemp Seeds|beta_sitosterol
 Honeydew Melon|lutein
 Horseradish|glucosinolate
 Horseradish|sulforaphane
+Hummus|beta_sitosterol
+Hummus|chickpea_saponin
 Jackfruit|beta_carotene
 Jackfruit|quercetin
 Kalamata Olives|anthocyanin
@@ -186,6 +191,9 @@ Mandarin Orange|beta_cryptoxanthin
 Mandarin Orange|hesperidin
 Mandarin Orange|naringenin
 Mango|beta_carotene
+Microgreens|beta_carotene
+Microgreens|lutein
+Microgreens|sulforaphane
 Milk Chocolate|catechin
 Mint|menthol
 Miso|genistein

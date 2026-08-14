@@ -118,13 +118,13 @@ struct GuildBloomCelebrationView: View {
 }
 
 #Preview("Bloom, standard") {
-    GuildBloomCelebrationView(guildDisplayName: "The Anti-inflammatory Arsenal",
+    GuildBloomCelebrationView(guildDisplayName: "The Lining Keepers",
                               claimRisk: false) {}
         .themed()
 }
 
 #Preview("Bloom, claim-risk (Fence 2 tag)") {
-    GuildBloomCelebrationView(guildDisplayName: "The Mood Regulators",
+    GuildBloomCelebrationView(guildDisplayName: "The Messengers",
                               claimRisk: true) {}
         .themed()
 }

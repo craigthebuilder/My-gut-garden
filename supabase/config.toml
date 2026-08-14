@@ -320,8 +320,11 @@ max_frequency = "5s"
 # `discord`, `facebook`, `github`, `gitlab`, `google`, `keycloak`, `linkedin_oidc`, `notion`, `twitch`,
 # `twitter`, `x`, `slack`, `spotify`, `workos`, `zoom`.
 [auth.external.apple]
-enabled = false
-client_id = ""
+# Mirrors the HOSTED project (native Sign in with Apple, id_token flow) so a
+# future `supabase config push` can't silently disable Apple sign-in — the
+# shipped app depends on it (AuthService.signInWithApple).
+enabled = true
+client_id = "com.carlos.MyGutGarden"
 # DO NOT commit your OAuth provider secret to git. Use environment variable substitution instead:
 secret = "env(SUPABASE_AUTH_EXTERNAL_APPLE_SECRET)"
 # Overrides the default auth callback URL derived from auth.external_url.
@@ -412,3 +415,17 @@ enabled = true
 # declarative_schema_path = "./database"
 # JSON string passed through to pg-delta SQL formatting.
 # format_options = "{\"keywordCase\":\"upper\",\"indent\":2,\"maxWidth\":80,\"commaStyle\":\"trailing\"}"
+
+# ---------------------------------------------------------------------------
+# Edge Functions: pin JWT verification explicitly. The librarian trusts the
+# gateway to have verified the token signature before it reads the role claim
+# (service-role batch modes), and recognize/delete-account are paid/destructive
+# calls — none of these may ever be deployed with --no-verify-jwt.
+[functions.recognize]
+verify_jwt = true
+
+[functions.librarian]
+verify_jwt = true
+
+[functions.delete-account]
+verify_jwt = true

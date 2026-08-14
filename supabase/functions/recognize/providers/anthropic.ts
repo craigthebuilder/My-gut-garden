@@ -137,8 +137,10 @@ export class AnthropicProvider implements RecognitionProvider {
     });
 
     if (!res.ok) {
-      const body = await res.text();
-      throw new Error(`Anthropic API error ${res.status}: ${body}`);
+      // Log the body server-side only — the raw provider error can carry
+      // internals that don't belong in a client-visible message.
+      console.error(`Anthropic API error ${res.status}: ${await res.text()}`);
+      throw new Error(`vision provider error (${res.status})`);
     }
 
     const data = (await res.json()) as AnthropicResponse;
